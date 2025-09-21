@@ -51,7 +51,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
           ref={videoRef}
           source={require('@/public/log_video.mp4')}
           style={styles.video}
-          resizeMode={ResizeMode.CONTAIN}
+          resizeMode={ResizeMode.COVER}
           shouldPlay={false}
           isLooping={false}
           isMuted={true}
@@ -68,7 +68,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
         {!videoLoaded && !videoError && (
           <View style={styles.logoOverlay}>
             <Image 
-              source={require('@/assets/images/logo.png')}
+              source={require('@/public/logo_video_uimage.png')}
               style={styles.logo}
               contentFit="contain"
             />
@@ -78,7 +78,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
         {videoError && (
           <View style={styles.errorOverlay}>
             <Image 
-              source={require('@/assets/images/logo.png')}
+              source={require('@/public/logo_video_uimage.png')}
               style={styles.logo}
               contentFit="contain"
             />
@@ -114,6 +114,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
+    right: 0,
+    bottom: 0,
   },
   logoOverlay: {
     position: 'absolute',
@@ -126,10 +128,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   logo: {
-    width: screenWidth * 0.6,
-    height: screenHeight * 0.4,
-    maxWidth: 300,
-    maxHeight: 200,
+    width: screenWidth * 0.8,
+    height: screenHeight * 0.6,
+    maxWidth: 400,
+    maxHeight: 300,
   },
   errorOverlay: {
     position: 'absolute',
@@ -143,6 +145,7 @@ const styles = StyleSheet.create({
   },
   tapText: {
     fontSize: 18,
+    fontFamily: 'Outfit_500Medium',
     textAlign: 'center',
     color: '#333',
     marginTop: 20,
