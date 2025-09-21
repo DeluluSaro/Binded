@@ -1,5 +1,4 @@
 import { ResizeMode, Video } from 'expo-av';
-import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, StatusBar, StyleSheet, View } from 'react-native';
 import { ThemedText } from './themed-text';
@@ -11,7 +10,6 @@ interface IntroScreenProps {
 }
 
 export default function IntroScreen({ onComplete }: IntroScreenProps) {
-  const [videoLoaded, setVideoLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<Video>(null);
 
@@ -25,7 +23,6 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
 
   const handleVideoLoad = () => {
     console.log('Video loaded successfully');
-    setVideoLoaded(true);
     // Start playing immediately when loaded
     if (videoRef.current) {
       videoRef.current.playAsync();
@@ -51,7 +48,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
           ref={videoRef}
           source={require('@/public/log_video.mp4')}
           style={styles.video}
-          resizeMode={ResizeMode.COVER}
+          resizeMode={ResizeMode.CONTAIN}
           shouldPlay={false}
           isLooping={false}
           isMuted={true}
@@ -64,24 +61,8 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
           onLoad={handleVideoLoad}
         />
         
-        {/* Show logo while video is loading */}
-        {!videoLoaded && !videoError && (
-          <View style={styles.logoOverlay}>
-            <Image 
-              source={require('@/public/logo_video_uimage.png')}
-              style={styles.logo}
-              contentFit="contain"
-            />
-          </View>
-        )}
-        
         {videoError && (
           <View style={styles.errorOverlay}>
-            <Image 
-              source={require('@/public/logo_video_uimage.png')}
-              style={styles.logo}
-              contentFit="contain"
-            />
             <ThemedText type="subtitle" style={styles.tapText}>
               Proceeding to app...
             </ThemedText>
@@ -116,22 +97,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-  },
-  logoOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  logo: {
-    width: screenWidth * 0.8,
-    height: screenHeight * 0.6,
-    maxWidth: 400,
-    maxHeight: 300,
   },
   errorOverlay: {
     position: 'absolute',
