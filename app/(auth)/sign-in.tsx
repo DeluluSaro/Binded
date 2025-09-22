@@ -7,21 +7,21 @@ import { Image as ExpoImage } from 'expo-image';
 import { Link, useRouter } from 'expo-router';
 import React from 'react';
 import {
-  ActivityIndicator, // For loading state
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator, // For loading state
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 // It's best practice to place assets in an assets folder.
 const BACKGROUND_VIDEO = require('@/public/sign_video.mp4')
-const LOGO_IMAGE = require('@/assets/images/logo.png')
+const LOGO_IMAGE = require('@/public/logo.png')
 
 export default function SignInPage() {
   const { signIn, setActive, isLoaded } = useSignIn()

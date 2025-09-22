@@ -31,7 +31,9 @@ export const Fonts = Platform.select({
   ios: {
     /** Outfit font family for iOS */
     sans: 'Outfit_400Regular',
-    /** Outfit bold for headings */
+    /** Poppins bold for main headings */
+    heading: 'Poppins_700Bold',
+    /** Outfit bold for subheadings */
     serif: 'Outfit_700Bold',
     /** Outfit medium for rounded style */
     rounded: 'Outfit_500Medium',
@@ -41,13 +43,20 @@ export const Fonts = Platform.select({
   default: {
     /** Outfit font family for Android and other platforms */
     sans: 'Outfit_400Regular',
+    /** Poppins bold for main headings */
+    heading: 'Poppins_700Bold',
+    /** Outfit bold for subheadings */
     serif: 'Outfit_700Bold',
+    /** Outfit medium for rounded style */
     rounded: 'Outfit_500Medium',
+    /** Outfit light for monospace alternative */
     mono: 'Outfit_300Light',
   },
   web: {
     /** Outfit font family for web */
     sans: "'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    /** Poppins for main headings on web */
+    heading: "'Poppins', 'Outfit', Georgia, 'Times New Roman', serif",
     serif: "'Outfit', Georgia, 'Times New Roman', serif",
     rounded: "'Outfit', 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
     mono: "'Outfit', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",

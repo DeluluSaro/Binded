@@ -119,7 +119,7 @@ export default function SignUpPage() {
                 <View style={styles.header}>
                   <View style={styles.logoContainer}>
                     <ExpoImage 
-                      source={require('@/assets/images/logo.png')}
+                      source={require('@/public/logo.png')}
                       style={styles.logo}
                       contentFit="contain"
                     />

@@ -1,6 +1,6 @@
 import { ResizeMode, Video } from 'expo-av';
 import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, StatusBar, StyleSheet, View } from 'react-native';
+import { Dimensions, Image, StatusBar, StyleSheet, View } from 'react-native';
 import { ThemedText } from './themed-text';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -11,11 +11,13 @@ interface IntroScreenProps {
 
 export default function IntroScreen({ onComplete }: IntroScreenProps) {
   const [videoError, setVideoError] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
   const videoRef = useRef<Video>(null);
 
   const handleVideoError = (error: any) => {
     console.error('Video error:', error);
     setVideoError(true);
+    setIsVideoLoading(false);
     setTimeout(() => {
       onComplete();
     }, 2000);
@@ -23,6 +25,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
 
   const handleVideoLoad = () => {
     console.log('Video loaded successfully');
+    setIsVideoLoading(false);
     // Start playing immediately when loaded
     if (videoRef.current) {
       videoRef.current.playAsync();
@@ -61,6 +64,17 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
           onLoad={handleVideoLoad}
         />
         
+        {/* Show logo while video is loading */}
+        {isVideoLoading && (
+          <View style={styles.logoOverlay}>
+            <Image
+              source={require('@/public/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
+        )}
+        
         {videoError && (
           <View style={styles.errorOverlay}>
             <ThemedText type="subtitle" style={styles.tapText}>
@@ -97,6 +111,20 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  logoOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  logo: {
+    width: 400,
+    height: 400,
   },
   errorOverlay: {
     position: 'absolute',
