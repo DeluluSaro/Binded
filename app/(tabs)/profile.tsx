@@ -1,26 +1,23 @@
+import ThemeToggle from '@/components/theme-toggle';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { Fonts } from '@/constants/theme';
+import { useThemeColors } from '@/hooks/use-theme-color';
+import { useLongPressTheme } from '@/hooks/use-triple-tap-theme';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-// --- New "Monochrome Focus" Color Palette ---
-const Colors = {
-  BACKGROUND:     '#101014', // Deep, dark charcoal
-  SURFACE:        '#1E1E24', // Slightly lighter charcoal for panels
-  TEXT_PRIMARY:   '#F0F0F5', // Bright Off-White
-  TEXT_SECONDARY: '#A9A8B3', // Muted Light Grey
-  ACCENT_GLOW:    '#A855F7', // Vibrant Glowing Purple (consistent accent)
-  DANGER:         '#FF78B4', // Glowing pink (consistent accent)
-};
+import { Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileScreen() {
   const { user } = useUser();
   const { signOut } = useAuth();
   const router = useRouter();
   const [showSignOutModal, setShowSignOutModal] = React.useState(false);
+  const colors = useThemeColors();
+  const { handleLongPressStart, handleLongPressEnd } = useLongPressTheme();
 
   const handleSignOut = () => setShowSignOutModal(true);
 
@@ -37,67 +34,88 @@ export default function ProfileScreen() {
   const cancelSignOut = () => setShowSignOutModal(false);
 
   return (
-    <View style={styles.container}>
+    <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
-        <View style={[styles.panel, styles.profileHeader]}>
+        <View style={[styles.panel, styles.profileHeader, { backgroundColor: colors.surface, borderColor: colors.borderAccent }]}>
           <Image
             source={{ uri: user?.imageUrl }}
-            style={styles.profileImage}
+            style={[styles.profileImage, { borderColor: colors.borderAccent }]}
           />
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName} numberOfLines={1}>{user?.fullName}</Text>
-            <Text style={styles.profileEmail} numberOfLines={1}>{user?.primaryEmailAddress?.emailAddress}</Text>
+            <TouchableOpacity 
+              onPressIn={handleLongPressStart} 
+              onPressOut={handleLongPressEnd}
+              activeOpacity={0.7}
+            >
+              <ThemedText style={styles.profileName} numberOfLines={1}>{user?.fullName}</ThemedText>
+            </TouchableOpacity>
+            <ThemedText variant="secondary" style={styles.profileEmail} numberOfLines={1}>{user?.primaryEmailAddress?.emailAddress}</ThemedText>
           </View>
+          <ThemeToggle size="small" />
         </View>
 
         {/* Profile Details */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Information</Text>
-          <View style={[styles.panel, styles.detailItem]}>
-            <Ionicons name="person-outline" size={20} color={Colors.ACCENT_GLOW} />
+          <ThemedText style={styles.sectionTitle}>Account Information</ThemedText>
+          <View style={[styles.panel, styles.detailItem, { backgroundColor: colors.surface }]}>
+            <Ionicons name="person-outline" size={20} color={colors.iconAccent} />
             <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Full Name</Text>
-              <Text style={styles.detailValue}>{user?.fullName || 'Not set'}</Text>
+              <ThemedText variant="secondary" style={styles.detailLabel}>Full Name</ThemedText>
+              <ThemedText style={styles.detailValue}>{user?.fullName || 'Not set'}</ThemedText>
             </View>
           </View>
-          <View style={[styles.panel, styles.detailItem]}>
-            <Ionicons name="mail-outline" size={20} color={Colors.ACCENT_GLOW} />
+          <View style={[styles.panel, styles.detailItem, { backgroundColor: colors.surface }]}>
+            <Ionicons name="mail-outline" size={20} color={colors.iconAccent} />
             <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Email</Text>
-              <Text style={styles.detailValue}>{user?.primaryEmailAddress?.emailAddress || 'Not set'}</Text>
+              <ThemedText variant="secondary" style={styles.detailLabel}>Email</ThemedText>
+              <ThemedText style={styles.detailValue}>{user?.primaryEmailAddress?.emailAddress || 'Not set'}</ThemedText>
             </View>
           </View>
-          <View style={[styles.panel, styles.detailItem]}>
-            <Ionicons name="calendar-outline" size={20} color={Colors.ACCENT_GLOW} />
+          <View style={[styles.panel, styles.detailItem, { backgroundColor: colors.surface }]}>
+            <Ionicons name="calendar-outline" size={20} color={colors.iconAccent} />
             <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Member Since</Text>
-              <Text style={styles.detailValue}>{user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}</Text>
+              <ThemedText variant="secondary" style={styles.detailLabel}>Member Since</ThemedText>
+              <ThemedText style={styles.detailValue}>{user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}</ThemedText>
             </View>
           </View>
         </View>
 
         {/* Reading Stats */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Reading Statistics</Text>
+          <ThemedText style={styles.sectionTitle}>Reading Statistics</ThemedText>
           <View style={styles.statsGrid}>
-            <View style={[styles.panel, styles.statCard]}><Text style={styles.statNumber}>12</Text><Text style={styles.statLabel}>Books Read</Text></View>
-            <View style={[styles.panel, styles.statCard]}><Text style={styles.statNumber}>3</Text><Text style={styles.statLabel}>Currently</Text></View>
-            <View style={[styles.panel, styles.statCard]}><Text style={styles.statNumber}>1,250</Text><Text style={styles.statLabel}>Pages Read</Text></View>
-            <View style={[styles.panel, styles.statCard]}><Text style={styles.statNumber}>15</Text><Text style={styles.statLabel}>Day Streak</Text></View>
+            <View style={[styles.panel, styles.statCard, { backgroundColor: colors.surface }]}>
+              <ThemedText variant="accent" style={styles.statNumber}>12</ThemedText>
+              <ThemedText variant="secondary" style={styles.statLabel}>Books Read</ThemedText>
+            </View>
+            <View style={[styles.panel, styles.statCard, { backgroundColor: colors.surface }]}>
+              <ThemedText variant="accent" style={styles.statNumber}>3</ThemedText>
+              <ThemedText variant="secondary" style={styles.statLabel}>Currently</ThemedText>
+            </View>
+            <View style={[styles.panel, styles.statCard, { backgroundColor: colors.surface }]}>
+              <ThemedText variant="accent" style={styles.statNumber}>1,250</ThemedText>
+              <ThemedText variant="secondary" style={styles.statLabel}>Pages Read</ThemedText>
+            </View>
+            <View style={[styles.panel, styles.statCard, { backgroundColor: colors.surface }]}>
+              <ThemedText variant="accent" style={styles.statNumber}>15</ThemedText>
+              <ThemedText variant="secondary" style={styles.statLabel}>Day Streak</ThemedText>
+            </View>
           </View>
         </View>
 
         {/* Action Buttons */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Actions</Text>
-          <TouchableOpacity style={[styles.panel, styles.actionButton, styles.signOutButton]} onPress={handleSignOut}>
-            <Ionicons name="log-out-outline" size={20} color={Colors.DANGER} />
-            <Text style={styles.signOutButtonText}>Sign Out</Text>
-            <Ionicons name="chevron-forward" size={16} color={Colors.TEXT_SECONDARY} />
+          <ThemedText style={styles.sectionTitle}>Account Actions</ThemedText>
+          <TouchableOpacity style={[styles.panel, styles.actionButton, styles.signOutButton, { backgroundColor: colors.surface, borderColor: colors.error }]} onPress={handleSignOut}>
+            <Ionicons name="log-out-outline" size={20} color={colors.error} />
+            <ThemedText style={[styles.signOutButtonText, { color: colors.error }]}>Sign Out</ThemedText>
+            <Ionicons name="chevron-forward" size={16} color={colors.icon} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.panel, styles.actionButton]}>
-            <Ionicons name="bookmark-outline" size={20} color={Colors.TEXT_PRIMARY} /><Text style={styles.actionButtonText}>My Bookmarks</Text><Ionicons name="chevron-forward" size={16} color={Colors.TEXT_SECONDARY} />
+          <TouchableOpacity style={[styles.panel, styles.actionButton, { backgroundColor: colors.surface }]}>
+            <Ionicons name="bookmark-outline" size={20} color={colors.icon} />
+            <ThemedText style={styles.actionButtonText}>My Bookmarks</ThemedText>
+            <Ionicons name="chevron-forward" size={16} color={colors.icon} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -105,31 +123,30 @@ export default function ProfileScreen() {
       {/* Custom Sign Out Modal */}
       <Modal visible={showSignOutModal} transparent animationType="fade" onRequestClose={cancelSignOut}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.panel, styles.modalContainer]}>
+          <View style={[styles.panel, styles.modalContainer, { backgroundColor: colors.surface, borderColor: colors.borderAccent }]}>
             <View style={styles.modalHeader}>
-              <Ionicons name="log-out-outline" size={32} color={Colors.ACCENT_GLOW} />
-              <Text style={styles.modalTitle}>Sign Out</Text>
-              <Text style={styles.modalMessage}>Are you sure you want to sign out?</Text>
+              <Ionicons name="log-out-outline" size={32} color={colors.iconAccent} />
+              <ThemedText style={styles.modalTitle}>Sign Out</ThemedText>
+              <ThemedText variant="secondary" style={styles.modalMessage}>Are you sure you want to sign out?</ThemedText>
             </View>
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.modalCancelButton} onPress={cancelSignOut}>
-                <Text style={styles.modalCancelText}>Cancel</Text>
+              <TouchableOpacity style={[styles.modalCancelButton, { backgroundColor: colors.surfaceSecondary }]} onPress={cancelSignOut}>
+                <ThemedText variant="secondary" style={styles.modalCancelText}>Cancel</ThemedText>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalConfirmButton} onPress={confirmSignOut}>
-                <Text style={styles.modalConfirmText}>Sign Out</Text>
+              <TouchableOpacity style={[styles.modalConfirmButton, { backgroundColor: colors.error }]} onPress={confirmSignOut}>
+                <ThemedText style={[styles.modalConfirmText, { color: colors.text }]}>Sign Out</ThemedText>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-    </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.BACKGROUND,
   },
   scrollContent: {
     padding: 24,
@@ -138,7 +155,6 @@ const styles = StyleSheet.create({
   },
   // --- Base Panel Style ---
   panel: {
-    backgroundColor: Colors.SURFACE,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: 'transparent', // Default to no border
@@ -149,7 +165,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
     padding: 24,
-    borderColor: Colors.ACCENT_GLOW, // Accent border for hero element
   },
   profileImage: {
     width: 80,
@@ -157,7 +172,6 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     marginRight: 20,
     borderWidth: 2,
-    borderColor: Colors.ACCENT_GLOW,
   },
   profileInfo: {
     flex: 1,
@@ -165,13 +179,11 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.TEXT_PRIMARY,
     fontFamily: Fonts.heading,
     marginBottom: 4,
   },
   profileEmail: {
     fontSize: 16,
-    color: Colors.TEXT_SECONDARY,
     fontFamily: Fonts.rounded,
   },
   // --- Sections & Details ---
@@ -181,7 +193,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: Colors.TEXT_PRIMARY,
     fontFamily: Fonts.heading,
     marginBottom: 20,
     paddingHorizontal: 8,
@@ -198,13 +209,11 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 14,
-    color: Colors.TEXT_SECONDARY,
     fontFamily: Fonts.rounded,
     marginBottom: 2,
   },
   detailValue: {
     fontSize: 16,
-    color: Colors.TEXT_PRIMARY,
     fontFamily: Fonts.rounded,
     fontWeight: '600',
   },
@@ -223,13 +232,11 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 26,
     fontWeight: '700',
-    color: Colors.ACCENT_GLOW,
     fontFamily: Fonts.heading,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 13,
-    color: Colors.TEXT_SECONDARY,
     fontFamily: Fonts.rounded,
     textAlign: 'center',
   },
@@ -243,17 +250,15 @@ const styles = StyleSheet.create({
   actionButtonText: {
     flex: 1,
     fontSize: 16,
-    color: Colors.TEXT_PRIMARY,
     fontFamily: Fonts.rounded,
     marginLeft: 16,
   },
   signOutButton: {
-    borderColor: Colors.DANGER, // Special border for sign out
+    // Special border for sign out
   },
   signOutButtonText: {
     flex: 1,
     fontSize: 16,
-    color: Colors.DANGER,
     fontFamily: Fonts.rounded,
     marginLeft: 16,
     fontWeight: '600',
@@ -270,7 +275,6 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 340,
-    borderColor: Colors.ACCENT_GLOW,
   },
   modalHeader: {
     alignItems: 'center',
@@ -279,14 +283,12 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.TEXT_PRIMARY,
     fontFamily: Fonts.heading,
     marginTop: 12,
     marginBottom: 8,
   },
   modalMessage: {
     fontSize: 16,
-    color: Colors.TEXT_SECONDARY,
     fontFamily: Fonts.rounded,
     textAlign: 'center',
     lineHeight: 22,
@@ -297,27 +299,23 @@ const styles = StyleSheet.create({
   },
   modalCancelButton: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
   },
   modalCancelText: {
     fontSize: 16,
-    color: Colors.TEXT_SECONDARY,
     fontFamily: Fonts.rounded,
     fontWeight: '600',
   },
   modalConfirmButton: {
     flex: 1,
-    backgroundColor: Colors.ACCENT_GLOW,
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
   },
   modalConfirmText: {
     fontSize: 16,
-    color: '#FFFFFF',
     fontFamily: Fonts.rounded,
     fontWeight: '700',
   },

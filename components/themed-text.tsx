@@ -1,11 +1,12 @@
 import { StyleSheet, Text, type TextProps } from 'react-native';
 
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useThemeColor, useThemeColors } from '@/hooks/use-theme-color';
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
-  type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link';
+  type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'accent';
 };
 
 export function ThemedText({
@@ -13,9 +14,26 @@ export function ThemedText({
   lightColor,
   darkColor,
   type = 'default',
+  variant = 'primary',
   ...rest
 }: ThemedTextProps) {
-  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  const colors = useThemeColors();
+  
+  let color;
+  if (lightColor || darkColor) {
+    color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  } else {
+    switch (variant) {
+      case 'secondary':
+        color = colors.textSecondary;
+        break;
+      case 'accent':
+        color = colors.tint;
+        break;
+      default:
+        color = colors.text;
+    }
+  }
 
   return (
     <Text
@@ -26,6 +44,7 @@ export function ThemedText({
         type === 'defaultSemiBold' ? styles.defaultSemiBold : undefined,
         type === 'subtitle' ? styles.subtitle : undefined,
         type === 'link' ? styles.link : undefined,
+        type === 'secondary' ? styles.secondary : undefined,
         style,
       ]}
       {...rest}
@@ -57,6 +76,10 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     fontSize: 16,
     fontFamily: 'Outfit_500Medium',
-    color: '#0a7ea4',
+  },
+  secondary: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Outfit_400Regular',
   },
 });

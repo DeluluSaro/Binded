@@ -1,17 +1,21 @@
 import { Fonts } from '@/constants/theme';
+import { useThemeColors } from '@/hooks/use-theme-color';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import ThemeToggle from './theme-toggle';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -47,6 +51,7 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
   const router = useRouter();
   const [activeRoute, setActiveRoute] = useState('/home');
   const [selectedCategory, setSelectedCategory] = useState('1');
+  const colors = useThemeColors();
 
   // --- Animation Setup ---
   const slideAnim = useRef(new Animated.Value(-screenWidth)).current;
@@ -71,125 +76,170 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents={isOpen ? 'auto' : 'none'}>
       <TouchableOpacity
-        style={styles.backdrop}
+        style={[styles.backdrop, { backgroundColor: colors.shadow }]}
         onPress={onClose}
         activeOpacity={1}
       />
 
-      <Animated.View style={[styles.sidebar, { transform: [{ translateX: slideAnim }] }]}>
-        <View style={styles.header}>
-          <View style={styles.logoPlaceholder}>
-            <Ionicons name="book" size={24} color={Colors.ACCENT_GLOW} />
-          </View>
-          <Text style={styles.appName}>Binded</Text>
-        </View>
+      <Animated.View style={[
+        styles.sidebar, 
+        { 
+          transform: [{ translateX: slideAnim }],
+          borderRightColor: colors.borderAccent,
+        }
+      ]}>
+        <BlurView
+          intensity={100}
+          tint={colors.background === '#010101' ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <LinearGradient
+          colors={[
+            `${colors.surface}40`,
+            `${colors.surfaceSecondary}30`,
+            `${colors.surface}50`,
+          ]}
+          style={StyleSheet.absoluteFillObject}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+        
+        <View style={styles.content}>
+              <View style={[styles.header, { borderBottomColor: colors.border }]}>
+                <View style={styles.headerLeft}>
+                  <View style={[styles.logoPlaceholder, { backgroundColor: colors.tint }]}>
+                    <Ionicons name="book" size={24} color={colors.text} />
+                  </View>
+                  <Text style={[styles.appName, { color: colors.text }]}>Binded</Text>
+                </View>
+                <ThemeToggle size="small" />
+              </View>
 
-        <TouchableOpacity
-          style={styles.profileSection}
-          onPress={() => {
-            router.push('/profile');
-            onClose();
-          }}
-        >
-          <Image
-            source={{ uri: user?.imageUrl }}
-            style={styles.profileImage}
-          />
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName} numberOfLines={1}>{user?.fullName}</Text>
-            <Text style={styles.profileEmail} numberOfLines={1}>{user?.primaryEmailAddress?.emailAddress}</Text>
-          </View>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.profileSection, { backgroundColor: colors.surfaceSecondary }]}
+            onPress={() => {
+              router.push('/profile');
+              onClose();
+            }}
+          >
+            <Image
+              source={{ uri: user?.imageUrl }}
+              style={[styles.profileImage, { borderColor: colors.tint }]}
+            />
+            <View style={styles.profileInfo}>
+              <Text style={[styles.profileName, { color: colors.text }]} numberOfLines={1}>{user?.fullName}</Text>
+              <Text style={[styles.profileEmail, { color: colors.textSecondary }]} numberOfLines={1}>{user?.primaryEmailAddress?.emailAddress}</Text>
+            </View>
+          </TouchableOpacity>
 
-        <View style={styles.menuSection}>
-          {menuItems.map((item) => {
-            const isActive = activeRoute === item.route;
-            return (
+          <View style={styles.menuSection}>
+            {menuItems.map((item) => {
+              const isActive = activeRoute === item.route;
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[
+                    styles.menuItem, 
+                    { backgroundColor: isActive ? colors.tint : 'transparent' },
+                    isActive && styles.activeMenuItem
+                  ]}
+                  onPress={() => {
+                    setActiveRoute(item.route);
+                    router.push(item.route);
+                    onClose();
+                  }}
+                >
+                  <Ionicons
+                    name={item.icon as any}
+                    size={22}
+                    color={isActive ? colors.text : colors.icon}
+                  />
+                  <Text style={[
+                    styles.menuText, 
+                    { color: isActive ? colors.text : colors.textSecondary },
+                    isActive && styles.activeMenuText
+                  ]}>
+                    {item.title}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={[styles.separator, { backgroundColor: colors.border }]} />
+
+          <View style={styles.categoriesSection}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Your Categories</Text>
+            {categories.map((category) => {
+               const isSelected = selectedCategory === category.id;
+               return (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[
+                    styles.categoryItem, 
+                    { backgroundColor: isSelected ? colors.tint : 'transparent' },
+                    isSelected && styles.selectedCategory
+                  ]}
+                  onPress={() => setSelectedCategory(category.id)}
+                >
+                  <Text style={[
+                    styles.categoryText, 
+                    { color: isSelected ? colors.text : colors.textSecondary },
+                    isSelected && styles.selectedCategoryText
+                  ]} numberOfLines={1}>
+                    {category.title}
+                  </Text>
+                  <View style={[
+                    styles.categoryCount, 
+                    { backgroundColor: isSelected ? colors.surfaceSecondary : colors.surface },
+                    isSelected && styles.selectedCategoryCount
+                  ]}>
+                    <Text style={[
+                      styles.categoryCountText, 
+                      { color: isSelected ? colors.text : colors.textSecondary },
+                      isSelected && styles.selectedCategoryCountText
+                    ]}>
+                      {category.count}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={[styles.footer, { borderTopColor: colors.border }]}>
+            {bottomMenuItems.map((item) => (
               <TouchableOpacity
                 key={item.id}
-                style={[styles.menuItem, isActive && styles.activeMenuItem]}
-                onPress={() => {
-                  setActiveRoute(item.route);
-                  router.push(item.route);
-                  onClose();
-                }}
+                style={styles.footerItem}
+                onPress={item.title === 'Sign Out' ? handleSignOut : () => {}}
               >
                 <Ionicons
                   name={item.icon as any}
                   size={22}
-                  color={isActive ? Colors.TEXT_PRIMARY : Colors.TEXT_SECONDARY}
+                  color={item.title === 'Sign Out' ? colors.error : colors.icon}
                 />
-                <Text style={[styles.menuText, isActive && styles.activeMenuText]}>
+                <Text style={[
+                  styles.footerText, 
+                  { color: item.title === 'Sign Out' ? colors.error : colors.textSecondary },
+                  item.title === 'Sign Out' && styles.signOutText
+                ]}>
                   {item.title}
                 </Text>
               </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <View style={styles.separator} />
-
-        <View style={styles.categoriesSection}>
-          <Text style={styles.sectionTitle}>Your Categories</Text>
-          {categories.map((category) => {
-             const isSelected = selectedCategory === category.id;
-             return (
-              <TouchableOpacity
-                key={category.id}
-                style={[styles.categoryItem, isSelected && styles.selectedCategory]}
-                onPress={() => setSelectedCategory(category.id)}
-              >
-                <Text style={[styles.categoryText, isSelected && styles.selectedCategoryText]} numberOfLines={1}>
-                  {category.title}
-                </Text>
-                <View style={[styles.categoryCount, isSelected && styles.selectedCategoryCount]}>
-                  <Text style={[styles.categoryCountText, isSelected && styles.selectedCategoryCountText]}>
-                    {category.count}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <View style={styles.footer}>
-          {bottomMenuItems.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.footerItem}
-              onPress={item.title === 'Sign Out' ? handleSignOut : () => {}}
-            >
-              <Ionicons
-                name={item.icon as any}
-                size={22}
-                color={item.title === 'Sign Out' ? Colors.DANGER : Colors.TEXT_SECONDARY}
-              />
-              <Text style={[styles.footerText, item.title === 'Sign Out' && styles.signOutText]}>
-                {item.title}
-              </Text>
-            </TouchableOpacity>
-          ))}
+            ))}
+          </View>
         </View>
       </Animated.View>
     </View>
   );
 }
 
-// --- "Midnight Glass" Color Palette ---
-const Colors = {
-  GRADIENT_START: '#110E1C',
-  ACCENT_GLOW:    '#A855F7',
-  TEXT_PRIMARY:   '#F0F0F5',
-  TEXT_SECONDARY: '#A9A8B3',
-  DANGER:         '#FF78B4',
-  SURFACE_GLASS:  'rgba(30, 25, 45, 0.8)', // Darker, more saturated glass
-  BORDER_GLASS:   'rgba(255, 255, 255, 0.15)',
-};
+// Premium glass morphism sidebar with theme support
 
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     zIndex: 999,
   },
   sidebar: {
@@ -199,23 +249,30 @@ const styles = StyleSheet.create({
     width: screenWidth * 0.8,
     maxWidth: 320,
     height: screenHeight,
-    backgroundColor: Colors.SURFACE_GLASS,
     borderRightWidth: 1,
-    borderRightColor: Colors.BORDER_GLASS,
     zIndex: 1000,
-    paddingTop: 60,
-    paddingBottom: 40,
-    // Note: For a true blur, use Expo's <BlurView> component as the background
-    // backdropFilter: 'blur(20px)',
-    shadowColor: '#000',
     shadowOffset: { width: 4, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 20,
     elevation: 20,
   },
+  content: {
+    flex: 1,
+    paddingTop: 60,
+    paddingBottom: 40,
+    position: 'relative',
+    zIndex: 1,
+  },
   header: {
     paddingHorizontal: 25,
     marginBottom: 25,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    paddingBottom: 20,
+  },
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -224,14 +281,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   appName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: Colors.TEXT_PRIMARY,
     fontFamily: Fonts.heading,
   },
   profileSection: {
@@ -240,13 +295,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     marginBottom: 25,
     gap: 15,
+    borderRadius: 16,
+    paddingVertical: 15,
   },
   profileImage: {
     width: 55,
     height: 55,
     borderRadius: 27.5,
     borderWidth: 2,
-    borderColor: Colors.ACCENT_GLOW,
   },
   profileInfo: {
     flex: 1,
@@ -254,17 +310,14 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: Colors.TEXT_PRIMARY,
     fontFamily: Fonts.heading,
   },
   profileEmail: {
     fontSize: 14,
-    color: Colors.TEXT_SECONDARY,
     fontFamily: Fonts.sans,
   },
   separator: {
     height: 1,
-    backgroundColor: Colors.BORDER_GLASS,
     marginHorizontal: 25,
     marginVertical: 15,
   },
@@ -281,16 +334,14 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   activeMenuItem: {
-    backgroundColor: Colors.ACCENT_GLOW,
+    // Active state handled dynamically
   },
   menuText: {
     fontSize: 16,
-    color: Colors.TEXT_SECONDARY,
     fontFamily: Fonts.sans,
     fontWeight: '500',
   },
   activeMenuText: {
-    color: Colors.TEXT_PRIMARY,
     fontWeight: '600',
   },
   categoriesSection: {
@@ -300,7 +351,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.TEXT_SECONDARY,
     fontFamily: Fonts.heading,
     marginBottom: 15,
     textTransform: 'uppercase',
@@ -316,42 +366,37 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   selectedCategory: {
-    backgroundColor: Colors.ACCENT_GLOW,
+    // Selected state handled dynamically
   },
   categoryText: {
     fontSize: 15,
-    color: Colors.TEXT_SECONDARY,
     fontFamily: Fonts.sans,
     fontWeight: '500',
     flex: 1,
     marginRight: 10,
   },
   selectedCategoryText: {
-    color: Colors.TEXT_PRIMARY,
     fontWeight: '700',
   },
   categoryCount: {
-    backgroundColor: 'rgba(0,0,0,0.3)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   selectedCategoryCount: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    // Selected state handled dynamically
   },
   categoryCountText: {
     fontSize: 12,
-    color: Colors.TEXT_SECONDARY,
     fontFamily: Fonts.sans,
     fontWeight: '600',
   },
   selectedCategoryCountText: {
-    color: Colors.TEXT_PRIMARY,
+    // Selected state handled dynamically
   },
   footer: {
     paddingHorizontal: 15,
     borderTopWidth: 1,
-    borderTopColor: Colors.BORDER_GLASS,
     paddingTop: 15,
     marginTop: 15,
   },
@@ -365,12 +410,10 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 16,
-    color: Colors.TEXT_SECONDARY,
     fontFamily: Fonts.sans,
     fontWeight: '500',
   },
   signOutText: {
-    color: Colors.DANGER,
     fontWeight: '600',
   },
 });
