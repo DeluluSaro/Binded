@@ -6,21 +6,22 @@ import { ThemedView } from '@/components/themed-view';
 import { Fonts } from '@/constants/theme';
 import { useThemeColors } from '@/hooks/use-theme-color';
 import { useLongPressTheme } from '@/hooks/use-triple-tap-theme';
+import { Book, fetchBooks, getBookUrl } from '@/lib/supabase';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useRouter } from 'expo-router';
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   FlatList,
+  Linking,
   Platform,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
-  View,
-  Dimensions
+  View
 } from 'react-native';
 
 // --- Mock Data (Unchanged) ---
@@ -36,20 +37,42 @@ const categories = [ { id: '1', name: 'Non-Fiction', icon: 'book' }, { id: '2', 
 const popularAuthors = [ { id: '1', name: 'Sally Rooney', booksCount: 3, image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face', }, { id: '2', name: 'Delia Owens', booksCount: 2, image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face', }, { id: '3', name: 'Matt Haig', booksCount: 4, image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face', }, { id: '4', name: 'Andy Weir', booksCount: 2, image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face', }, ];
 
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+// Screen dimensions available if needed
+// const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
   const colors = useThemeColors();
   const { handleLongPressStart, handleLongPressEnd } = useLongPressTheme();
   
   // Parallax animation values
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerOpacity = useRef(new Animated.Value(1)).current;
-  const [scrollOffset, setScrollOffset] = useState(0);
+
+  // Fetch books from Supabase
+  useEffect(() => {
+    const loadBooks = async () => {
+      try {
+        console.log('🔄 Starting to load books in component...');
+        setLoading(true);
+        const fetchedBooks = await fetchBooks();
+        console.log('📚 Books loaded in component:', fetchedBooks.length, 'books');
+        setBooks(fetchedBooks);
+      } catch (error) {
+        console.error('💥 Error loading books in component:', error);
+        Alert.alert('Error', `Failed to load books: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBooks();
+  }, []);
 
   if (isLoaded && !isSignedIn) return <Redirect href="/sign-in" />;
   if (!isLoaded) return (
@@ -93,16 +116,35 @@ export default function HomeScreen() {
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    { useNativeDriver: true, listener: (event: any) => {
-      setScrollOffset(event.nativeEvent.contentOffset.y);
-    }}
+    { useNativeDriver: true }
   );
 
-  const renderBookCard = ({ item }: { item: any }) => (
-    <TouchableOpacity style={[styles.bookCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <Image source={{ uri: item.cover }} style={styles.bookCover} contentFit="cover" />
-      <ThemedText style={styles.bookTitle} numberOfLines={2}>{item.title}</ThemedText>
-      <ThemedText variant="secondary" style={styles.bookAuthor} numberOfLines={1}>{item.author}</ThemedText>
+  const handleBookPress = async (book: Book) => {
+    try {
+      const bookUrl = getBookUrl(book.file_path);
+      const supported = await Linking.canOpenURL(bookUrl);
+      
+      if (supported) {
+        await Linking.openURL(bookUrl);
+      } else {
+        Alert.alert('Error', 'Cannot open this book. Please try again later.');
+      }
+    } catch (error) {
+      console.error('Error opening book:', error);
+      Alert.alert('Error', 'Failed to open book. Please try again.');
+    }
+  };
+
+  const renderBookCard = ({ item }: { item: Book }) => (
+    <TouchableOpacity 
+      style={[styles.bookCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      onPress={() => handleBookPress(item)}
+    >
+      <View style={styles.bookCoverPlaceholder}>
+        <Ionicons name="book" size={40} color={colors.iconAccent} />
+      </View>
+      <ThemedText style={styles.bookTitle} numberOfLines={2}>{item.name}</ThemedText>
+      <ThemedText variant="secondary" style={styles.bookAuthor} numberOfLines={1}>Tap to open</ThemedText>
     </TouchableOpacity>
   );
 
@@ -291,14 +333,29 @@ export default function HomeScreen() {
               <ThemedText variant="accent" style={styles.seeAllText}>See All</ThemedText>
             </TouchableOpacity>
           </View>
-          <FlatList
-            data={mockBooks.slice(1)}
-            renderItem={renderBookCard}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalListContainer}
-          />
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ThemedText style={{ color: colors.text }}>Loading books...</ThemedText>
+            </View>
+          ) : books.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="book-outline" size={48} color={colors.iconAccent} />
+              <ThemedText style={[styles.emptyText, { color: colors.text }]}>No books available</ThemedText>
+              <ThemedText variant="secondary" style={styles.emptySubtext}>Check Supabase bucket permissions</ThemedText>
+              <ThemedText variant="secondary" style={[styles.emptySubtext, { fontSize: 12, marginTop: 8 }]}>
+                Make sure the Books bucket has public access enabled
+              </ThemedText>
+            </View>
+          ) : (
+            <FlatList
+              data={books}
+              renderItem={renderBookCard}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalListContainer}
+            />
+          )}
         </Animated.View>
         
         {/* --- Animated Popular Authors Section --- */}
@@ -576,5 +633,37 @@ const styles = StyleSheet.create({
     fontSize: 13, 
     fontFamily: Fonts.rounded,
     textAlign: 'center',
+  },
+
+  // --- Book Cover Placeholder ---
+  bookCoverPlaceholder: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  // --- Empty State ---
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    fontFamily: Fonts.heading,
+    textAlign: 'center',
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    fontFamily: Fonts.rounded,
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
