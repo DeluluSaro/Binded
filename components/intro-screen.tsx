@@ -1,6 +1,7 @@
 import { ResizeMode, Video } from 'expo-av';
+import { Image as ExpoImage } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, Image, StatusBar, StyleSheet, View } from 'react-native';
+import { Dimensions, StatusBar, StyleSheet, View } from 'react-native';
 import { ThemedText } from './themed-text';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -12,6 +13,7 @@ interface IntroScreenProps {
 export default function IntroScreen({ onComplete }: IntroScreenProps) {
   const [videoError, setVideoError] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const [showLogo, setShowLogo] = useState(true);
   const videoRef = useRef<Video>(null);
 
   const handleVideoError = (error: any) => {
@@ -26,10 +28,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
   const handleVideoLoad = () => {
     console.log('Video loaded successfully');
     setIsVideoLoading(false);
-    // Start playing immediately when loaded
-    if (videoRef.current) {
-      videoRef.current.playAsync();
-    }
+    // Don't start playing immediately - wait for logo timer
   };
 
   const handleVideoEnd = () => {
@@ -37,9 +36,17 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
     onComplete();
   };
 
-  // Auto-start video loading immediately
+  // Show logo for 1.3 seconds, then start video
   useEffect(() => {
-    // Video will start playing when loaded via handleVideoLoad
+    const logoTimer = setTimeout(() => {
+      setShowLogo(false);
+      // Start playing video after logo is hidden
+      if (videoRef.current) {
+        videoRef.current.playAsync();
+      }
+    }, 1300);
+
+    return () => clearTimeout(logoTimer);
   }, []);
 
   return (
@@ -49,7 +56,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
       <View style={styles.videoContainer}>
         <Video
           ref={videoRef}
-          source={require('@/public/log_video.mp4')}
+          source={require('@/public/log1.mp4')}
           style={styles.video}
           resizeMode={ResizeMode.CONTAIN}
           shouldPlay={false}
@@ -64,13 +71,13 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
           onLoad={handleVideoLoad}
         />
         
-        {/* Show logo while video is loading */}
-        {isVideoLoading && (
+        {/* Show logo for 1.3 seconds */}
+        {showLogo && (
           <View style={styles.logoOverlay}>
-            <Image
-              source={require('@/public/logo.png')}
-              style={styles.logo}
-              resizeMode="contain"
+            <ExpoImage
+              source={require('@/public/logo.svg')}
+              style={styles.loadingLogo}
+              contentFit="contain"
             />
           </View>
         )}
@@ -90,7 +97,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f9f5e9',
   },
   touchArea: {
     flex: 1,
@@ -120,11 +127,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#f9f5e9',
   },
-  logo: {
+  loadingLogo: {
     width: 400,
     height: 400,
+  },
+  logo: {
+    width: 500,
+    height: 500,
   },
   errorOverlay: {
     position: 'absolute',
@@ -134,7 +145,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#f9f5e9',
   },
   tapText: {
     fontSize: 18,

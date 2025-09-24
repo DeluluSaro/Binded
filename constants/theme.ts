@@ -39,7 +39,7 @@ export const Colors = {
     // Premium effects
     shadow: 'rgba(0, 0, 0, 0.1)',
     glow: primaryAccent,
-    gradient: [lightBackground, '#c4b8a8', '#d4c9b8'],
+    gradient: [lightBackground, '#c4b8a8', '#f44336'],
   },
   dark: {
     // Primary colors
@@ -69,7 +69,7 @@ export const Colors = {
     // Premium effects
     shadow: 'rgba(0, 0, 0, 0.3)',
     glow: primaryAccent,
-    gradient: [darkBackground, '#1a1a1a', '#2a2a2a'],
+    gradient: [darkBackground, '#1a1a1a', '#f44336'],
   },
 };
 

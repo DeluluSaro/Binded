@@ -119,7 +119,7 @@ export default function SignUpPage() {
                 <View style={styles.header}>
                   <View style={styles.logoContainer}>
                     <ExpoImage 
-                      source={require('@/public/logo.png')}
+                      source={require('@/public/logo.svg')}
                       style={styles.logo}
                       contentFit="contain"
                     />
@@ -312,8 +312,8 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logo: {
-    width: 70,
-    height: 70,
+    width: 200,
+    height: 200,
     marginBottom: 20,
   },
   welcomeText: {
