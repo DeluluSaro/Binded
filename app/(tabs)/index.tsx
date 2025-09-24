@@ -1,6 +1,8 @@
+import Loading from '@/components/loading';
 import PremiumButton from '@/components/premium-button';
 import PremiumGlassContainer from '@/components/premium-glass-container';
 import SideNavbar from '@/components/side-navbar';
+import SimpleEpubReader from '@/components/simple-epub-reader';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Fonts } from '@/constants/theme';
@@ -47,6 +49,9 @@ export default function HomeScreen() {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showEpubReader, setShowEpubReader] = useState(false);
+  const [selectedEpubUri, setSelectedEpubUri] = useState<string>('');
+  const [openingBook, setOpeningBook] = useState(false);
   const colors = useThemeColors();
   const { handleLongPressStart, handleLongPressEnd } = useLongPressTheme();
   
@@ -80,6 +85,24 @@ export default function HomeScreen() {
       <ThemedText style={{ color: colors.text }}>Loading...</ThemedText>
     </ThemedView>
   );
+
+  // Show loading screen when opening a book
+  if (openingBook) {
+    return <Loading message="Opening Book..." />;
+  }
+
+  // Show EPUB reader if a book is selected
+  if (showEpubReader && selectedEpubUri) {
+    return (
+      <SimpleEpubReader
+        epubUrl={selectedEpubUri}
+        onClose={() => {
+          setShowEpubReader(false);
+          setSelectedEpubUri('');
+        }}
+      />
+    );
+  }
 
   const lastReadBook = mockBooks[0]; // For the hero component
 
@@ -121,32 +144,59 @@ export default function HomeScreen() {
 
   const handleBookPress = async (book: Book) => {
     try {
-      const bookUrl = getBookUrl(book.file_path);
-      const supported = await Linking.canOpenURL(bookUrl);
+      setOpeningBook(true);
       
-      if (supported) {
-        await Linking.openURL(bookUrl);
+      // Show loading for 2 seconds to display the loading screen
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const bookUrl = getBookUrl(book.file_path);
+      
+      // Check if it's an EPUB file
+      if (book.file_path.toLowerCase().endsWith('.epub')) {
+        // Directly open EPUB in reader - no prompts, no downloads
+        setSelectedEpubUri(bookUrl);
+        setShowEpubReader(true);
       } else {
-        Alert.alert('Error', 'Cannot open this book. Please try again later.');
+        // For other file types (PDF, etc.), open with external app
+        const supported = await Linking.canOpenURL(bookUrl);
+        
+        if (supported) {
+          await Linking.openURL(bookUrl);
+        } else {
+          Alert.alert('Error', 'Cannot open this book. Please try again later.');
+        }
       }
     } catch (error) {
       console.error('Error opening book:', error);
       Alert.alert('Error', 'Failed to open book. Please try again.');
+    } finally {
+      setOpeningBook(false);
     }
   };
 
-  const renderBookCard = ({ item }: { item: Book }) => (
-    <TouchableOpacity 
-      style={[styles.bookCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-      onPress={() => handleBookPress(item)}
-    >
-      <View style={styles.bookCoverPlaceholder}>
-        <Ionicons name="book" size={40} color={colors.iconAccent} />
-      </View>
-      <ThemedText style={styles.bookTitle} numberOfLines={2}>{item.name}</ThemedText>
-      <ThemedText variant="secondary" style={styles.bookAuthor} numberOfLines={1}>Tap to open</ThemedText>
-    </TouchableOpacity>
-  );
+  const renderBookCard = ({ item }: { item: Book }) => {
+    const isEpub = item.file_path.toLowerCase().endsWith('.epub');
+    const isPdf = item.file_path.toLowerCase().endsWith('.pdf');
+    
+    return (
+      <TouchableOpacity 
+        style={[styles.bookCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        onPress={() => handleBookPress(item)}
+      >
+        <View style={styles.bookCoverPlaceholder}>
+          <Ionicons 
+            name={isEpub ? "book" : isPdf ? "document-text" : "book"} 
+            size={40} 
+            color={colors.iconAccent} 
+          />
+        </View>
+        <ThemedText style={styles.bookTitle} numberOfLines={2}>{item.name}</ThemedText>
+        <ThemedText variant="secondary" style={styles.bookAuthor} numberOfLines={1}>
+          {isEpub ? 'Tap to read' : 'Tap to open'}
+        </ThemedText>
+      </TouchableOpacity>
+    );
+  };
 
   const renderCategory = ({ item }: { item: any }) => (
     <TouchableOpacity style={[styles.categoryChip, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
@@ -238,23 +288,28 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <View style={styles.headerCenter}>
                 <View style={styles.greetingContainer}>
-                    <ThemedText style={{ fontFamily: 'Pacifico-Regular', fontSize: 24, fontWeight: 'normal', textAlign: 'center' }}>Hello, </ThemedText>
+                    <ThemedText style={{ fontFamily: 'Outfit_400Regular', fontSize: 28, fontWeight: 'normal', textAlign: 'center' }}>Hello, </ThemedText>
                     <TouchableOpacity 
                         onPressIn={handleLongPressStart} 
                         onPressOut={handleLongPressEnd}
                         activeOpacity={0.7}
                     >
-                        <ThemedText style={{ color: colors.tint, fontFamily: 'Pacifico-Regular', fontSize: 28, fontWeight: 'normal' }}>{user?.firstName || 'Reader'}</ThemedText>
+                        <ThemedText style={{ color: colors.tint, fontFamily: 'Outfit_400Regular', fontSize: 32, fontWeight: 'normal' }}>{user?.firstName || 'Reader'}</ThemedText>
                     </TouchableOpacity>
                 </View>
-                <ThemedText variant="secondary" style={styles.subGreeting}>Ready to dive in?</ThemedText>
             </View>
+            
             <View style={styles.headerRight}>
               <TouchableOpacity onPress={() => router.push('/profile')} style={styles.profileButton}>
                 <Image source={{ uri: user?.imageUrl }} style={[styles.profileImage, { borderColor: colors.borderAccent }]} />
               </TouchableOpacity>
             </View>
         </Animated.View>
+
+        {/* --- Sub Greeting Section --- */}
+        <View style={styles.subGreetingSection}>
+            <ThemedText variant="secondary" style={styles.subGreeting}>Ready to dive in?</ThemedText>
+        </View>
 
         {/* --- Animated Spotlight Hero Section --- */}
         <Animated.View style={[
@@ -454,22 +509,27 @@ const styles = StyleSheet.create({
   },
   greetingContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'center',
     
   },
   greeting: { 
     fontSize: 18, 
     fontWeight: 'bold', 
-    fontFamily: 'Pacifico-Regular',
+    fontFamily: 'Silkscreen-Regular',
     textAlign: 'center',
-    paddingTop:10
+    paddingTop:20
+  },
+  subGreetingSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    marginBottom: 20,
   },
   subGreeting: { 
-    fontSize: 16, 
+    fontSize: 24, 
     fontFamily: Fonts.rounded,
-    textAlign: 'left',
-    marginTop: 2,
+    textAlign: 'center',
   },
   profileButton: {
     borderRadius: 24,
@@ -497,10 +557,11 @@ const styles = StyleSheet.create({
   },
   // The title text itself, now without horizontal padding
   sectionTitle: { 
-    fontSize: 24, 
+    fontSize: 22, 
     fontWeight: 'normal', 
     fontFamily: 'Outfit_700Bold', 
     textAlign: 'left',
+    
   },
   seeAllText: { 
     fontSize: 16, 
@@ -600,8 +661,8 @@ const styles = StyleSheet.create({
   },
   bookTitle: { 
     fontSize: 15, 
-    fontWeight: '600', 
-    fontFamily: Fonts.heading, 
+    fontWeight: 'normal', 
+    fontFamily: 'Outfit_400Regular', 
     marginBottom: 4,
     textAlign: 'left',
   },

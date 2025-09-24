@@ -75,42 +75,42 @@ export const Colors = {
 
 export const Fonts = Platform.select({
   ios: {
-    /** Outfit font family for iOS */
-    sans: 'Outfit_400Regular',
-    /** Poppins bold for main headings */
-    heading: 'Poppins_700Bold',
-    /** Pacifico for section headings */
-    sectionHeading: 'Pacifico-Regular',
-    /** Outfit bold for subheadings */
-    serif: 'Outfit_700Bold',
-    /** Outfit medium for rounded style */
-    rounded: 'Outfit_500Medium',
-    /** Outfit light for monospace alternative */
-    mono: 'Outfit_300Light',
+    /** Silkscreen font family for iOS */
+    sans: 'Silkscreen-Regular',
+    /** Silkscreen bold for main headings */
+    heading: 'Silkscreen-Regular',
+    /** Silkscreen for section headings */
+    sectionHeading: 'Silkscreen-Regular',
+    /** Silkscreen bold for subheadings */
+    serif: 'Silkscreen-Regular',
+    /** Silkscreen medium for rounded style */
+    rounded: 'Silkscreen-Regular',
+    /** Silkscreen light for monospace alternative */
+    mono: 'Silkscreen-Regular',
   },
   default: {
-    /** Outfit font family for Android and other platforms */
-    sans: 'Outfit_400Regular',
-    /** Poppins bold for main headings */
-    heading: 'Poppins_700Bold',
-    /** Pacifico for section headings */
-    sectionHeading: 'Pacifico-Regular',
-    /** Outfit bold for subheadings */
-    serif: 'Outfit_700Bold',
-    /** Outfit medium for rounded style */
-    rounded: 'Outfit_500Medium',
-    /** Outfit light for monospace alternative */
-    mono: 'Outfit_300Light',
+    /** Silkscreen font family for Android and other platforms */
+    sans: 'Silkscreen-Regular',
+    /** Silkscreen bold for main headings */
+    heading: 'Silkscreen-Regular',
+    /** Silkscreen for section headings */
+    sectionHeading: 'Silkscreen-Regular',
+    /** Silkscreen bold for subheadings */
+    serif: 'Silkscreen-Regular',
+    /** Silkscreen medium for rounded style */
+    rounded: 'Silkscreen-Regular',
+    /** Silkscreen light for monospace alternative */
+    mono: 'Silkscreen-Regular',
   },
   web: {
-    /** Outfit font family for web */
-    sans: "'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    /** Poppins for main headings on web */
-    heading: "'Poppins', 'Outfit', Georgia, 'Times New Roman', serif",
-    /** Pacifico for section headings on web */
-    sectionHeading: "'Pacifico', 'Outfit', Georgia, 'Times New Roman', serif",
-    serif: "'Outfit', Georgia, 'Times New Roman', serif",
-    rounded: "'Outfit', 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "'Outfit', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+    /** Silkscreen font family for web */
+    sans: "'Silkscreen', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    /** Silkscreen for main headings on web */
+    heading: "'Silkscreen', Georgia, 'Times New Roman', serif",
+    /** Silkscreen for section headings on web */
+    sectionHeading: "'Silkscreen', Georgia, 'Times New Roman', serif",
+    serif: "'Silkscreen', Georgia, 'Times New Roman', serif",
+    rounded: "'Silkscreen', 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
+    mono: "'Silkscreen', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });

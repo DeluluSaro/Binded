@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 8,
-    fontFamily: 'Outfit_500Medium',
+    fontFamily: 'Silkscreen-Regular',
   },
   toggleContainer: {
     borderRadius: 20,

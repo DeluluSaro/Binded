@@ -9,7 +9,9 @@ export default function AppWrapper({ children }: { children: React.ReactNode }) 
   const [showQuotePopup, setShowQuotePopup] = useState(true);
   const [fontsLoaded] = useFonts({
     'Pacifico-Regular': require('@/assets/fonts/Pacifico-Regular.ttf'),
-    'Silkscreen-Regular': require('@/assets/fonts/Silkscreen-Regular.ttf'),
+    'Silkscreen': require('@/assets/fonts/Silkscreen-Regular.ttf'),
+    'Outfit_400Regular': require('@/assets/fonts/Outfit-Regular.ttf'),
+    'Outfit_700Bold': require('@/assets/fonts/Outfit-Bold.ttf'),
   });
 
   // Suppress Clerk telemetry errors

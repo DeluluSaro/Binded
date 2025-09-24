@@ -7,16 +7,16 @@ import { Image as ExpoImage } from 'expo-image';
 import { Link, useRouter } from 'expo-router';
 import React from 'react';
 import {
-  ActivityIndicator, // For loading state
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator, // For loading state
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 // It's best practice to place assets in an assets folder.
@@ -228,13 +228,13 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: 28,
-    fontFamily: 'Outfit_700Bold',
+    fontFamily: 'Silkscreen-Regular',
     color: '#ffffff',
     textAlign: 'center',
   },
   subtitleText: {
     fontSize: 16,
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Silkscreen-Regular',
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
     marginTop: 8,
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 12,
     fontSize: 16,
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Silkscreen-Regular',
     color: '#ffffff',
   },
   primaryButton: {
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontFamily: 'Outfit_600SemiBold',
+    fontFamily: 'Silkscreen-Regular',
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   dividerText: {
     marginHorizontal: 16,
     fontSize: 12,
-    fontFamily: 'Outfit_500Medium',
+    fontFamily: 'Silkscreen-Regular',
     color: 'rgba(255, 255, 255, 0.6)',
   },
   googleButton: {
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   googleButtonText: {
     color: '#1f2937', // Dark text for contrast on the white button
     fontSize: 16,
-    fontFamily: 'Outfit_500Medium',
+    fontFamily: 'Silkscreen-Regular',
   },
   footer: {
     flexDirection: 'row',
@@ -324,12 +324,12 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Silkscreen-Regular',
     color: 'rgba(255, 255, 255, 0.7)',
   },
   footerLink: {
     fontSize: 14,
-    fontFamily: 'Outfit_600SemiBold',
+    fontFamily: 'Silkscreen-Regular',
     color: '#a78bfa', // A more harmonious, vibrant highlight color
   },
 })

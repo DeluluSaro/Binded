@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 14,
-    fontFamily: 'Outfit_500Medium',
+    fontFamily: 'Silkscreen-Regular',
     color: '#1e40af',
     textAlign: 'center',
   },

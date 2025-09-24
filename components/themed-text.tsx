@@ -56,30 +56,33 @@ const styles = StyleSheet.create({
   default: {
     fontSize: 16,
     lineHeight: 24,
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Silkscreen-Regular',
   },
   defaultSemiBold: {
     fontSize: 16,
     lineHeight: 24,
-    fontFamily: 'Outfit_600SemiBold',
+    fontFamily: 'Silkscreen-Regular',
+    fontWeight: 'bold',
   },
   title: {
     fontSize: 32,
-    fontFamily: 'Outfit_700Bold',
+    fontFamily: 'Silkscreen-Regular',
+    fontWeight: 'bold',
     lineHeight: 32,
   },
   subtitle: {
     fontSize: 20,
-    fontFamily: 'Outfit_700Bold',
+    fontFamily: 'Silkscreen-Regular',
+    fontWeight: 'bold',
   },
   link: {
     lineHeight: 30,
     fontSize: 16,
-    fontFamily: 'Outfit_500Medium',
+    fontFamily: 'Silkscreen-Regular',
   },
   secondary: {
     fontSize: 14,
     lineHeight: 20,
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Silkscreen-Regular',
   },
 });

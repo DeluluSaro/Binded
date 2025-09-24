@@ -127,7 +127,7 @@ export default function SignUpPage() {
                   <Text style={styles.welcomeText}>
                     Create account{user?.firstName ? `, ` : ''}
                     {user?.firstName && (
-                      <Text style={{ fontFamily: 'Pacifico-Regular', fontSize: 18, color: '#ff69b4', fontWeight: 'normal' }}>{user.firstName}</Text>
+                      <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 18, color: '#ff69b4', fontWeight: 'normal' }}>{user.firstName}</Text>
                     )}
                   </Text>
                   <Text style={styles.subtitleText}>Join the Binded community</Text>
@@ -318,13 +318,13 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: 28,
-    fontFamily: 'Outfit_700Bold',
+    fontFamily: 'Silkscreen-Regular',
     color: '#ffffff',
     textAlign: 'center',
   },
   subtitleText: {
     fontSize: 16,
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Silkscreen-Regular',
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
     marginTop: 8,
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 12,
     fontSize: 16,
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Silkscreen-Regular',
     color: '#ffffff',
   },
   verificationContainer: {
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
   },
   verificationSubtitle: {
     fontSize: 16,
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Silkscreen-Regular',
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
   },
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontFamily: 'Outfit_600SemiBold',
+    fontFamily: 'Silkscreen-Regular',
   },
   secondaryButton: {
     alignItems: 'center',
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: '#667eea',
     fontSize: 14,
-    fontFamily: 'Outfit_500Medium',
+    fontFamily: 'Silkscreen-Regular',
   },
   linkButton: {
     alignItems: 'center',
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   linkButtonText: {
     color: '#6b7280',
     fontSize: 14,
-    fontFamily: 'Outfit_500Medium',
+    fontFamily: 'Silkscreen-Regular',
   },
   dividerContainer: {
     flexDirection: 'row',
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   dividerText: {
     marginHorizontal: 16,
     fontSize: 14,
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Silkscreen-Regular',
     color: 'rgba(255, 255, 255, 0.8)',
   },
   googleButton: {
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
   googleButtonText: {
     color: '#1f2937',
     fontSize: 16,
-    fontFamily: 'Outfit_500Medium',
+    fontFamily: 'Silkscreen-Regular',
   },
   footer: {
     flexDirection: 'row',
@@ -453,17 +453,17 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Silkscreen-Regular',
     color: 'rgba(255, 255, 255, 0.8)',
   },
   footerLink: {
     fontSize: 14,
-    fontFamily: 'Outfit_600SemiBold',
+    fontFamily: 'Silkscreen-Regular',
     color: '#ff69b4',
   },
   userNameHighlight: {
     fontSize: 18,
-    fontFamily: 'Pacifico-Regular',
+    fontFamily: 'Silkscreen-Regular',
     color: '#ff69b4',
     fontWeight: 'bold',
   },

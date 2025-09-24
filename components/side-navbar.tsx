@@ -8,12 +8,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import ThemeToggle from './theme-toggle';
 
@@ -110,7 +110,7 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
                   <View style={[styles.logoPlaceholder, { backgroundColor: colors.tint }]}>
                     <Ionicons name="book" size={24} color={colors.text} />
                   </View>
-                  <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 24, fontWeight: 'normal', color: colors.text }}>Binded</Text>
+                  <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 24, fontWeight: 'normal', color: colors.text }}>Binded</Text>
                 </View>
                 <ThemeToggle size="small" />
               </View>
