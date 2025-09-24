@@ -88,13 +88,13 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <View style={styles.headerCenter}>
                 <View style={styles.greetingContainer}>
-                    <ThemedText style={styles.greeting}>Hello </ThemedText>
+                    <ThemedText style={{ fontFamily: 'Pacifico-Regular', fontSize: 24, fontWeight: 'normal', textAlign: 'center' }}>Hello, </ThemedText>
                     <TouchableOpacity 
                         onPressIn={handleLongPressStart} 
                         onPressOut={handleLongPressEnd}
                         activeOpacity={0.7}
                     >
-                        <ThemedText style={[styles.greeting, { color: colors.tint }]}>{user?.firstName || 'Reader'}</ThemedText>
+                        <ThemedText style={{ color: colors.tint, fontFamily: 'Pacifico-Regular', fontSize: 28, fontWeight: 'normal' }}>{user?.firstName || 'Reader'}</ThemedText>
                     </TouchableOpacity>
                 </View>
                 <ThemedText variant="secondary" style={styles.subGreeting}>Ready to dive in?</ThemedText>
@@ -105,6 +105,8 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
         </View>
+
+      
 
         {/* --- Spotlight Hero Section --- */}
         <View style={styles.section}>
@@ -197,7 +199,8 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { 
     paddingTop: Platform.OS === 'ios' ? 70 : 50, 
-    paddingBottom: 50 
+    paddingBottom: 50, 
+    
   },
   loadingContainer: { 
     flex: 1, 
@@ -207,6 +210,7 @@ const styles = StyleSheet.create({
   
   // --- Header ---
   header: {
+    marginTop: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -238,17 +242,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    
   },
   greeting: { 
-    fontSize: 28, 
+    fontSize: 18, 
     fontWeight: 'bold', 
-    fontFamily: Fonts.heading,
+    fontFamily: 'Pacifico-Regular',
     textAlign: 'center',
+    paddingTop:10
   },
   subGreeting: { 
     fontSize: 16, 
     fontFamily: Fonts.rounded,
-    textAlign: 'center',
+    textAlign: 'left',
     marginTop: 2,
   },
   profileButton: {
@@ -263,7 +269,7 @@ const styles = StyleSheet.create({
 
   // --- General Section Styling ---
   section: { 
-    marginBottom: 32 
+    marginBottom: 40 
   },
   // Container for section titles and the "See All" button
   sectionHeader: { 
@@ -271,13 +277,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     alignItems: 'center', 
     paddingHorizontal: 24, 
-    marginBottom: 20 
+    marginBottom: 30,
+    paddingBottom: 10
   },
   // The title text itself, now without horizontal padding
   sectionTitle: { 
     fontSize: 24, 
-    fontWeight: 'bold', 
-    fontFamily: Fonts.heading, 
+    fontWeight: 'normal', 
+    fontFamily: 'Outfit_700Bold', 
     textAlign: 'left',
   },
   seeAllText: { 
@@ -289,7 +296,8 @@ const styles = StyleSheet.create({
   // Styling for the content area of horizontal lists
   horizontalListContainer: { 
     paddingHorizontal: 24, 
-    gap: 20 
+    gap: 20,
+    paddingTop: 10
   },
 
   // --- Spotlight Hero Card ---

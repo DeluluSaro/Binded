@@ -79,6 +79,8 @@ export const Fonts = Platform.select({
     sans: 'Outfit_400Regular',
     /** Poppins bold for main headings */
     heading: 'Poppins_700Bold',
+    /** Pacifico for section headings */
+    sectionHeading: 'Pacifico-Regular',
     /** Outfit bold for subheadings */
     serif: 'Outfit_700Bold',
     /** Outfit medium for rounded style */
@@ -91,6 +93,8 @@ export const Fonts = Platform.select({
     sans: 'Outfit_400Regular',
     /** Poppins bold for main headings */
     heading: 'Poppins_700Bold',
+    /** Pacifico for section headings */
+    sectionHeading: 'Pacifico-Regular',
     /** Outfit bold for subheadings */
     serif: 'Outfit_700Bold',
     /** Outfit medium for rounded style */
@@ -103,6 +107,8 @@ export const Fonts = Platform.select({
     sans: "'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     /** Poppins for main headings on web */
     heading: "'Poppins', 'Outfit', Georgia, 'Times New Roman', serif",
+    /** Pacifico for section headings on web */
+    sectionHeading: "'Pacifico', 'Outfit', Georgia, 'Times New Roman', serif",
     serif: "'Outfit', Georgia, 'Times New Roman', serif",
     rounded: "'Outfit', 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
     mono: "'Outfit', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",

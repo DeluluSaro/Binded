@@ -127,7 +127,7 @@ export default function SignUpPage() {
                   <Text style={styles.welcomeText}>
                     Create account{user?.firstName ? `, ` : ''}
                     {user?.firstName && (
-                      <Text style={styles.userNameHighlight}>{user.firstName}</Text>
+                      <Text style={{ fontFamily: 'Pacifico-Regular', fontSize: 18, color: '#ff69b4', fontWeight: 'normal' }}>{user.firstName}</Text>
                     )}
                   </Text>
                   <Text style={styles.subtitleText}>Join the Binded community</Text>
@@ -460,5 +460,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Outfit_600SemiBold',
     color: '#ff69b4',
+  },
+  userNameHighlight: {
+    fontSize: 18,
+    fontFamily: 'Pacifico-Regular',
+    color: '#ff69b4',
+    fontWeight: 'bold',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
   },
 })
