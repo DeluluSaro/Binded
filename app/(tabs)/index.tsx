@@ -11,14 +11,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
+  Animated,
   FlatList,
   Platform,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  View
+  View,
+  Dimensions
 } from 'react-native';
 
 // --- Mock Data (Unchanged) ---
@@ -34,6 +36,8 @@ const categories = [ { id: '1', name: 'Non-Fiction', icon: 'book' }, { id: '2', 
 const popularAuthors = [ { id: '1', name: 'Sally Rooney', booksCount: 3, image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face', }, { id: '2', name: 'Delia Owens', booksCount: 2, image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face', }, { id: '3', name: 'Matt Haig', booksCount: 4, image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face', }, { id: '4', name: 'Andy Weir', booksCount: 2, image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face', }, ];
 
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
 export default function HomeScreen() {
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
@@ -41,6 +45,11 @@ export default function HomeScreen() {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const colors = useThemeColors();
   const { handleLongPressStart, handleLongPressEnd } = useLongPressTheme();
+  
+  // Parallax animation values
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerOpacity = useRef(new Animated.Value(1)).current;
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   if (isLoaded && !isSignedIn) return <Redirect href="/sign-in" />;
   if (!isLoaded) return (
@@ -50,6 +59,44 @@ export default function HomeScreen() {
   );
 
   const lastReadBook = mockBooks[0]; // For the hero component
+
+  // Parallax animation effects
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [0, -50],
+    extrapolate: 'clamp',
+  });
+
+  const headerScale = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [1, 0.95],
+    extrapolate: 'clamp',
+  });
+
+  const heroTranslateY = scrollY.interpolate({
+    inputRange: [0, 200],
+    outputRange: [0, -100],
+    extrapolate: 'clamp',
+  });
+
+  const heroOpacity = scrollY.interpolate({
+    inputRange: [0, 150],
+    outputRange: [1, 0.8],
+    extrapolate: 'clamp',
+  });
+
+  const sectionTranslateY = scrollY.interpolate({
+    inputRange: [0, 300],
+    outputRange: [0, -50],
+    extrapolate: 'clamp',
+  });
+
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { useNativeDriver: true, listener: (event: any) => {
+      setScrollOffset(event.nativeEvent.contentOffset.y);
+    }}
+  );
 
   const renderBookCard = ({ item }: { item: any }) => (
     <TouchableOpacity style={[styles.bookCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -79,10 +126,71 @@ export default function HomeScreen() {
       colors={colors.gradient as [string, string, string]}
       style={styles.container}
     >
+      {/* Floating Background Elements */}
+      <Animated.View style={[
+        styles.floatingElement1,
+        {
+          transform: [
+            { translateY: scrollY.interpolate({
+              inputRange: [0, 500],
+              outputRange: [0, -200],
+              extrapolate: 'clamp',
+            })},
+            { translateX: scrollY.interpolate({
+              inputRange: [0, 500],
+              outputRange: [0, 50],
+              extrapolate: 'clamp',
+            })}
+          ],
+          opacity: scrollY.interpolate({
+            inputRange: [0, 300],
+            outputRange: [0.3, 0],
+            extrapolate: 'clamp',
+          })
+        }
+      ]} />
+      
+      <Animated.View style={[
+        styles.floatingElement2,
+        {
+          transform: [
+            { translateY: scrollY.interpolate({
+              inputRange: [0, 500],
+              outputRange: [0, -150],
+              extrapolate: 'clamp',
+            })},
+            { translateX: scrollY.interpolate({
+              inputRange: [0, 500],
+              outputRange: [0, -30],
+              extrapolate: 'clamp',
+            })}
+          ],
+          opacity: scrollY.interpolate({
+            inputRange: [0, 400],
+            outputRange: [0.2, 0],
+            extrapolate: 'clamp',
+          })
+        }
+      ]} />
+
       <SideNavbar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* --- Header --- */}
-        <View style={styles.header}>
+      <Animated.ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        {/* --- Animated Header --- */}
+        <Animated.View style={[
+          styles.header,
+          {
+            transform: [
+              { translateY: headerTranslateY },
+              { scale: headerScale }
+            ],
+            opacity: headerOpacity
+          }
+        ]}>
             <TouchableOpacity style={styles.menuButton} onPress={() => setIsSidebarOpen(true)}>
                 <Ionicons name="menu" size={30} color={colors.text} />
             </TouchableOpacity>
@@ -104,12 +212,18 @@ export default function HomeScreen() {
                 <Image source={{ uri: user?.imageUrl }} style={[styles.profileImage, { borderColor: colors.borderAccent }]} />
               </TouchableOpacity>
             </View>
-        </View>
+        </Animated.View>
 
-      
-
-        {/* --- Spotlight Hero Section --- */}
-        <View style={styles.section}>
+        {/* --- Animated Spotlight Hero Section --- */}
+        <Animated.View style={[
+          styles.section,
+          {
+            transform: [
+              { translateY: heroTranslateY }
+            ],
+            opacity: heroOpacity
+          }
+        ]}>
             <View style={styles.sectionHeader}>
               <ThemedText style={styles.sectionTitle}>Continue Reading</ThemedText>
             </View>
@@ -135,10 +249,17 @@ export default function HomeScreen() {
                     </View>
                 </TouchableOpacity>
             </PremiumGlassContainer>
-        </View>
+        </Animated.View>
 
-        {/* --- Categories Section --- */}
-        <View style={styles.section}>
+        {/* --- Animated Categories Section --- */}
+        <Animated.View style={[
+          styles.section,
+          {
+            transform: [
+              { translateY: sectionTranslateY }
+            ]
+          }
+        ]}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Categories</ThemedText>
             <TouchableOpacity>
@@ -153,10 +274,17 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalListContainer}
           />
-        </View>
+        </Animated.View>
 
-        {/* --- Popular Books Section --- */}
-        <View style={styles.section}>
+        {/* --- Animated Popular Books Section --- */}
+        <Animated.View style={[
+          styles.section,
+          {
+            transform: [
+              { translateY: sectionTranslateY }
+            ]
+          }
+        ]}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Popular Books</ThemedText>
             <TouchableOpacity>
@@ -171,10 +299,17 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalListContainer}
           />
-        </View>
+        </Animated.View>
         
-        {/* --- Popular Authors Section --- */}
-        <View style={styles.section}>
+        {/* --- Animated Popular Authors Section --- */}
+        <Animated.View style={[
+          styles.section,
+          {
+            transform: [
+              { translateY: sectionTranslateY }
+            ]
+          }
+        ]}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Popular Authors</ThemedText>
             <TouchableOpacity>
@@ -189,8 +324,8 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalListContainer}
           />
-        </View>
-      </ScrollView>
+        </Animated.View>
+      </Animated.ScrollView>
     </LinearGradient>
   );
 }
@@ -200,7 +335,28 @@ const styles = StyleSheet.create({
   scrollContent: { 
     paddingTop: Platform.OS === 'ios' ? 70 : 50, 
     paddingBottom: 50, 
-    
+  },
+  
+  // Floating background elements
+  floatingElement1: {
+    position: 'absolute',
+    top: 100,
+    right: -50,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    zIndex: 0,
+  },
+  floatingElement2: {
+    position: 'absolute',
+    top: 300,
+    left: -80,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    zIndex: 0,
   },
   loadingContainer: { 
     flex: 1, 
@@ -217,6 +373,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginBottom: 32,
     minHeight: 50,
+    zIndex: 10,
   },
   // Left header element container
   menuButton: {
@@ -269,7 +426,8 @@ const styles = StyleSheet.create({
 
   // --- General Section Styling ---
   section: { 
-    marginBottom: 40 
+    marginBottom: 40,
+    zIndex: 5,
   },
   // Container for section titles and the "See All" button
   sectionHeader: { 

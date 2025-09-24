@@ -51,6 +51,7 @@ export function ClerkProviderWrapper({ children }: { children: React.ReactNode }
     <ClerkProvider 
       publishableKey={publishableKey}
       tokenCache={tokenCache}
+      telemetry={false}
     >
       {children}
     </ClerkProvider>
