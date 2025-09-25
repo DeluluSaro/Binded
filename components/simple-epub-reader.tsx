@@ -1,12 +1,12 @@
 import { useThemeColors } from '@/hooks/use-theme-color';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 import { WebView } from 'react-native-webview';
@@ -14,7 +14,6 @@ import SimpleEpubParser from '../utils/SimpleEpubParser';
 import Loading from './loading';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
-
 
 
 interface SimpleEpubReaderProps {
@@ -32,9 +31,10 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
   const [loadedChapters, setLoadedChapters] = useState<Set<number>>(new Set());
   const [chapterCache, setChapterCache] = useState<Map<number, string>>(new Map());
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
   const colors = useThemeColors();
   const epubParser = new SimpleEpubParser();
-  
+  const webViewRef = useRef<WebView>(null);
 
   useEffect(() => {
     loadEpub();
@@ -42,7 +42,6 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
       epubParser.cleanup();
     };
   }, []);
-
 
   useEffect(() => {
     if (bookData && bookData.chapters.length > 0 && !loading) {
@@ -146,23 +145,32 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
       
       let content = await epubParser.getChapterContent(chapterPath);
       
-      // Enhanced HTML wrapper for better display
+      // Enhanced HTML wrapper for better display with custom long press
       content = `
         <!DOCTYPE html>
         <html>
           <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
             <meta charset="UTF-8">
             <style>
+              html {
+                height: 100%;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+              }
               body {
                 font-family: Georgia, 'Times New Roman', serif;
                 font-size: ${fontSize}px;
                 line-height: 1.6;
                 margin: 20px;
-                padding: 0;
+                padding: 20px;
                 color: #2c3e50;
                 background-color: #fefefe;
                 text-align: justify;
+                user-select: none;
+                -webkit-user-select: none;
+                -webkit-touch-callout: none;
+                min-height: 100vh;
               }
               p { 
                 margin-bottom: 1.2em; 
@@ -205,7 +213,324 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
               /* Remove default margins from first and last elements */
               body > *:first-child { margin-top: 0; }
               body > *:last-child { margin-bottom: 0; }
+              
+              /* Word highlighting */
+              .word-highlight {
+                background-color: #ff9800;
+                color: #000000;
+                padding: 2px 4px;
+                border-radius: 3px;
+                font-weight: bold;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+              }
             </style>
+            <script>
+              let longPressTimer;
+              let isLongPress = false;
+              let touchStartTime = 0;
+              let touchStartX = 0;
+              let touchStartY = 0;
+              const LONG_PRESS_DURATION = 500; // milliseconds
+              const TOUCH_MOVE_THRESHOLD = 10; // pixels
+              
+              function handleTouchStart(e) {
+                // Don't prevent default - allow scrolling
+                isLongPress = false;
+                touchStartTime = Date.now();
+                
+                const touch = e.touches[0];
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+                
+                // Clear any existing highlights
+                removeHighlights();
+                
+                longPressTimer = setTimeout(() => {
+                  isLongPress = true;
+                  const word = getWordAtPosition(touchStartX, touchStartY);
+                  if (word && word.length > 2) { // Only process words longer than 2 characters
+                    highlightWord(word);
+                    
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                      type: 'wordLongPress',
+                      word: word.toLowerCase().replace(/[^a-zA-Z0-9]/g, ''), // Clean the word
+                      x: touchStartX,
+                      y: touchStartY
+                    }));
+                  }
+                }, LONG_PRESS_DURATION);
+              }
+              
+              function handleTouchMove(e) {
+                if (!longPressTimer) return;
+                
+                const touch = e.touches[0];
+                const moveX = Math.abs(touch.clientX - touchStartX);
+                const moveY = Math.abs(touch.clientY - touchStartY);
+                
+                // Cancel long press if user moves finger too much
+                if (moveX > TOUCH_MOVE_THRESHOLD || moveY > TOUCH_MOVE_THRESHOLD) {
+                  clearTimeout(longPressTimer);
+                  longPressTimer = null;
+                }
+              }
+              
+              function handleTouchEnd(e) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+                
+                if (isLongPress) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              }
+              
+              function getWordAtPosition(x, y) {
+                // Method 1: Use caretRangeFromPoint (most accurate)
+                let range = null;
+                
+                try {
+                  if (document.caretRangeFromPoint) {
+                    range = document.caretRangeFromPoint(x, y);
+                  } else if (document.caretPositionFromPoint) {
+                    const position = document.caretPositionFromPoint(x, y);
+                    if (position) {
+                      range = document.createRange();
+                      range.setStart(position.offsetNode, position.offset);
+                      range.setEnd(position.offsetNode, position.offset);
+                    }
+                  }
+                  
+                  if (range && range.startContainer && range.startContainer.nodeType === Node.TEXT_NODE) {
+                    const textNode = range.startContainer;
+                    const offset = range.startOffset;
+                    const text = textNode.textContent;
+                    
+                    // Find word boundaries around the offset
+                    const word = extractWordAtOffset(text, offset);
+                    if (word && word.length > 0) {
+                      return word;
+                    }
+                  }
+                } catch (error) {
+                  console.log('caretRangeFromPoint failed:', error);
+                }
+                
+                // Method 2: Fallback using elementFromPoint with improved logic
+                return getWordFromElementAtPoint(x, y);
+              }
+              
+              function extractWordAtOffset(text, offset) {
+                // Handle edge cases
+                if (!text || offset < 0 || offset > text.length) {
+                  return '';
+                }
+                
+                // Define word boundaries (letters, numbers, apostrophes for contractions)
+                const wordPattern = /[a-zA-Z0-9']+/g;
+                let match;
+                
+                // Find all words and their positions
+                while ((match = wordPattern.exec(text)) !== null) {
+                  const wordStart = match.index;
+                  const wordEnd = match.index + match[0].length;
+                  
+                  // Check if offset falls within this word
+                  if (offset >= wordStart && offset <= wordEnd) {
+                    return match[0];
+                  }
+                }
+                
+                // If no word found at exact offset, find the closest word
+                const words = text.split(/\\s+/);
+                let currentPos = 0;
+                
+                for (let word of words) {
+                  const wordStart = currentPos;
+                  const wordEnd = currentPos + word.length;
+                  
+                  // If offset is close to this word, return it
+                  if (Math.abs(offset - wordStart) <= 3 || Math.abs(offset - wordEnd) <= 3) {
+                    return word.replace(/[^a-zA-Z0-9']/g, ''); // Clean punctuation
+                  }
+                  
+                  currentPos = wordEnd + 1; // +1 for space
+                }
+                
+                return '';
+              }
+              
+              function getWordFromElementAtPoint(x, y) {
+                const element = document.elementFromPoint(x, y);
+                if (!element) return '';
+                
+                // Get all text nodes within the element
+                const textNodes = getTextNodesIn(element);
+                
+                let closestWord = '';
+                let minDistance = Infinity;
+                
+                for (let textNode of textNodes) {
+                  const range = document.createRange();
+                  range.selectNode(textNode);
+                  const rect = range.getBoundingClientRect();
+                  
+                  // Check if the touch point is within this text node's area
+                  if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                    const text = textNode.textContent;
+                    const words = text.match(/[a-zA-Z0-9']+/g) || [];
+                    
+                    // Find the closest word based on horizontal position
+                    const relativeX = x - rect.left;
+                    const charWidth = rect.width / text.length;
+                    const estimatedCharIndex = Math.floor(relativeX / charWidth);
+                    
+                    const word = extractWordAtOffset(text, estimatedCharIndex);
+                    if (word) {
+                      return word;
+                    }
+                  }
+                  
+                  // Calculate distance to this text node as fallback
+                  const centerX = (rect.left + rect.right) / 2;
+                  const centerY = (rect.top + rect.bottom) / 2;
+                  const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+                  
+                  if (distance < minDistance) {
+                    minDistance = distance;
+                    const words = textNode.textContent.match(/[a-zA-Z0-9']+/g) || [];
+                    if (words.length > 0) {
+                      closestWord = words[0]; // Take the first word as fallback
+                    }
+                  }
+                }
+                
+                return closestWord;
+              }
+              
+              function getTextNodesIn(element) {
+                const textNodes = [];
+                const walker = document.createTreeWalker(
+                  element,
+                  NodeFilter.SHOW_TEXT,
+                  {
+                    acceptNode: function(node) {
+                      // Only accept text nodes with actual content
+                      if (node.textContent.trim().length > 0) {
+                        return NodeFilter.FILTER_ACCEPT;
+                      }
+                      return NodeFilter.FILTER_REJECT;
+                    }
+                  },
+                  false
+                );
+                
+                let node;
+                while (node = walker.nextNode()) {
+                  textNodes.push(node);
+                }
+                
+                return textNodes;
+              }
+              
+              function highlightWord(word) {
+                if (!word || word.length === 0) return;
+                
+                removeHighlights();
+                
+                // Find the specific word at the touch position
+                const range = document.createRange();
+                let textNode = null;
+                let offset = 0;
+                
+                try {
+                  if (document.caretRangeFromPoint) {
+                    range.setStart(document.caretRangeFromPoint(touchStartX, touchStartY).startContainer, document.caretRangeFromPoint(touchStartX, touchStartY).startOffset);
+                    range.setEnd(document.caretRangeFromPoint(touchStartX, touchStartY).startContainer, document.caretRangeFromPoint(touchStartX, touchStartY).startOffset);
+                  } else if (document.caretPositionFromPoint) {
+                    const position = document.caretPositionFromPoint(touchStartX, touchStartY);
+                    if (position) {
+                      range.setStart(position.offsetNode, position.offset);
+                      range.setEnd(position.offsetNode, position.offset);
+                    }
+                  }
+                  
+                  if (range.startContainer && range.startContainer.nodeType === Node.TEXT_NODE) {
+                    textNode = range.startContainer;
+                    offset = range.startOffset;
+                  }
+                } catch (error) {
+                  console.log('Error getting range:', error);
+                }
+                
+                if (textNode) {
+                  const text = textNode.textContent;
+                  const wordRegex = new RegExp(word, 'gi');
+                  let match;
+                  
+                  // Find all occurrences of the word in this text node
+                  while ((match = wordRegex.exec(text)) !== null) {
+                    const wordStart = match.index;
+                    const wordEnd = match.index + match[0].length;
+                    
+                    // Check if the touch offset falls within this word
+                    if (offset >= wordStart && offset <= wordEnd) {
+                      // Highlight only this specific occurrence
+                      const beforeWord = text.substring(0, wordStart);
+                      const wordText = text.substring(wordStart, wordEnd);
+                      const afterWord = text.substring(wordEnd);
+                      
+                      const highlightedText = beforeWord + '<span class="word-highlight">' + wordText + '</span>' + afterWord;
+                      
+                      if (highlightedText !== text) {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = highlightedText;
+                        
+                        const fragment = document.createDocumentFragment();
+                        while (tempDiv.firstChild) {
+                          fragment.appendChild(tempDiv.firstChild);
+                        }
+                        
+                        textNode.parentNode.replaceChild(fragment, textNode);
+                      }
+                      break; // Only highlight the first matching word at this position
+                    }
+                  }
+                }
+              }
+              
+              function removeHighlights() {
+                const highlights = document.querySelectorAll('.word-highlight');
+                highlights.forEach(highlight => {
+                  const parent = highlight.parentNode;
+                  parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
+                  parent.normalize();
+                });
+              }
+              
+              // Listen for messages from React Native
+              window.addEventListener('message', function(event) {
+                try {
+                  const data = JSON.parse(event.data);
+                  if (data.type === 'removeHighlights') {
+                    removeHighlights();
+                  }
+                } catch (error) {
+                  console.log('Error parsing message:', error);
+                }
+              });
+              
+              // Attach event listeners - use passive for scrolling
+              document.addEventListener('touchstart', handleTouchStart, { passive: true });
+              document.addEventListener('touchmove', handleTouchMove, { passive: true });
+              document.addEventListener('touchend', handleTouchEnd, { passive: true });
+              
+              // Prevent context menu on long press
+              document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+              });
+              
+            </script>
           </head>
           <body>
             ${content}
@@ -281,6 +606,7 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
     setIsLoadingMore(false);
   };
 
+
   const nextChapter = async () => {
     if (currentChapter < bookData.chapters.length - 1) {
       const nextChapterIndex = currentChapter + 1;
@@ -308,6 +634,8 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
     await AsyncStorage.setItem('epub_font_size', newSize.toString());
   };
 
+
+
   if (loading || contentLoading) {
     return <Loading message="Opening Book..." />;
   }
@@ -325,61 +653,70 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
 
   return (
     <ThemedView style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <View style={styles.chapterInfo}>
-          <ThemedText variant="secondary" style={styles.chapterText}>
-            {currentChapter + 1}/{bookData.chapters.length}
-          </ThemedText>
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <View style={styles.chapterInfo}>
+            <ThemedText variant="secondary" style={styles.chapterText}>
+              {currentChapter + 1}/{bookData.chapters.length}
+            </ThemedText>
+          </View>
         </View>
-      </View>
 
-      {/* Font Size Controls */}
-      <View style={[styles.fontControls, { backgroundColor: colors.surfaceSecondary, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={onClose} style={styles.backButton}>
-          <Text style={[styles.backButtonText, { color: colors.text }]}>←</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.fontControlsCenter}>
-          <TouchableOpacity 
-            style={[styles.fontButton, { backgroundColor: colors.tint }]} 
-            onPress={() => adjustFontSize(Math.max(12, fontSize - 2))}
-          >
-            <Text style={styles.fontButtonText}>A-</Text>
+        {/* Font Size Controls */}
+        <View style={[styles.fontControls, { backgroundColor: colors.surfaceSecondary, borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={onClose} style={styles.backButton}>
+            <Text style={[styles.backButtonText, { color: colors.text }]}>←</Text>
           </TouchableOpacity>
-          <ThemedText style={styles.fontSizeText}>{fontSize}px</ThemedText>
-          <TouchableOpacity 
-            style={[styles.fontButton, { backgroundColor: colors.tint }]} 
-            onPress={() => adjustFontSize(Math.min(24, fontSize + 2))}
-          >
-            <Text style={styles.fontButtonText}>A+</Text>
+          
+          <View style={styles.fontControlsCenter}>
+            <TouchableOpacity 
+              style={[styles.fontButton, { backgroundColor: colors.tint }]} 
+              onPress={() => adjustFontSize(Math.max(12, fontSize - 2))}
+            >
+              <Text style={styles.fontButtonText}>A-</Text>
+            </TouchableOpacity>
+            <ThemedText style={styles.fontSizeText}>{fontSize}px</ThemedText>
+            <TouchableOpacity 
+              style={[styles.fontButton, { backgroundColor: colors.tint }]} 
+              onPress={() => adjustFontSize(Math.min(24, fontSize + 2))}
+            >
+              <Text style={styles.fontButtonText}>A+</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Text style={[styles.closeButtonText, { color: colors.text }]}>✕</Text>
           </TouchableOpacity>
         </View>
-        
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Text style={[styles.closeButtonText, { color: colors.text }]}>✕</Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* Content */}
-      <View style={styles.contentContainer}>
-        <WebView
-          source={{ html: chapterContent }}
-          style={styles.webView}
-          showsVerticalScrollIndicator={true}
-          bounces={true}
-          scalesPageToFit={false}
-          startInLoadingState={true}
-          renderLoading={() => (
-            <View style={styles.webViewLoading}>
-              <ThemedText>Loading chapter...</ThemedText>
-            </View>
-          )}
-        />
-      </View>
+        {/* Content */}
+        <View style={styles.contentContainer}>
+          <WebView
+            ref={webViewRef}
+            source={{ html: chapterContent }}
+            style={styles.webView}
+            showsVerticalScrollIndicator={true}
+            bounces={true}
+            scalesPageToFit={false}
+            startInLoadingState={true}
+             scrollEnabled={true}
+            nestedScrollEnabled={true}
+            automaticallyAdjustContentInsets={false}
+            contentInsetAdjustmentBehavior="never"
+            allowsInlineMediaPlayback={true}
+            mediaPlaybackRequiresUserAction={false}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            renderLoading={() => (
+              <View style={styles.webViewLoading}>
+                <ThemedText>Loading chapter...</ThemedText>
+              </View>
+            )}
+          />
+        </View>
 
-      {/* Navigation */}
-      <View style={[styles.navigationContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+         {/* Navigation */}
+         <View style={[styles.navigationContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
         <TouchableOpacity
           style={[
             styles.navButton, 
@@ -398,6 +735,7 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
         </TouchableOpacity>
         
         <View style={styles.progressContainer}>
+          {/* Progress Bar */}
           <View style={[styles.progressBar, { backgroundColor: colors.surfaceSecondary }]}>
             <View 
               style={[
@@ -409,6 +747,7 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
               ]} 
             />
           </View>
+          
           {isLoadingMore && (
             <View style={styles.loadingMoreIndicator}>
               <ThemedText variant="secondary" style={styles.loadingMoreText}>
@@ -435,6 +774,7 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
           </Text>
         </TouchableOpacity>
       </View>
+
     </ThemedView>
   );
 };
@@ -458,7 +798,7 @@ const styles = StyleSheet.create({
   retryButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 5,
+    borderRadius: 25,
   },
   retryButtonText: {
     color: '#fff',
@@ -479,7 +819,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 8,
-    borderRadius: 20,
+    borderRadius: 25,
   },
   closeButtonText: {
     fontSize: 20,
@@ -507,17 +847,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backButton: {
-    padding: 8,
-    borderRadius: 20,
+    padding: 12,
+    borderRadius: 25,
   },
   backButtonText: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
   },
   fontButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 4,
+    borderRadius: 20,
     marginHorizontal: 10,
   },
   fontButtonText: {
@@ -553,7 +893,7 @@ const styles = StyleSheet.create({
   navButton: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 6,
+    borderRadius: 25,
     minWidth: 80,
     alignItems: 'center',
   },
