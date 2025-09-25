@@ -43,6 +43,9 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
   const [bookmarkData, setBookmarkData] = useState<any>(null);
   const [hasBookmark, setHasBookmark] = useState(false);
   const [showBookmarkControls, setShowBookmarkControls] = useState(false);
+  const [isBookmarkSelectionMode, setIsBookmarkSelectionMode] = useState(false);
+  const [selectedWord, setSelectedWord] = useState<string>('');
+  const [showBookmarkConfirm, setShowBookmarkConfirm] = useState(false);
   
   const colors = useThemeColors();
   const epubParser = useRef(new SimpleEpubParser());
@@ -340,6 +343,13 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
           handleBookmarkSet(message.data);
           break;
           
+        case 'wordSelected':
+          if (isBookmarkSelectionMode) {
+            setSelectedWord(message.word);
+            setShowBookmarkConfirm(true);
+          }
+          break;
+          
         case 'requestNextChapter':
           if (currentChapter < bookData.chapters.length - 1) {
             nextChapter();
@@ -390,6 +400,67 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
     } catch (error) {
       console.error('Error handling bookmark set:', error);
     }
+  };
+
+  // Handle bookmark confirmation
+  const confirmBookmark = async () => {
+    try {
+      if (!selectedWord || !bookData) return;
+      
+      // Create bookmark data
+      const bookmarkData = {
+        wordIndex: 0, // We'll get this from the WebView
+        wordText: selectedWord,
+        totalWords: 100, // We'll get this from the WebView
+        position: { scrollY: 0, x: 0, y: 0 },
+        timestamp: new Date().toISOString(),
+        lastAccessed: new Date().toISOString()
+      };
+      
+      // Save bookmark
+      await BookmarkManager.saveBookmark(bookData.title, currentChapter, bookmarkData);
+      
+      // Update UI
+      setHasBookmark(true);
+      setBookmarkData(bookmarkData);
+      
+      // Exit selection mode
+      setIsBookmarkSelectionMode(false);
+      setShowBookmarkConfirm(false);
+      setSelectedWord('');
+      
+      // Notify WebView to highlight the word permanently
+      webViewRef.current?.postMessage(JSON.stringify({
+        type: 'confirmBookmark',
+        word: selectedWord
+      }));
+      
+      console.log('✅ Bookmark confirmed and saved');
+    } catch (error) {
+      console.error('❌ Error confirming bookmark:', error);
+    }
+  };
+
+  // Notify WebView when bookmark selection mode changes
+  useEffect(() => {
+    if (webViewRef.current) {
+      webViewRef.current.postMessage(JSON.stringify({
+        type: 'setBookmarkSelectionMode',
+        enabled: isBookmarkSelectionMode
+      }));
+    }
+  }, [isBookmarkSelectionMode]);
+
+  // Cancel bookmark selection
+  const cancelBookmark = () => {
+    setIsBookmarkSelectionMode(false);
+    setShowBookmarkConfirm(false);
+    setSelectedWord('');
+    
+    // Notify WebView to remove temporary highlight
+    webViewRef.current?.postMessage(JSON.stringify({
+      type: 'cancelBookmark'
+    }));
   };
 
   // Bookmark navigation functions
@@ -460,6 +531,25 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
           activeOpacity={0.7}
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          onPress={() => setIsBookmarkSelectionMode(!isBookmarkSelectionMode)} 
+          style={[
+            styles.headerButton, 
+            { 
+              backgroundColor: isBookmarkSelectionMode ? colors.tint : colors.surfaceSecondary,
+              borderWidth: isBookmarkSelectionMode ? 2 : 0,
+              borderColor: colors.tint
+            }
+          ]}
+          activeOpacity={0.7}
+        >
+          <Ionicons 
+            name={isBookmarkSelectionMode ? "add-circle" : "add-circle-outline"} 
+            size={24} 
+            color={isBookmarkSelectionMode ? '#fff' : colors.text} 
+          />
         </TouchableOpacity>
         
         <View style={styles.chapterInfo}>
@@ -670,6 +760,40 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
           </View>
         )}
       </View>
+
+      {/* Bookmark Confirmation Modal */}
+      {showBookmarkConfirm && (
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <ThemedText style={[styles.modalTitle, { fontFamily: 'Outfit_700Bold' }]}>
+              Add Bookmark
+            </ThemedText>
+            <ThemedText style={[styles.modalText, { fontFamily: 'Outfit_400Regular' }]}>
+              Add "{selectedWord}" to bookmarks?
+            </ThemedText>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                onPress={cancelBookmark}
+                style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.surfaceSecondary }]}
+                activeOpacity={0.7}
+              >
+                <ThemedText style={[styles.modalButtonText, { fontFamily: 'Outfit_400Regular' }]}>
+                  Cancel
+                </ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={confirmBookmark}
+                style={[styles.modalButton, styles.confirmButton, { backgroundColor: colors.tint }]}
+                activeOpacity={0.7}
+              >
+                <ThemedText style={[styles.modalButtonText, { color: '#fff', fontFamily: 'Outfit_700Bold' }]}>
+                  Add Bookmark
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -898,6 +1022,64 @@ const styles = StyleSheet.create({
   loadingMoreText: {
     fontSize: 12,
     fontStyle: 'italic',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    margin: 20,
+    borderRadius: 15,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    minWidth: 280,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    marginHorizontal: 6,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    // backgroundColor will be set dynamically
+  },
+  confirmButton: {
+    // backgroundColor will be set dynamically
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

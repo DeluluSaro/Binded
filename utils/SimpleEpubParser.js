@@ -145,8 +145,23 @@ class SimpleEpubParser {
     cleanContent = cleanContent.replace(/<[^>]*>\s*<\/[^>]*>/g, '');
     cleanContent = cleanContent.replace(/\s+/g, ' ');
     
-    // Wrap individual words in spans, but only for actual text content
-    // This regex matches words that are at least 3 characters and contain letters
+    // Remove metadata and attributes that might interfere
+    cleanContent = cleanContent
+      .replace(/class="[^"]*"/g, '')
+      .replace(/id="[^"]*"/g, '')
+      .replace(/style="[^"]*"/g, '')
+      .replace(/href="[^"]*"/g, '')
+      .replace(/src="[^"]*"/g, '')
+      .replace(/alt="[^"]*"/g, '')
+      .replace(/title="[^"]*"/g, '')
+      .replace(/data-[^=]*="[^"]*"/g, '')
+      .replace(/xmlns="[^"]*"/g, '')
+      .replace(/xml:space="[^"]*"/g, '')
+      .replace(/xml:lang="[^"]*"/g, '')
+      .replace(/xmlns:[^=]*="[^"]*"/g, '');
+    
+    // Wrap individual words in spans, but only for meaningful text content
+    // This regex matches words that are at least 3 characters, start with a letter, and are not metadata
     return cleanContent.replace(
       /\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, 
       '<span class="word">$1</span>'
@@ -309,7 +324,26 @@ class SimpleEpubParser {
                 // Click to set bookmark
                 word.addEventListener('click', (e) => {
                   e.preventDefault();
-                  setBookmark(index);
+                  
+                  // Check if we're in bookmark selection mode
+                  if (window.bookmarkSelectionMode) {
+                    // Highlight word temporarily
+                    word.style.backgroundColor = '#FFE082';
+                    word.style.color = '#2c3e50';
+                    word.style.fontWeight = 'bold';
+                    word.style.borderRadius = '4px';
+                    word.style.padding = '2px 4px';
+                    
+                    // Send word selection message
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                      type: 'wordSelected',
+                      word: word.textContent.trim(),
+                      wordIndex: index
+                    }));
+                } else {
+                    // Original bookmark behavior
+                    setBookmark(index);
+                  }
                 });
                 
                 // Touch events for mobile
@@ -340,7 +374,7 @@ class SimpleEpubParser {
                 isDragging = true;
                 dragStarted = true;
                 showDragIndicator();
-                e.preventDefault();
+              e.preventDefault();
               }
             }
             
@@ -565,6 +599,34 @@ class SimpleEpubParser {
                   }
                   currentBookmarkWordIndex = -1;
                   break;
+                case 'setBookmarkSelectionMode':
+                  window.bookmarkSelectionMode = data.enabled;
+                  console.log('Bookmark selection mode:', data.enabled);
+                  break;
+                case 'confirmBookmark':
+                  // Find and highlight the confirmed word permanently
+                  const confirmedWord = words.find(word => word.textContent.trim() === data.word);
+                  if (confirmedWord) {
+                    confirmedWord.classList.add('bookmark-active');
+                    confirmedWord.style.backgroundColor = '';
+                    confirmedWord.style.color = '';
+                    confirmedWord.style.fontWeight = '';
+                    confirmedWord.style.borderRadius = '';
+                    confirmedWord.style.padding = '';
+                  }
+                  break;
+                case 'cancelBookmark':
+                  // Remove temporary highlights
+                  words.forEach(word => {
+                    if (word.style.backgroundColor === 'rgb(255, 224, 130)') {
+                      word.style.backgroundColor = '';
+                      word.style.color = '';
+                      word.style.fontWeight = '';
+                      word.style.borderRadius = '';
+                      word.style.padding = '';
+                    }
+                  });
+                  break;
               }
             });
             
@@ -694,6 +756,18 @@ class SimpleEpubParser {
       // Remove comments
       content = content.replace(/<!--[\s\S]*?-->/g, '');
       
+      // Remove navigation and metadata elements
+      content = content.replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '');
+      content = content.replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '');
+      content = content.replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '');
+      content = content.replace(/<aside[^>]*>[\s\S]*?<\/aside>/gi, '');
+      
+      // Remove empty tags
+      content = content.replace(/<[^>]*>\s*<\/[^>]*>/g, '');
+      
+      // Normalize whitespace
+      content = content.replace(/\s+/g, ' ');
+      
       console.log('Processed content preview:', content.substring(0, 200));
       
       return content;
@@ -710,8 +784,8 @@ class SimpleEpubParser {
     // First, extract only the body content from XHTML
     let bodyContent = this.extractBodyContent(content);
     
-    // Remove all HTML tags completely
-    let cleanText = bodyContent.replace(/<[^>]*>/g, ' ');
+    // Remove ALL HTML tags completely - no spaces between tags
+    let cleanText = bodyContent.replace(/<[^>]*>/g, '');
     
     // Decode HTML entities
     cleanText = cleanText
@@ -720,59 +794,89 @@ class SimpleEpubParser {
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
-      .replace(/&nbsp;/g, ' ');
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&mdash;/g, '—')
+      .replace(/&ndash;/g, '–')
+      .replace(/&hellip;/g, '…')
+      .replace(/&ldquo;/g, '\u201C')
+      .replace(/&rdquo;/g, '\u201D')
+      .replace(/&lsquo;/g, '\u2018')
+      .replace(/&rsquo;/g, '\u2019')
+      .replace(/&apos;/g, "'");
     
-    // Remove all non-alphanumeric characters except spaces
-    cleanText = cleanText.replace(/[^\w\s]/g, ' ');
+    // Remove all XML/HTML attributes and metadata
+    cleanText = cleanText
+      .replace(/class="[^"]*"/g, '')
+      .replace(/id="[^"]*"/g, '')
+      .replace(/style="[^"]*"/g, '')
+      .replace(/href="[^"]*"/g, '')
+      .replace(/src="[^"]*"/g, '')
+      .replace(/alt="[^"]*"/g, '')
+      .replace(/title="[^"]*"/g, '')
+      .replace(/data-[^=]*="[^"]*"/g, '')
+      .replace(/xmlns="[^"]*"/g, '')
+      .replace(/xml:space="[^"]*"/g, '')
+      .replace(/xml:lang="[^"]*"/g, '')
+      .replace(/xmlns:[^=]*="[^"]*"/g, '');
+    
+    // Remove common EPUB metadata and navigation elements
+    cleanText = cleanText
+      .replace(/calibre[0-9]+/g, '')
+      .replace(/calibre[0-9]+_[0-9]+/g, '')
+      .replace(/FIGURE\s+[0-9]+/gi, '')
+      .replace(/TABLE\s+[0-9]+/gi, '')
+      .replace(/CHAPTER\s+[0-9]+/gi, '')
+      .replace(/SECTION\s+[0-9]+/gi, '')
+      .replace(/PAGE\s+[0-9]+/gi, '')
+      .replace(/INDEX\s+[0-9]+/gi, '')
+      .replace(/BIBLIOGRAPHY/gi, '')
+      .replace(/REFERENCES/gi, '')
+      .replace(/ACKNOWLEDGMENTS/gi, '')
+      .replace(/DEDICATION/gi, '')
+      .replace(/COPYRIGHT/gi, '')
+      .replace(/ISBN/gi, '')
+      .replace(/PUBLISHER/gi, '')
+      .replace(/AUTHOR/gi, '')
+      .replace(/TITLE/gi, '')
+      .replace(/SUBTITLE/gi, '')
+      .replace(/EDITION/gi, '')
+      .replace(/VOLUME/gi, '')
+      .replace(/PART\s+[0-9]+/gi, '')
+      .replace(/BOOK\s+[0-9]+/gi, '')
+      .replace(/SERIES/gi, '')
+      .replace(/COLLECTION/gi, '');
+    
+    // Remove URLs and email addresses
+    cleanText = cleanText
+      .replace(/https?:\/\/[^\s]+/g, '')
+      .replace(/www\.[^\s]+/g, '')
+      .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '');
+    
+    // Remove standalone numbers
+    cleanText = cleanText.replace(/\b\d+\b/g, '');
+    
+    // Remove punctuation except sentence endings and common punctuation
+    cleanText = cleanText.replace(/[^\w\s.!?,'"-]/g, ' ');
     
     // Normalize whitespace
     cleanText = cleanText.replace(/\s+/g, ' ').trim();
     
-    // Remove common EPUB metadata and navigation text
-    const metadataPatterns = [
-      /page\s+\d+/gi,
-      /chapter\s+\d+/gi,
-      /table\s+of\s+contents/gi,
-      /contents/gi,
-      /index/gi,
-      /copyright/gi,
-      /all\s+rights\s+reserved/gi,
-      /published\s+by/gi,
-      /isbn/gi,
-      /ebook/gi,
-      /digital\s+edition/gi,
-      /converted\s+ebook/gi,
-      /pdf\s+reflow\s+conversion/gi,
-      /calibre/gi,
-      /id\s*=\s*"[^"]*"/gi,
-      /class\s*=\s*"[^"]*"/gi,
-      /xmlns[^=]*="[^"]*"/gi,
-      /xml:space[^=]*="[^"]*"/gi
-    ];
-    
-    metadataPatterns.forEach(pattern => {
-      cleanText = cleanText.replace(pattern, '');
-    });
-    
-    // Remove single characters and very short words
-    cleanText = cleanText.replace(/\b\w{1,2}\b/g, ' ');
-    
-    // Normalize whitespace again
-    cleanText = cleanText.replace(/\s+/g, ' ').trim();
-    
-    // Split by whitespace and filter out empty strings
+    // Split into words and filter for meaningful content
     const words = cleanText.split(/\s+/).filter(word => 
-      word.length > 2 && 
-      !/^\d+$/.test(word) && // Not just numbers
-      /^[a-zA-Z]/.test(word) // Must start with a letter
+      word.length >= 3 && 
+      /^[a-zA-Z]/.test(word) && // Must start with a letter
+      !/^[A-Z]{2,}$/.test(word) && // Not all caps (likely metadata)
+      !/^[a-z]+[A-Z]/.test(word) && // Not camelCase (likely metadata)
+      !/^[A-Z][a-z]*[A-Z]/.test(word) // Not PascalCase (likely metadata)
     );
     
-    console.log('Word count debug:', {
+    console.log('Enhanced word count debug:', {
       originalLength: content.length,
       bodyLength: bodyContent.length,
       cleanTextLength: cleanText.length,
       wordCount: words.length,
-      sampleWords: words.slice(0, 10)
+      sampleWords: words.slice(0, 10),
+      sampleText: cleanText.substring(0, 200)
     });
     
     return words.length;
