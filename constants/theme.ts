@@ -3,7 +3,6 @@
  * Designed for a premium, sophisticated feel
  */
 
-import { Platform } from 'react-native';
 
 // Premium color palette
 const primaryAccent = '#eb5838'; // Vibrant orange-red accent
@@ -73,44 +72,12 @@ export const Colors = {
   },
 };
 
-export const Fonts = Platform.select({
-  ios: {
-    /** Silkscreen font family for iOS */
-    sans: 'Silkscreen-Regular',
-    /** Silkscreen bold for main headings */
-    heading: 'Silkscreen-Regular',
-    /** Silkscreen for section headings */
-    sectionHeading: 'Silkscreen-Regular',
-    /** Silkscreen bold for subheadings */
-    serif: 'Silkscreen-Regular',
-    /** Silkscreen medium for rounded style */
-    rounded: 'Silkscreen-Regular',
-    /** Silkscreen light for monospace alternative */
-    mono: 'Silkscreen-Regular',
-  },
-  default: {
-    /** Silkscreen font family for Android and other platforms */
-    sans: 'Silkscreen-Regular',
-    /** Silkscreen bold for main headings */
-    heading: 'Silkscreen-Regular',
-    /** Silkscreen for section headings */
-    sectionHeading: 'Silkscreen-Regular',
-    /** Silkscreen bold for subheadings */
-    serif: 'Silkscreen-Regular',
-    /** Silkscreen medium for rounded style */
-    rounded: 'Silkscreen-Regular',
-    /** Silkscreen light for monospace alternative */
-    mono: 'Silkscreen-Regular',
-  },
-  web: {
-    /** Silkscreen font family for web */
-    sans: "'Silkscreen', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    /** Silkscreen for main headings on web */
-    heading: "'Silkscreen', Georgia, 'Times New Roman', serif",
-    /** Silkscreen for section headings on web */
-    sectionHeading: "'Silkscreen', Georgia, 'Times New Roman', serif",
-    serif: "'Silkscreen', Georgia, 'Times New Roman', serif",
-    rounded: "'Silkscreen', 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "'Silkscreen', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-  },
-});
+// Font names only - use inline styling for fontFamily
+export const Fonts = {
+  silkscreenRegular: 'Silkscreen-Regular',
+  silkscreenBold: 'Silkscreen-Bold',
+  outfitRegular: 'Outfit-Regular',
+  outfitBold: 'Outfit-Bold',
+  pacificoRegular: 'Pacifico-Regular',
+  badeenDisplayRegular: 'BadeenDisplay-Regular',
+};

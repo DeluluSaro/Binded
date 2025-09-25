@@ -204,7 +204,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontWeight: '600',
-    fontFamily: 'Silkscreen-Regular',
     textAlign: 'center',
   },
 });

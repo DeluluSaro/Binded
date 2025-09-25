@@ -1,4 +1,3 @@
-import { Fonts } from '@/constants/theme';
 import { useThemeColors } from '@/hooks/use-theme-color';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
@@ -110,7 +109,7 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
                   <View style={[styles.logoPlaceholder, { backgroundColor: colors.tint }]}>
                     <Ionicons name="book" size={24} color={colors.text} />
                   </View>
-                  <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 24, fontWeight: 'normal', color: colors.text }}>Binded</Text>
+                  <Text style={{ fontSize: 24, fontWeight: 'normal', color: colors.text }}>Binded</Text>
                 </View>
                 <ThemeToggle size="small" />
               </View>
@@ -287,7 +286,6 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 24,
     fontWeight: 'bold',
-    fontFamily: Fonts.heading,
   },
   profileSection: {
     flexDirection: 'row',
@@ -310,11 +308,9 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 18,
     fontWeight: 'bold',
-    fontFamily: Fonts.heading,
   },
   profileEmail: {
     fontSize: 14,
-    fontFamily: Fonts.sans,
   },
   separator: {
     height: 1,
@@ -338,7 +334,6 @@ const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 16,
-    fontFamily: Fonts.sans,
     fontWeight: '500',
   },
   activeMenuText: {
@@ -351,7 +346,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: Fonts.heading,
     marginBottom: 15,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -370,7 +364,6 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 15,
-    fontFamily: Fonts.sans,
     fontWeight: '500',
     flex: 1,
     marginRight: 10,
@@ -388,7 +381,6 @@ const styles = StyleSheet.create({
   },
   categoryCountText: {
     fontSize: 12,
-    fontFamily: Fonts.sans,
     fontWeight: '600',
   },
   selectedCategoryCountText: {
@@ -410,7 +402,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 16,
-    fontFamily: Fonts.sans,
     fontWeight: '500',
   },
   signOutText: {

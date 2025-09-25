@@ -56,33 +56,27 @@ const styles = StyleSheet.create({
   default: {
     fontSize: 16,
     lineHeight: 24,
-    fontFamily: 'Silkscreen-Regular',
   },
   defaultSemiBold: {
     fontSize: 16,
     lineHeight: 24,
-    fontFamily: 'Silkscreen-Regular',
     fontWeight: 'bold',
   },
   title: {
     fontSize: 32,
-    fontFamily: 'Silkscreen-Regular',
     fontWeight: 'bold',
     lineHeight: 32,
   },
   subtitle: {
     fontSize: 20,
-    fontFamily: 'Silkscreen-Regular',
     fontWeight: 'bold',
   },
   link: {
     lineHeight: 30,
     fontSize: 16,
-    fontFamily: 'Silkscreen-Regular',
   },
   secondary: {
     fontSize: 14,
     lineHeight: 20,
-    fontFamily: 'Silkscreen-Regular',
   },
 });

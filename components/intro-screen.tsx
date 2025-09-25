@@ -149,7 +149,6 @@ const styles = StyleSheet.create({
   },
   tapText: {
     fontSize: 18,
-    fontFamily: 'Silkscreen-Regular',
     textAlign: 'center',
     color: '#333',
     marginTop: 20,

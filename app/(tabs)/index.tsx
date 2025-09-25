@@ -3,6 +3,7 @@ import PremiumButton from '@/components/premium-button';
 import PremiumGlassContainer from '@/components/premium-glass-container';
 import SideNavbar from '@/components/side-navbar';
 import SimpleEpubReader from '@/components/simple-epub-reader';
+import AsteroidDodge from '@/components/snake-game';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Fonts } from '@/constants/theme';
@@ -11,6 +12,7 @@ import { useLongPressTheme } from '@/hooks/use-triple-tap-theme';
 import { Book, fetchBooks, getBookUrl } from '@/lib/supabase';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
+import { useFonts } from 'expo-font';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useRouter } from 'expo-router';
@@ -52,8 +54,36 @@ export default function HomeScreen() {
   const [showEpubReader, setShowEpubReader] = useState(false);
   const [selectedEpubUri, setSelectedEpubUri] = useState<string>('');
   const [openingBook, setOpeningBook] = useState(false);
+  const [showAsteroidDodge, setShowAsteroidDodge] = useState(false);
   const colors = useThemeColors();
   const { handleLongPressStart, handleLongPressEnd } = useLongPressTheme();
+  
+  // Load Outfit font
+  const [fontsLoaded] = useFonts({
+    'Outfit-Regular': require('@/assets/fonts/Outfit-Regular.ttf'),
+  });
+  
+  // Asteroid Dodge game long press handlers
+  const asteroidLongPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  const handleAsteroidLongPressStart = () => {
+    // Clear any existing timeout
+    if (asteroidLongPressRef.current) {
+      clearTimeout(asteroidLongPressRef.current);
+    }
+    
+    // Set timeout for 1.2 seconds
+    asteroidLongPressRef.current = setTimeout(() => {
+      setShowAsteroidDodge(true);
+    }, 1200);
+  };
+
+  const handleAsteroidLongPressEnd = () => {
+    if (asteroidLongPressRef.current) {
+      clearTimeout(asteroidLongPressRef.current);
+      asteroidLongPressRef.current = null;
+    }
+  };
   
   // Parallax animation values
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -80,7 +110,7 @@ export default function HomeScreen() {
   }, []);
 
   if (isLoaded && !isSignedIn) return <Redirect href="/sign-in" />;
-  if (!isLoaded) return (
+  if (!isLoaded || !fontsLoaded) return (
     <ThemedView style={styles.loadingContainer}>
       <ThemedText style={{ color: colors.text }}>Loading...</ThemedText>
     </ThemedView>
@@ -190,8 +220,8 @@ export default function HomeScreen() {
             color={colors.iconAccent} 
           />
         </View>
-        <ThemedText style={styles.bookTitle} numberOfLines={2}>{item.name}</ThemedText>
-        <ThemedText variant="secondary" style={styles.bookAuthor} numberOfLines={1}>
+        <ThemedText style={[styles.bookTitle, { fontFamily: Fonts.outfitRegular }]} numberOfLines={2}>{item.name}</ThemedText>
+        <ThemedText variant="secondary" style={[styles.bookAuthor, { fontFamily: Fonts.outfitRegular }]} numberOfLines={1}>
           {isEpub ? 'Tap to read' : 'Tap to open'}
         </ThemedText>
       </TouchableOpacity>
@@ -201,15 +231,15 @@ export default function HomeScreen() {
   const renderCategory = ({ item }: { item: any }) => (
     <TouchableOpacity style={[styles.categoryChip, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
       <Ionicons name={item.icon as any} size={16} color={colors.iconAccent} />
-      <ThemedText variant="secondary" style={styles.chipText}>{item.name}</ThemedText>
+      <ThemedText variant="secondary" style={[styles.chipText, { fontFamily: 'Silkscreen-Regular' }]} numberOfLines={1}>{item.name}</ThemedText>
     </TouchableOpacity>
   );
 
   const renderAuthor = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.authorCard}>
       <Image source={{ uri: item.image }} style={[styles.authorImage, { borderColor: colors.borderAccent }]} />
-      <ThemedText style={styles.authorName}>{item.name}</ThemedText>
-      <ThemedText variant="secondary" style={styles.authorBooksCount}>{item.booksCount} books</ThemedText>
+      <ThemedText style={[styles.authorName, { fontFamily: 'Silkscreen-Regular' }]}>{item.name}</ThemedText>
+      <ThemedText variant="secondary" style={[styles.authorBooksCount, { fontFamily: Fonts.outfitRegular }]}>{item.booksCount} books</ThemedText>
     </TouchableOpacity>
   );
 
@@ -271,6 +301,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+          scrollEnabled={!showAsteroidDodge}
       >
         {/* --- Animated Header --- */}
         <Animated.View style={[
@@ -288,13 +319,14 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <View style={styles.headerCenter}>
                 <View style={styles.greetingContainer}>
-                    <ThemedText style={{ fontFamily: 'Outfit_400Regular', fontSize: 28, fontWeight: 'normal', textAlign: 'center' }}>Hello, </ThemedText>
+                    <ThemedText style={{ fontSize: 28, fontWeight: 'normal', textAlign: 'center', fontFamily: 'Outfit-Regular', flexShrink: 0 }}>Hello, </ThemedText>
                     <TouchableOpacity 
                         onPressIn={handleLongPressStart} 
                         onPressOut={handleLongPressEnd}
                         activeOpacity={0.7}
+                        style={{ flexShrink: 0 }}
                     >
-                        <ThemedText style={{ color: colors.tint, fontFamily: 'Outfit_400Regular', fontSize: 32, fontWeight: 'normal' }}>{user?.firstName || 'Reader'}</ThemedText>
+                        <ThemedText style={{ color: colors.tint, fontSize: 32, fontWeight: 'normal', fontFamily: 'Outfit-Regular', flexShrink: 0 }} numberOfLines={1}>{user?.firstName || 'Reader'}</ThemedText>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -308,7 +340,13 @@ export default function HomeScreen() {
 
         {/* --- Sub Greeting Section --- */}
         <View style={styles.subGreetingSection}>
-            <ThemedText variant="secondary" style={styles.subGreeting}>Ready to dive in?</ThemedText>
+            <TouchableOpacity
+              onPressIn={handleAsteroidLongPressStart}
+              onPressOut={handleAsteroidLongPressEnd}
+              activeOpacity={0.7}
+            >
+              <ThemedText variant="secondary" style={[styles.subGreeting, { fontFamily: Fonts.silkscreenRegular }]}>Ready to dive in?</ThemedText>
+            </TouchableOpacity>
         </View>
 
         {/* --- Animated Spotlight Hero Section --- */}
@@ -322,19 +360,19 @@ export default function HomeScreen() {
           }
         ]}>
             <View style={styles.sectionHeader}>
-              <ThemedText style={styles.sectionTitle}>Continue Reading</ThemedText>
+              <ThemedText style={[styles.sectionTitle, { fontFamily: 'Outfit-Regular' }]}>Continue Reading</ThemedText>
             </View>
             <PremiumGlassContainer variant="card" style={styles.spotlightCard}>
                 <TouchableOpacity style={styles.spotlightContent}>
                     <Image source={{ uri: lastReadBook.cover }} style={styles.spotlightCover} />
                     <View style={styles.spotlightInfo}>
-                        <ThemedText style={styles.spotlightTitle} numberOfLines={2}>{lastReadBook.title}</ThemedText>
-                        <ThemedText variant="secondary" style={styles.spotlightAuthor} numberOfLines={1}>{lastReadBook.author}</ThemedText>
+                        <ThemedText style={[styles.spotlightTitle, { fontFamily: 'Outfit-Regular', fontWeight: 'normal' }]} numberOfLines={2}>{lastReadBook.title}</ThemedText>
+                        <ThemedText variant="secondary" style={[styles.spotlightAuthor, { fontFamily: 'Silkscreen-Regular' }]} numberOfLines={1}>{lastReadBook.author}</ThemedText>
                         <View>
                             <View style={[styles.progressBarContainer, { backgroundColor: colors.surfaceSecondary }]}>
                                 <View style={[styles.progressBarFill, { width: `${lastReadBook.progress * 100}%`, backgroundColor: colors.tint }]} />
                             </View>
-                            <ThemedText variant="secondary" style={styles.progressText}>{Math.round(lastReadBook.progress * 100)}%</ThemedText>
+                            <ThemedText variant="secondary" style={[styles.progressText, { fontFamily: 'Silkscreen-Regular' }]}>{Math.round(lastReadBook.progress * 100)}%</ThemedText>
                         </View>
                         <PremiumButton
                             title="Continue"
@@ -358,7 +396,7 @@ export default function HomeScreen() {
           }
         ]}>
           <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Categories</ThemedText>
+            <ThemedText style={[styles.sectionTitle, { fontFamily: Fonts.outfitRegular }]}>Categories</ThemedText>
             <TouchableOpacity>
               <ThemedText variant="accent" style={styles.seeAllText}>See All</ThemedText>
             </TouchableOpacity>
@@ -383,7 +421,7 @@ export default function HomeScreen() {
           }
         ]}>
           <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Popular Books</ThemedText>
+            <ThemedText style={[styles.sectionTitle, { fontFamily: Fonts.outfitRegular }]}>Popular Books</ThemedText>
             <TouchableOpacity>
               <ThemedText variant="accent" style={styles.seeAllText}>See All</ThemedText>
             </TouchableOpacity>
@@ -423,7 +461,7 @@ export default function HomeScreen() {
           }
         ]}>
           <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Popular Authors</ThemedText>
+            <ThemedText style={[styles.sectionTitle, { fontFamily: Fonts.outfitRegular }]}>Popular Authors</ThemedText>
             <TouchableOpacity>
               <ThemedText variant="accent" style={styles.seeAllText}>See All</ThemedText>
             </TouchableOpacity>
@@ -438,6 +476,12 @@ export default function HomeScreen() {
           />
         </Animated.View>
       </Animated.ScrollView>
+      
+      {/* Asteroid Dodge Game Modal */}
+      <AsteroidDodge 
+        visible={showAsteroidDodge} 
+        onClose={() => setShowAsteroidDodge(false)}
+      />
     </LinearGradient>
   );
 }
@@ -489,7 +533,7 @@ const styles = StyleSheet.create({
   },
   // Left header element container
   menuButton: {
-    minWidth: 100,
+    minWidth: 60,
     justifyContent: 'flex-start',
   },
   // Center header element container
@@ -497,26 +541,27 @@ const styles = StyleSheet.create({
     flex: 1, // Allows the center to take up remaining space
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 5,
+    minWidth: 0, // Allows flex shrinking
   },
   // Right header element container
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    minWidth: 100,
+    minWidth: 60,
     justifyContent: 'flex-end',
   },
   greetingContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'center',
-    
+    flexWrap: 'wrap',
+    maxWidth: '100%',
   },
   greeting: { 
     fontSize: 18, 
     fontWeight: 'bold', 
-    fontFamily: 'Silkscreen-Regular',
     textAlign: 'center',
     paddingTop:20
   },
@@ -524,11 +569,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
-    marginBottom: 20,
+    marginBottom: 40,
   },
   subGreeting: { 
     fontSize: 24, 
-    fontFamily: Fonts.rounded,
     textAlign: 'center',
   },
   profileButton: {
@@ -553,27 +597,29 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     paddingHorizontal: 24, 
     marginBottom: 30,
-    paddingBottom: 10
+    paddingBottom: 10,
+    minHeight: 30,
   },
   // The title text itself, now without horizontal padding
   sectionTitle: { 
     fontSize: 22, 
     fontWeight: 'normal', 
-    fontFamily: 'Outfit_700Bold', 
     textAlign: 'left',
-    
+    flexShrink: 0,
+    flex: 1,
+    fontFamily: 'Outfit-Regular',
   },
   seeAllText: { 
     fontSize: 16, 
     fontWeight: '600', 
-    fontFamily: Fonts.rounded,
     textAlign: 'right',
   },
   // Styling for the content area of horizontal lists
   horizontalListContainer: { 
     paddingHorizontal: 24, 
-    gap: 20,
-    paddingTop: 10
+    gap: 15,
+    paddingTop: 10,
+    paddingRight: 40,
   },
 
   // --- Spotlight Hero Card ---
@@ -598,14 +644,16 @@ const styles = StyleSheet.create({
   },
   spotlightTitle: { 
     fontSize: 22, 
-    fontWeight: 'bold', 
-    fontFamily: Fonts.heading, 
+    fontWeight: 'normal', 
     textAlign: 'left',
+    fontFamily: 'Outfit-Regular',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   spotlightAuthor: { 
     fontSize: 16, 
-    fontFamily: Fonts.rounded,
     textAlign: 'left',
+    fontFamily: 'Silkscreen-Regular',
   },
   progressBarContainer: { 
     height: 8, 
@@ -617,10 +665,10 @@ const styles = StyleSheet.create({
   },
   progressText: { 
     fontSize: 12, 
-    fontFamily: Fonts.rounded, 
     fontWeight: '600', 
     textAlign: 'right',
     marginTop: 4,
+    fontFamily: 'Silkscreen-Regular',
   },
   continueButton: {
     alignSelf: 'flex-start', // Keep button left-aligned
@@ -637,13 +685,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     borderWidth: 1,
-    minWidth: 100,
+    minWidth: 120,
+    flexShrink: 0,
   },
   chipText: { 
     fontSize: 15, 
     fontWeight: '500', 
-    fontFamily: Fonts.rounded,
     textAlign: 'center',
+    flexShrink: 0,
+    fontFamily: 'Silkscreen-Regular',
   },
 
   // --- Popular Book Card ---
@@ -662,13 +712,11 @@ const styles = StyleSheet.create({
   bookTitle: { 
     fontSize: 15, 
     fontWeight: 'normal', 
-    fontFamily: 'Outfit_400Regular', 
     marginBottom: 4,
     textAlign: 'left',
   },
   bookAuthor: { 
     fontSize: 13, 
-    fontFamily: Fonts.rounded,
     textAlign: 'left',
   },
   
@@ -687,12 +735,11 @@ const styles = StyleSheet.create({
   authorName: { 
     fontSize: 15, 
     fontWeight: '600', 
-    fontFamily: Fonts.heading, 
     textAlign: 'center',
+    fontFamily: 'Silkscreen-Regular',
   },
   authorBooksCount: { 
     fontSize: 13, 
-    fontFamily: Fonts.rounded,
     textAlign: 'center',
   },
 
@@ -717,13 +764,11 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    fontFamily: Fonts.heading,
     textAlign: 'center',
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    fontFamily: Fonts.rounded,
     textAlign: 'center',
     marginTop: 8,
   },

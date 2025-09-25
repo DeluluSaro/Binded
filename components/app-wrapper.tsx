@@ -9,9 +9,11 @@ export default function AppWrapper({ children }: { children: React.ReactNode }) 
   const [showQuotePopup, setShowQuotePopup] = useState(true);
   const [fontsLoaded] = useFonts({
     'Pacifico-Regular': require('@/assets/fonts/Pacifico-Regular.ttf'),
-    'Silkscreen': require('@/assets/fonts/Silkscreen-Regular.ttf'),
+    'Silkscreen-Regular': require('@/assets/fonts/Silkscreen-Regular.ttf'),
+    'Silkscreen-Bold': require('@/assets/fonts/Silkscreen-Bold.ttf'),
     'Outfit_400Regular': require('@/assets/fonts/Outfit-Regular.ttf'),
     'Outfit_700Bold': require('@/assets/fonts/Outfit-Bold.ttf'),
+    'BadeenDisplay-Regular': require('@/assets/fonts/BadeenDisplay-Regular.ttf'),
   });
 
   // Suppress Clerk telemetry errors
@@ -38,8 +40,8 @@ export default function AppWrapper({ children }: { children: React.ReactNode }) 
 
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Loading fonts...</Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
+        <Text style={{ color: '#fff', fontSize: 18, fontFamily: 'System' }}>Loading fonts...</Text>
       </View>
     );
   }
