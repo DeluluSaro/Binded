@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  PanResponder,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -31,10 +32,16 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
   const [loadedChapters, setLoadedChapters] = useState<Set<number>>(new Set());
   const [chapterCache, setChapterCache] = useState<Map<number, string>>(new Map());
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isProgressBarPressed, setIsProgressBarPressed] = useState(false);
+  const [progressBarWidth, setProgressBarWidth] = useState(0);
+  const [lastSwipeChapter, setLastSwipeChapter] = useState(-1);
+  const [pendingChapter, setPendingChapter] = useState(-1);
+  const [displayChapter, setDisplayChapter] = useState(0);
   
   const colors = useThemeColors();
   const epubParser = new SimpleEpubParser();
   const webViewRef = useRef<WebView>(null);
+  const progressBarRef = useRef<View>(null);
 
   useEffect(() => {
     loadEpub();
@@ -48,6 +55,13 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
       loadChapterBatch(currentChapter);
     }
   }, [currentChapter, bookData, fontSize, loading]);
+
+  // Update displayChapter when currentChapter changes (but not during swipe)
+  useEffect(() => {
+    if (!isProgressBarPressed) {
+      setDisplayChapter(currentChapter);
+    }
+  }, [currentChapter, isProgressBarPressed]);
 
   // Load initial batch of chapters
   useEffect(() => {
@@ -634,6 +648,67 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
     await AsyncStorage.setItem('epub_font_size', newSize.toString());
   };
 
+  // Progress bar swipe functionality
+  const goToChapter = async (targetChapter: number) => {
+    if (targetChapter >= 0 && targetChapter < bookData.chapters.length && targetChapter !== currentChapter) {
+      setCurrentChapter(targetChapter);
+      await loadSingleChapter(targetChapter);
+      AsyncStorage.setItem(`reading_position_${epubUrl}`, targetChapter.toString());
+    }
+  };
+
+  const calculateChapterFromSwipe = (translationX: number) => {
+    if (progressBarWidth === 0) return currentChapter;
+    
+    // Calculate progress based on where the user is swiping on the progress bar
+    // translationX is the distance from the start of the swipe
+    const progress = Math.max(0, Math.min(1, translationX / progressBarWidth));
+    const targetChapter = Math.round(progress * (bookData.chapters.length - 1));
+    return Math.max(0, Math.min(bookData.chapters.length - 1, targetChapter));
+  };
+
+  const progressBarPanResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (evt) => {
+      setIsProgressBarPressed(true);
+      console.log('Progress bar pressed at:', evt.nativeEvent.locationX);
+    },
+    onPanResponderMove: (evt, gestureState) => {
+      if (isProgressBarPressed && progressBarWidth > 0) {
+        // Calculate target chapter based on absolute position on progress bar
+        const touchX = evt.nativeEvent.locationX;
+        const progress = Math.max(0, Math.min(1, touchX / progressBarWidth));
+        const targetChapter = Math.round(progress * (bookData.chapters.length - 1));
+        
+        console.log('Swipe - touchX:', touchX, 'progressBarWidth:', progressBarWidth, 'progress:', progress, 'targetChapter:', targetChapter, 'totalChapters:', bookData.chapters.length);
+        
+        // Only update the display chapter, don't load content yet
+        if (targetChapter !== displayChapter && 
+            targetChapter !== lastSwipeChapter && 
+            targetChapter >= 0 && 
+            targetChapter < bookData.chapters.length) {
+          setLastSwipeChapter(targetChapter);
+          setPendingChapter(targetChapter);
+          setDisplayChapter(targetChapter);
+        }
+      }
+    },
+    onPanResponderRelease: () => {
+      setIsProgressBarPressed(false);
+      setLastSwipeChapter(-1); // Reset the last swipe chapter
+      
+      // Now load the chapter that was selected during the swipe
+      if (pendingChapter !== -1 && pendingChapter !== currentChapter) {
+        console.log('Loading chapter after swipe:', pendingChapter);
+        setCurrentChapter(pendingChapter);
+        goToChapter(pendingChapter);
+      }
+      setPendingChapter(-1);
+      console.log('Progress bar released');
+    },
+  });
+
 
 
   if (loading || contentLoading) {
@@ -659,6 +734,40 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
             <ThemedText variant="secondary" style={styles.chapterText}>
               {currentChapter + 1}/{bookData.chapters.length}
             </ThemedText>
+          </View>
+        </View>
+
+        {/* Progress Bar at Top */}
+        <View style={[styles.progressSection, { backgroundColor: colors.surfaceSecondary, borderBottomColor: colors.border }]}>
+          <View style={styles.progressContainer}>
+            {/* Swipeable Progress Bar */}
+            <View 
+              ref={progressBarRef}
+              style={[styles.progressBar, { backgroundColor: colors.surfaceSecondary }]}
+            onLayout={(event) => {
+              const { width } = event.nativeEvent.layout;
+              setProgressBarWidth(width);
+              console.log('Progress bar width set to:', width);
+            }}
+              {...progressBarPanResponder.panHandlers}
+            >
+              <View 
+                style={[
+                  styles.progressFill, 
+                  { 
+                    width: `${((isProgressBarPressed ? displayChapter : currentChapter) + 1) / bookData.chapters.length * 100}%`,
+                    backgroundColor: colors.tint
+                  }
+                ]} 
+              />
+              {isProgressBarPressed && (
+                <View style={[styles.progressIndicator, { backgroundColor: colors.tint }]}>
+                  <ThemedText style={[styles.progressIndicatorText, { color: '#fff' }]}>
+                    {displayChapter + 1}
+                  </ThemedText>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
@@ -715,37 +824,50 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
           />
         </View>
 
-         {/* Navigation */}
+         {/* Navigation - Larger Bottom Bar */}
          <View style={[styles.navigationContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
-        <TouchableOpacity
-          style={[
-            styles.navButton, 
-            { backgroundColor: colors.tint },
-            currentChapter === 0 && styles.navButtonDisabled
-          ]}
-          onPress={prevChapter}
-          disabled={currentChapter === 0}
-        >
-          <Text style={[
-            styles.navButtonText, 
-            currentChapter === 0 && styles.navButtonTextDisabled
-          ]}>
-            ← Previous
-          </Text>
-        </TouchableOpacity>
-        
-        <View style={styles.progressContainer}>
-          {/* Progress Bar */}
-          <View style={[styles.progressBar, { backgroundColor: colors.surfaceSecondary }]}>
-            <View 
+          {/* Page Number at Top */}
+          <View style={[styles.pageIndicator, { backgroundColor: colors.surfaceSecondary, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 }]}>
+            <ThemedText style={[styles.pageIndicatorText, { color: colors.text }]}>
+              Page {displayChapter + 1} of {bookData.chapters.length}
+            </ThemedText>
+          </View>
+          
+          {/* Navigation Buttons */}
+          <View style={styles.navButtonsContainer}>
+            <TouchableOpacity
               style={[
-                styles.progressFill, 
-                { 
-                  width: `${((currentChapter + 1) / bookData.chapters.length) * 100}%`,
-                  backgroundColor: colors.tint
-                }
-              ]} 
-            />
+                styles.navButton, 
+                { backgroundColor: colors.tint },
+                currentChapter === 0 && styles.navButtonDisabled
+              ]}
+              onPress={prevChapter}
+              disabled={currentChapter === 0}
+            >
+              <Text style={[
+                styles.navButtonText, 
+                currentChapter === 0 && styles.navButtonTextDisabled
+              ]}>
+                ← Previous
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.navButton, 
+                { backgroundColor: colors.tint },
+                currentChapter === bookData.chapters.length - 1 && styles.navButtonDisabled
+              ]}
+              onPress={nextChapter}
+              disabled={currentChapter === bookData.chapters.length - 1}
+            >
+              <Text style={[
+                styles.navButtonText, 
+                currentChapter === bookData.chapters.length - 1 && styles.navButtonTextDisabled
+              ]}>
+                Next →
+              </Text>
+            </TouchableOpacity>
           </View>
           
           {isLoadingMore && (
@@ -756,24 +878,6 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
             </View>
           )}
         </View>
-        
-        <TouchableOpacity
-          style={[
-            styles.navButton, 
-            { backgroundColor: colors.tint },
-            currentChapter === bookData.chapters.length - 1 && styles.navButtonDisabled
-          ]}
-          onPress={nextChapter}
-          disabled={currentChapter === bookData.chapters.length - 1}
-        >
-          <Text style={[
-            styles.navButtonText, 
-            currentChapter === bookData.chapters.length - 1 && styles.navButtonTextDisabled
-          ]}>
-            Next →
-          </Text>
-        </TouchableOpacity>
-      </View>
 
     </ThemedView>
   );
@@ -884,17 +988,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   navigationContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    minHeight: 75,
+  },
+  progressSection: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+  },
+  navButtonsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderTopWidth: 1,
+    justifyContent: 'space-between',
+    marginTop: 6,
   },
   navButton: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 25,
-    minWidth: 80,
+    minWidth: 100,
     alignItems: 'center',
   },
   navButtonDisabled: {
@@ -910,16 +1024,47 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     flex: 1,
-    marginHorizontal: 20,
+  },
+  pageIndicator: {
+    alignItems: 'center',
+    marginBottom: 8,
+    alignSelf: 'center',
+  },
+  pageIndicatorText: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   progressBar: {
-    height: 4,
-    borderRadius: 2,
+    height: 8,
+    borderRadius: 4,
     overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#e0e0e0',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 4,
+  },
+  progressIndicator: {
+    position: 'absolute',
+    top: -30,
+    left: '50%',
+    transform: [{ translateX: -20 }],
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    minWidth: 50,
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  progressIndicatorText: {
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   loadingMoreIndicator: {
     marginTop: 8,
