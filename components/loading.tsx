@@ -1,3 +1,4 @@
+import { useFonts } from 'expo-font';
 import React from 'react';
 import { Dimensions, Image, StyleSheet, View } from 'react-native';
 import { ThemedText } from './themed-text';
@@ -9,6 +10,14 @@ interface LoadingProps {
 const { width, height } = Dimensions.get('window');
 
 export default function Loading({ message = 'Opening Book...' }: LoadingProps) {
+  // Load Silkscreen-Regular font for entire page
+  const [fontsLoaded] = useFonts({
+    'Silkscreen-Regular': require('@/assets/fonts/Silkscreen-Regular.ttf'),
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>
@@ -23,12 +32,12 @@ export default function Loading({ message = 'Opening Book...' }: LoadingProps) {
       
       <View style={styles.textOverlay}>
         <View style={styles.textContainer}>
-          <ThemedText type="subtitle" style={styles.quoteText}>
+          <ThemedText style={[styles.quoteText, { fontFamily: 'Silkscreen-Regular' }]}>
             &ldquo;Emptiness is the best way to start new life&rdquo;
           </ThemedText>
           <View style={styles.divider} />
-          <ThemedText type="title" style={styles.titleText}>VINLAND SAGA</ThemedText>
-          <ThemedText type="secondary" style={styles.subtitleText}>{message}</ThemedText>
+          <ThemedText style={[styles.titleText, { fontFamily: 'Silkscreen-Regular' }]}>VINLAND SAGA</ThemedText>
+          <ThemedText style={[styles.subtitleText, { fontFamily: 'Silkscreen-Regular' }]}>{message}</ThemedText>
         </View>
       </View>
     </View>
@@ -88,6 +97,7 @@ const styles = StyleSheet.create({
     fontStyle: 'normal',
     letterSpacing: 0.5,
     includeFontPadding: false,
+    fontFamily: 'Silkscreen-Regular',
   },
   divider: {
     width: 60,
@@ -104,6 +114,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 15,
     includeFontPadding: false,
+    fontFamily: 'Silkscreen-Regular',
   },
   subtitleText: {
     fontSize: 14,
@@ -113,5 +124,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     opacity: 0.8,
     includeFontPadding: false,
+    fontFamily: 'Silkscreen-Regular',
   },
 });

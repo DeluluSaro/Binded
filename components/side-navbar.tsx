@@ -7,12 +7,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Animated,
-    Dimensions,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import ThemeToggle from './theme-toggle';
 
@@ -109,7 +109,7 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
                   <View style={[styles.logoPlaceholder, { backgroundColor: colors.tint }]}>
                     <Ionicons name="book" size={24} color={colors.text} />
                   </View>
-                  <Text style={{ fontSize: 24, fontWeight: 'normal', color: colors.text }}>Binded</Text>
+                  <Text style={{ fontSize: 24, fontWeight: 'normal', color: colors.text, fontFamily: 'Outfit-Regular' }}>Kink</Text>
                 </View>
                 <ThemeToggle size="small" />
               </View>
@@ -126,8 +126,8 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
               style={[styles.profileImage, { borderColor: colors.tint }]}
             />
             <View style={styles.profileInfo}>
-              <Text style={[styles.profileName, { color: colors.text }]} numberOfLines={1}>{user?.fullName}</Text>
-              <Text style={[styles.profileEmail, { color: colors.textSecondary }]} numberOfLines={1}>{user?.primaryEmailAddress?.emailAddress}</Text>
+              <Text style={[styles.profileName, { color: colors.text, fontFamily: 'Outfit-Regular' }]} numberOfLines={1}>{user?.fullName}</Text>
+              <Text style={[styles.profileEmail, { color: colors.textSecondary, fontFamily: 'Outfit-Regular' }]} numberOfLines={1}>{user?.primaryEmailAddress?.emailAddress}</Text>
             </View>
           </TouchableOpacity>
 
@@ -155,7 +155,7 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
                   />
                   <Text style={[
                     styles.menuText, 
-                    { color: isActive ? colors.text : colors.textSecondary },
+                    { color: isActive ? colors.text : colors.textSecondary, fontFamily: 'Outfit-Regular' },
                     isActive && styles.activeMenuText
                   ]}>
                     {item.title}
@@ -168,7 +168,7 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
 
           <View style={styles.categoriesSection}>
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Your Categories</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontFamily: 'Outfit-Regular' }]}>Your Categories</Text>
             {categories.map((category) => {
                const isSelected = selectedCategory === category.id;
                return (
@@ -183,7 +183,7 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
                 >
                   <Text style={[
                     styles.categoryText, 
-                    { color: isSelected ? colors.text : colors.textSecondary },
+                    { color: isSelected ? colors.text : colors.textSecondary, fontFamily: 'Outfit-Regular' },
                     isSelected && styles.selectedCategoryText
                   ]} numberOfLines={1}>
                     {category.title}
@@ -195,7 +195,7 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
                   ]}>
                     <Text style={[
                       styles.categoryCountText, 
-                      { color: isSelected ? colors.text : colors.textSecondary },
+                      { color: isSelected ? colors.text : colors.textSecondary, fontFamily: 'Outfit-Regular' },
                       isSelected && styles.selectedCategoryCountText
                     ]}>
                       {category.count}
@@ -220,7 +220,7 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
                 />
                 <Text style={[
                   styles.footerText, 
-                  { color: item.title === 'Sign Out' ? colors.error : colors.textSecondary },
+                  { color: item.title === 'Sign Out' ? colors.error : colors.textSecondary, fontFamily: 'Outfit-Regular' },
                   item.title === 'Sign Out' && styles.signOutText
                 ]}>
                   {item.title}
@@ -286,6 +286,7 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 24,
     fontWeight: 'bold',
+    fontFamily: 'Outfit-Regular',
   },
   profileSection: {
     flexDirection: 'row',
@@ -308,9 +309,11 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 18,
     fontWeight: 'bold',
+    fontFamily: 'Outfit-Regular',
   },
   profileEmail: {
     fontSize: 14,
+    fontFamily: 'Outfit-Regular',
   },
   separator: {
     height: 1,
@@ -335,6 +338,7 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 16,
     fontWeight: '500',
+    fontFamily: 'Outfit-Regular',
   },
   activeMenuText: {
     fontWeight: '600',
@@ -349,6 +353,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    fontFamily: 'Outfit-Regular',
   },
   categoryItem: {
     flexDirection: 'row',
@@ -367,6 +372,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
     marginRight: 10,
+    fontFamily: 'Outfit-Regular',
   },
   selectedCategoryText: {
     fontWeight: '700',
@@ -382,6 +388,7 @@ const styles = StyleSheet.create({
   categoryCountText: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: 'Outfit-Regular',
   },
   selectedCategoryCountText: {
     // Selected state handled dynamically
@@ -403,6 +410,7 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 16,
     fontWeight: '500',
+    fontFamily: 'Outfit-Regular',
   },
   signOutText: {
     fontWeight: '600',
