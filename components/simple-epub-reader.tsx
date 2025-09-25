@@ -12,6 +12,7 @@ import {
 
 import { WebView } from 'react-native-webview';
 import SimpleEpubParser from '../utils/SimpleEpubParser';
+import InPageLoader from './in-page-loader';
 import Loading from './loading';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -711,7 +712,7 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
 
 
 
-  if (loading || contentLoading) {
+  if (loading) {
     return <Loading message="Opening Book..." />;
   }
 
@@ -822,6 +823,11 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
               </View>
             )}
           />
+          
+          {/* In-page loader for content loading */}
+          {contentLoading && (
+            <InPageLoader message="Loading page..." />
+          )}
         </View>
 
          {/* Navigation - Larger Bottom Bar */}
@@ -977,6 +983,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
+    position: 'relative',
   },
   webView: {
     flex: 1,
