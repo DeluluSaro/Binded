@@ -88,7 +88,7 @@ export default function SignInPage() {
         resizeMode={ResizeMode.COVER}
         shouldPlay={true}
         isLooping={true}
-        isMuted={true}
+        isMuted={false}
       />
 
       {/* Professional Gradient Overlay */}

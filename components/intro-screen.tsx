@@ -61,7 +61,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
           resizeMode={ResizeMode.CONTAIN}
           shouldPlay={false}
           isLooping={false}
-          isMuted={true}
+          isMuted={false}
           onPlaybackStatusUpdate={(status) => {
             if (status.isLoaded && status.didJustFinish) {
               handleVideoEnd();

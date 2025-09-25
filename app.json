@@ -14,7 +14,11 @@
               "supabaseAnonKey": "process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY"
             },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app needs access to microphone for audio playback.",
+        "NSCameraUsageDescription": "This app needs access to camera for video recording."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,7 +32,9 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.VIBRATE"
+        "android.permission.VIBRATE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "web": {

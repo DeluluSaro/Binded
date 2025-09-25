@@ -1,22 +1,23 @@
 import { useThemeColors } from '@/hooks/use-theme-color';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   PanResponder,
+  SafeAreaView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View
 } from 'react-native';
 
 import { WebView } from 'react-native-webview';
+import { BookmarkManager } from '../utils/BookmarkManager';
 import SimpleEpubParser from '../utils/SimpleEpubParser';
 import InPageLoader from './in-page-loader';
 import Loading from './loading';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
-
 
 interface SimpleEpubReaderProps {
   epubUrl: string;
@@ -28,7 +29,7 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
   const [chapterContent, setChapterContent] = useState('');
   const [bookData, setBookData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [contentLoading, setContentLoading] = useState(true);
+  const [contentLoading, setContentLoading] = useState(false);
   const [fontSize, setFontSize] = useState(18);
   const [loadedChapters, setLoadedChapters] = useState<Set<number>>(new Set());
   const [chapterCache, setChapterCache] = useState<Map<number, string>>(new Map());
@@ -38,16 +39,20 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
   const [lastSwipeChapter, setLastSwipeChapter] = useState(-1);
   const [pendingChapter, setPendingChapter] = useState(-1);
   const [displayChapter, setDisplayChapter] = useState(0);
+  const [bookmarkPosition, setBookmarkPosition] = useState(-1);
+  const [bookmarkData, setBookmarkData] = useState<any>(null);
+  const [hasBookmark, setHasBookmark] = useState(false);
+  const [showBookmarkControls, setShowBookmarkControls] = useState(false);
   
   const colors = useThemeColors();
-  const epubParser = new SimpleEpubParser();
+  const epubParser = useRef(new SimpleEpubParser());
   const webViewRef = useRef<WebView>(null);
   const progressBarRef = useRef<View>(null);
 
   useEffect(() => {
     loadEpub();
     return () => {
-      epubParser.cleanup();
+      epubParser.current.cleanup();
     };
   }, []);
 
@@ -81,10 +86,10 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Load EPUB directly from URL
-      await epubParser.loadEpubFromUrl(epubUrl);
+      await epubParser.current.loadEpubFromUrl(epubUrl);
       
       // Get book information
-      const bookInfo = await epubParser.getBookInfo();
+      const bookInfo = await epubParser.current.getBookInfo();
       setBookData(bookInfo);
       
       // Load saved reading position
@@ -97,11 +102,6 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
       const savedFontSize = await AsyncStorage.getItem('epub_font_size');
       if (savedFontSize) {
         setFontSize(parseInt(savedFontSize));
-      }
-      
-      // Load the first chapter content immediately
-      if (bookInfo && bookInfo.chapters.length > 0) {
-        await loadSingleChapter(0);
       }
       
     } catch (error) {
@@ -149,409 +149,35 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
         return;
       }
       
+      // Load saved bookmark for this chapter
+      const savedBookmark = await BookmarkManager.loadBookmark(
+        bookData.title, 
+        chapterIndex
+      );
+      
+      let bookmarkWordIndex = -1;
+      if (savedBookmark) {
+        bookmarkWordIndex = savedBookmark.wordIndex;
+        setBookmarkPosition(bookmarkWordIndex);
+        setBookmarkData(savedBookmark);
+        setHasBookmark(true);
+        console.log('📖 Restored bookmark at word:', bookmarkWordIndex);
+      } else {
+        setBookmarkPosition(-1);
+        setBookmarkData(null);
+        setHasBookmark(false);
+      }
+      
       const chapterPath = bookData.basePath + bookData.chapters[chapterIndex];
       console.log(`Loading chapter ${chapterIndex}:`, chapterPath);
       
       // Check if EPUB data is still available
-      if (!epubParser.isLoaded) {
+      if (!epubParser.current.isLoaded) {
         console.log('EPUB data lost, reloading...');
-        await epubParser.loadEpubFromUrl(epubUrl);
+        await epubParser.current.loadEpubFromUrl(epubUrl);
       }
       
-      let content = await epubParser.getChapterContent(chapterPath);
-      
-      // Enhanced HTML wrapper for better display with custom long press
-      content = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-            <meta charset="UTF-8">
-            <style>
-              html {
-                height: 100%;
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-              }
-              body {
-                font-family: Georgia, 'Times New Roman', serif;
-                font-size: ${fontSize}px;
-                line-height: 1.6;
-                margin: 20px;
-                padding: 20px;
-                color: #2c3e50;
-                background-color: #fefefe;
-                text-align: justify;
-                user-select: none;
-                -webkit-user-select: none;
-                -webkit-touch-callout: none;
-                min-height: 100vh;
-              }
-              p { 
-                margin-bottom: 1.2em; 
-                text-indent: 1.5em;
-              }
-              h1, h2, h3, h4, h5, h6 { 
-                color: #34495e;
-                margin-top: 2em;
-                margin-bottom: 1em;
-                text-align: left;
-                line-height: 1.3;
-              }
-              h1 { font-size: 1.8em; }
-              h2 { font-size: 1.5em; }
-              h3 { font-size: 1.3em; }
-              
-              img { 
-                max-width: 100%; 
-                height: auto; 
-                display: block;
-                margin: 1em auto;
-              }
-              
-              blockquote {
-                border-left: 4px solid #bdc3c7;
-                margin: 1.5em 0;
-                padding-left: 1em;
-                font-style: italic;
-                color: #7f8c8d;
-              }
-              
-              .chapter-title {
-                font-size: 1.5em;
-                font-weight: bold;
-                margin-bottom: 1em;
-                text-align: center;
-                color: #2980b9;
-              }
-              
-              /* Remove default margins from first and last elements */
-              body > *:first-child { margin-top: 0; }
-              body > *:last-child { margin-bottom: 0; }
-              
-              /* Word highlighting */
-              .word-highlight {
-                background-color: #ff9800;
-                color: #000000;
-                padding: 2px 4px;
-                border-radius: 3px;
-                font-weight: bold;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-              }
-            </style>
-            <script>
-              let longPressTimer;
-              let isLongPress = false;
-              let touchStartTime = 0;
-              let touchStartX = 0;
-              let touchStartY = 0;
-              const LONG_PRESS_DURATION = 500; // milliseconds
-              const TOUCH_MOVE_THRESHOLD = 10; // pixels
-              
-              function handleTouchStart(e) {
-                // Don't prevent default - allow scrolling
-                isLongPress = false;
-                touchStartTime = Date.now();
-                
-                const touch = e.touches[0];
-                touchStartX = touch.clientX;
-                touchStartY = touch.clientY;
-                
-                // Clear any existing highlights
-                removeHighlights();
-                
-                longPressTimer = setTimeout(() => {
-                  isLongPress = true;
-                  const word = getWordAtPosition(touchStartX, touchStartY);
-                  if (word && word.length > 2) { // Only process words longer than 2 characters
-                    highlightWord(word);
-                    
-                    window.ReactNativeWebView.postMessage(JSON.stringify({
-                      type: 'wordLongPress',
-                      word: word.toLowerCase().replace(/[^a-zA-Z0-9]/g, ''), // Clean the word
-                      x: touchStartX,
-                      y: touchStartY
-                    }));
-                  }
-                }, LONG_PRESS_DURATION);
-              }
-              
-              function handleTouchMove(e) {
-                if (!longPressTimer) return;
-                
-                const touch = e.touches[0];
-                const moveX = Math.abs(touch.clientX - touchStartX);
-                const moveY = Math.abs(touch.clientY - touchStartY);
-                
-                // Cancel long press if user moves finger too much
-                if (moveX > TOUCH_MOVE_THRESHOLD || moveY > TOUCH_MOVE_THRESHOLD) {
-                  clearTimeout(longPressTimer);
-                  longPressTimer = null;
-                }
-              }
-              
-              function handleTouchEnd(e) {
-                clearTimeout(longPressTimer);
-                longPressTimer = null;
-                
-                if (isLongPress) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }
-              }
-              
-              function getWordAtPosition(x, y) {
-                // Method 1: Use caretRangeFromPoint (most accurate)
-                let range = null;
-                
-                try {
-                  if (document.caretRangeFromPoint) {
-                    range = document.caretRangeFromPoint(x, y);
-                  } else if (document.caretPositionFromPoint) {
-                    const position = document.caretPositionFromPoint(x, y);
-                    if (position) {
-                      range = document.createRange();
-                      range.setStart(position.offsetNode, position.offset);
-                      range.setEnd(position.offsetNode, position.offset);
-                    }
-                  }
-                  
-                  if (range && range.startContainer && range.startContainer.nodeType === Node.TEXT_NODE) {
-                    const textNode = range.startContainer;
-                    const offset = range.startOffset;
-                    const text = textNode.textContent;
-                    
-                    // Find word boundaries around the offset
-                    const word = extractWordAtOffset(text, offset);
-                    if (word && word.length > 0) {
-                      return word;
-                    }
-                  }
-                } catch (error) {
-                  console.log('caretRangeFromPoint failed:', error);
-                }
-                
-                // Method 2: Fallback using elementFromPoint with improved logic
-                return getWordFromElementAtPoint(x, y);
-              }
-              
-              function extractWordAtOffset(text, offset) {
-                // Handle edge cases
-                if (!text || offset < 0 || offset > text.length) {
-                  return '';
-                }
-                
-                // Define word boundaries (letters, numbers, apostrophes for contractions)
-                const wordPattern = /[a-zA-Z0-9']+/g;
-                let match;
-                
-                // Find all words and their positions
-                while ((match = wordPattern.exec(text)) !== null) {
-                  const wordStart = match.index;
-                  const wordEnd = match.index + match[0].length;
-                  
-                  // Check if offset falls within this word
-                  if (offset >= wordStart && offset <= wordEnd) {
-                    return match[0];
-                  }
-                }
-                
-                // If no word found at exact offset, find the closest word
-                const words = text.split(/\\s+/);
-                let currentPos = 0;
-                
-                for (let word of words) {
-                  const wordStart = currentPos;
-                  const wordEnd = currentPos + word.length;
-                  
-                  // If offset is close to this word, return it
-                  if (Math.abs(offset - wordStart) <= 3 || Math.abs(offset - wordEnd) <= 3) {
-                    return word.replace(/[^a-zA-Z0-9']/g, ''); // Clean punctuation
-                  }
-                  
-                  currentPos = wordEnd + 1; // +1 for space
-                }
-                
-                return '';
-              }
-              
-              function getWordFromElementAtPoint(x, y) {
-                const element = document.elementFromPoint(x, y);
-                if (!element) return '';
-                
-                // Get all text nodes within the element
-                const textNodes = getTextNodesIn(element);
-                
-                let closestWord = '';
-                let minDistance = Infinity;
-                
-                for (let textNode of textNodes) {
-                  const range = document.createRange();
-                  range.selectNode(textNode);
-                  const rect = range.getBoundingClientRect();
-                  
-                  // Check if the touch point is within this text node's area
-                  if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-                    const text = textNode.textContent;
-                    const words = text.match(/[a-zA-Z0-9']+/g) || [];
-                    
-                    // Find the closest word based on horizontal position
-                    const relativeX = x - rect.left;
-                    const charWidth = rect.width / text.length;
-                    const estimatedCharIndex = Math.floor(relativeX / charWidth);
-                    
-                    const word = extractWordAtOffset(text, estimatedCharIndex);
-                    if (word) {
-                      return word;
-                    }
-                  }
-                  
-                  // Calculate distance to this text node as fallback
-                  const centerX = (rect.left + rect.right) / 2;
-                  const centerY = (rect.top + rect.bottom) / 2;
-                  const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
-                  
-                  if (distance < minDistance) {
-                    minDistance = distance;
-                    const words = textNode.textContent.match(/[a-zA-Z0-9']+/g) || [];
-                    if (words.length > 0) {
-                      closestWord = words[0]; // Take the first word as fallback
-                    }
-                  }
-                }
-                
-                return closestWord;
-              }
-              
-              function getTextNodesIn(element) {
-                const textNodes = [];
-                const walker = document.createTreeWalker(
-                  element,
-                  NodeFilter.SHOW_TEXT,
-                  {
-                    acceptNode: function(node) {
-                      // Only accept text nodes with actual content
-                      if (node.textContent.trim().length > 0) {
-                        return NodeFilter.FILTER_ACCEPT;
-                      }
-                      return NodeFilter.FILTER_REJECT;
-                    }
-                  },
-                  false
-                );
-                
-                let node;
-                while (node = walker.nextNode()) {
-                  textNodes.push(node);
-                }
-                
-                return textNodes;
-              }
-              
-              function highlightWord(word) {
-                if (!word || word.length === 0) return;
-                
-                removeHighlights();
-                
-                // Find the specific word at the touch position
-                const range = document.createRange();
-                let textNode = null;
-                let offset = 0;
-                
-                try {
-                  if (document.caretRangeFromPoint) {
-                    range.setStart(document.caretRangeFromPoint(touchStartX, touchStartY).startContainer, document.caretRangeFromPoint(touchStartX, touchStartY).startOffset);
-                    range.setEnd(document.caretRangeFromPoint(touchStartX, touchStartY).startContainer, document.caretRangeFromPoint(touchStartX, touchStartY).startOffset);
-                  } else if (document.caretPositionFromPoint) {
-                    const position = document.caretPositionFromPoint(touchStartX, touchStartY);
-                    if (position) {
-                      range.setStart(position.offsetNode, position.offset);
-                      range.setEnd(position.offsetNode, position.offset);
-                    }
-                  }
-                  
-                  if (range.startContainer && range.startContainer.nodeType === Node.TEXT_NODE) {
-                    textNode = range.startContainer;
-                    offset = range.startOffset;
-                  }
-                } catch (error) {
-                  console.log('Error getting range:', error);
-                }
-                
-                if (textNode) {
-                  const text = textNode.textContent;
-                  const wordRegex = new RegExp(word, 'gi');
-                  let match;
-                  
-                  // Find all occurrences of the word in this text node
-                  while ((match = wordRegex.exec(text)) !== null) {
-                    const wordStart = match.index;
-                    const wordEnd = match.index + match[0].length;
-                    
-                    // Check if the touch offset falls within this word
-                    if (offset >= wordStart && offset <= wordEnd) {
-                      // Highlight only this specific occurrence
-                      const beforeWord = text.substring(0, wordStart);
-                      const wordText = text.substring(wordStart, wordEnd);
-                      const afterWord = text.substring(wordEnd);
-                      
-                      const highlightedText = beforeWord + '<span class="word-highlight">' + wordText + '</span>' + afterWord;
-                      
-                      if (highlightedText !== text) {
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = highlightedText;
-                        
-                        const fragment = document.createDocumentFragment();
-                        while (tempDiv.firstChild) {
-                          fragment.appendChild(tempDiv.firstChild);
-                        }
-                        
-                        textNode.parentNode.replaceChild(fragment, textNode);
-                      }
-                      break; // Only highlight the first matching word at this position
-                    }
-                  }
-                }
-              }
-              
-              function removeHighlights() {
-                const highlights = document.querySelectorAll('.word-highlight');
-                highlights.forEach(highlight => {
-                  const parent = highlight.parentNode;
-                  parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
-                  parent.normalize();
-                });
-              }
-              
-              // Listen for messages from React Native
-              window.addEventListener('message', function(event) {
-                try {
-                  const data = JSON.parse(event.data);
-                  if (data.type === 'removeHighlights') {
-                    removeHighlights();
-                  }
-                } catch (error) {
-                  console.log('Error parsing message:', error);
-                }
-              });
-              
-              // Attach event listeners - use passive for scrolling
-              document.addEventListener('touchstart', handleTouchStart, { passive: true });
-              document.addEventListener('touchmove', handleTouchMove, { passive: true });
-              document.addEventListener('touchend', handleTouchEnd, { passive: true });
-              
-              // Prevent context menu on long press
-              document.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-              });
-              
-            </script>
-          </head>
-          <body>
-            ${content}
-          </body>
-        </html>
-      `;
+      let content = await epubParser.current.getChapterContent(chapterIndex, fontSize, bookmarkWordIndex);
       
       // Cache the chapter
       setChapterCache(prev => new Map(prev).set(chapterIndex, content));
@@ -568,7 +194,7 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
       if ((error as Error).message.includes('EPUB data not loaded')) {
         console.log('Attempting to reload EPUB...');
         try {
-          await epubParser.loadEpubFromUrl(epubUrl);
+          await epubParser.current.loadEpubFromUrl(epubUrl);
           // Retry loading the chapter
           setTimeout(() => loadSingleChapter(chapterIndex), 1000);
         } catch (reloadError) {
@@ -621,7 +247,6 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
     setIsLoadingMore(false);
   };
 
-
   const nextChapter = async () => {
     if (currentChapter < bookData.chapters.length - 1) {
       const nextChapterIndex = currentChapter + 1;
@@ -647,6 +272,11 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
   const adjustFontSize = async (newSize: number) => {
     setFontSize(newSize);
     await AsyncStorage.setItem('epub_font_size', newSize.toString());
+    
+    // Reload current chapter with new font size
+    if (bookData && bookData.chapters.length > 0) {
+      await loadSingleChapter(currentChapter);
+    }
   };
 
   // Progress bar swipe functionality
@@ -656,16 +286,6 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
       await loadSingleChapter(targetChapter);
       AsyncStorage.setItem(`reading_position_${epubUrl}`, targetChapter.toString());
     }
-  };
-
-  const calculateChapterFromSwipe = (translationX: number) => {
-    if (progressBarWidth === 0) return currentChapter;
-    
-    // Calculate progress based on where the user is swiping on the progress bar
-    // translationX is the distance from the start of the swipe
-    const progress = Math.max(0, Math.min(1, translationX / progressBarWidth));
-    const targetChapter = Math.round(progress * (bookData.chapters.length - 1));
-    return Math.max(0, Math.min(bookData.chapters.length - 1, targetChapter));
   };
 
   const progressBarPanResponder = PanResponder.create({
@@ -710,7 +330,110 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
     },
   });
 
+  // Enhanced WebView message handler
+  const handleWebViewMessage = (event: any) => {
+    try {
+      const message = JSON.parse(event.nativeEvent.data);
+      
+      switch (message.type) {
+        case 'bookmarkSet':
+          handleBookmarkSet(message.data);
+          break;
+          
+        case 'requestNextChapter':
+          if (currentChapter < bookData.chapters.length - 1) {
+            nextChapter();
+          }
+          break;
+          
+        case 'requestPreviousChapter':
+          if (currentChapter > 0) {
+            prevChapter();
+          }
+          break;
+          
+        case 'bookmarkPosition':
+          console.log('Current bookmark position:', message.data);
+          break;
+          
+        case 'wordLongPress':
+          // Handle word highlighting
+          break;
+          
+        default:
+          console.log('Unknown message type:', message.type);
+      }
+    } catch (error) {
+      console.error('Error handling WebView message:', error);
+    }
+  };
 
+  // Handle bookmark setting
+  const handleBookmarkSet = async (data: any) => {
+    try {
+      setBookmarkPosition(data.wordIndex);
+      setBookmarkData(data);
+      setHasBookmark(true);
+      
+      // Save bookmark to AsyncStorage
+      const success = await BookmarkManager.saveBookmark(
+        bookData.title,
+        data.chapterIndex,
+        data
+      );
+      
+      if (success) {
+        console.log('✅ Bookmark saved successfully');
+      } else {
+        console.error('❌ Failed to save bookmark');
+      }
+    } catch (error) {
+      console.error('Error handling bookmark set:', error);
+    }
+  };
+
+  // Bookmark navigation functions
+  const moveBookmarkNext = () => {
+    if (webViewRef.current) {
+      webViewRef.current.postMessage(JSON.stringify({
+        type: 'moveBookmarkNext'
+      }));
+    }
+  };
+
+  const moveBookmarkPrevious = () => {
+    if (webViewRef.current) {
+      webViewRef.current.postMessage(JSON.stringify({
+        type: 'moveBookmarkPrevious'
+      }));
+    }
+  };
+
+  const removeCurrentBookmark = async () => {
+    try {
+      const success = await BookmarkManager.removeBookmark(
+        bookData.title,
+        currentChapter
+      );
+      
+      if (success) {
+        setBookmarkPosition(-1);
+        setBookmarkData(null);
+        setHasBookmark(false);
+        
+        // Remove bookmark from WebView
+        if (webViewRef.current) {
+          webViewRef.current.postMessage(JSON.stringify({
+            type: 'removeBookmark'
+          }));
+        }
+        
+        console.log('🗑️ Bookmark removed');
+      }
+    } catch (error) {
+      console.error('Error removing bookmark:', error);
+    }
+  };
 
   if (loading) {
     return <Loading message="Opening Book..." />;
@@ -728,171 +451,232 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
   }
 
   return (
-    <ThemedView style={styles.container}>
-        {/* Header */}
-        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <View style={styles.chapterInfo}>
-            <ThemedText variant="secondary" style={styles.chapterText}>
-              {currentChapter + 1}/{bookData.chapters.length}
-            </ThemedText>
-          </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: 25 }]}>
+        <TouchableOpacity 
+          onPress={onClose} 
+          style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary }]}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
+        </TouchableOpacity>
+        
+        <View style={styles.chapterInfo}>
+          <ThemedText style={[styles.chapterText, { fontFamily: 'Outfit_400Regular' }]}>
+            Chapter {currentChapter + 1} of {bookData.chapters.length}
+          </ThemedText>
         </View>
+        
+        <TouchableOpacity 
+          onPress={() => setShowBookmarkControls(!showBookmarkControls)} 
+          style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary }]}
+          activeOpacity={0.7}
+        >
+          <Ionicons 
+            name={showBookmarkControls ? "bookmark" : "bookmark-outline"} 
+            size={24} 
+            color={colors.tint} 
+          />
+        </TouchableOpacity>
+      </View>
 
-        {/* Progress Bar at Top */}
-        <View style={[styles.progressSection, { backgroundColor: colors.surfaceSecondary, borderBottomColor: colors.border }]}>
-          <View style={styles.progressContainer}>
-            {/* Swipeable Progress Bar */}
-            <View 
-              ref={progressBarRef}
-              style={[styles.progressBar, { backgroundColor: colors.surfaceSecondary }]}
+      {/* Progress Bar */}
+      <View style={[styles.progressSection, { backgroundColor: colors.surfaceSecondary, borderBottomColor: colors.border }]}>
+        <View style={styles.progressContainer}>
+          <View 
+            ref={progressBarRef}
+            style={[styles.progressBar, { backgroundColor: colors.border }]}
             onLayout={(event) => {
               const { width } = event.nativeEvent.layout;
               setProgressBarWidth(width);
-              console.log('Progress bar width set to:', width);
             }}
-              {...progressBarPanResponder.panHandlers}
-            >
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { 
-                    width: `${((isProgressBarPressed ? displayChapter : currentChapter) + 1) / bookData.chapters.length * 100}%`,
-                    backgroundColor: colors.tint
-                  }
-                ]} 
-              />
-              {isProgressBarPressed && (
-                <View style={[styles.progressIndicator, { backgroundColor: colors.tint }]}>
-                  <ThemedText style={[styles.progressIndicatorText, { color: '#fff' }]}>
-                    {displayChapter + 1}
-                  </ThemedText>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Font Size Controls */}
-        <View style={[styles.fontControls, { backgroundColor: colors.surfaceSecondary, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={onClose} style={styles.backButton}>
-            <Text style={[styles.backButtonText, { color: colors.text }]}>←</Text>
-          </TouchableOpacity>
-          
-          <View style={styles.fontControlsCenter}>
-            <TouchableOpacity 
-              style={[styles.fontButton, { backgroundColor: colors.tint }]} 
-              onPress={() => adjustFontSize(Math.max(12, fontSize - 2))}
-            >
-              <Text style={styles.fontButtonText}>A-</Text>
-            </TouchableOpacity>
-            <ThemedText style={styles.fontSizeText}>{fontSize}px</ThemedText>
-            <TouchableOpacity 
-              style={[styles.fontButton, { backgroundColor: colors.tint }]} 
-              onPress={() => adjustFontSize(Math.min(24, fontSize + 2))}
-            >
-              <Text style={styles.fontButtonText}>A+</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={[styles.closeButtonText, { color: colors.text }]}>✕</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Content */}
-        <View style={styles.contentContainer}>
-          <WebView
-            ref={webViewRef}
-            source={{ html: chapterContent }}
-            style={styles.webView}
-            showsVerticalScrollIndicator={true}
-            bounces={true}
-            scalesPageToFit={false}
-            startInLoadingState={true}
-             scrollEnabled={true}
-            nestedScrollEnabled={true}
-            automaticallyAdjustContentInsets={false}
-            contentInsetAdjustmentBehavior="never"
-            allowsInlineMediaPlayback={true}
-            mediaPlaybackRequiresUserAction={false}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            renderLoading={() => (
-              <View style={styles.webViewLoading}>
-                <ThemedText>Loading chapter...</ThemedText>
+            {...progressBarPanResponder.panHandlers}
+          >
+            <View 
+              style={[
+                styles.progressFill, 
+                { 
+                  width: `${((isProgressBarPressed ? displayChapter : currentChapter) + 1) / bookData.chapters.length * 100}%`,
+                  backgroundColor: colors.tint
+                }
+              ]} 
+            />
+            {isProgressBarPressed && (
+              <View style={[styles.progressIndicator, { backgroundColor: colors.tint }]}>
+                <ThemedText style={[styles.progressIndicatorText, { color: '#fff', fontFamily: 'Outfit_700Bold' }]}>
+                  {displayChapter + 1}
+                </ThemedText>
               </View>
             )}
-          />
-          
-          {/* In-page loader for content loading */}
-          {contentLoading && (
-            <InPageLoader message="Loading page..." />
-          )}
+          </View>
         </View>
+      </View>
 
-         {/* Navigation - Larger Bottom Bar */}
-         <View style={[styles.navigationContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
-          {/* Page Number at Top */}
-          <View style={[styles.pageIndicator, { backgroundColor: colors.surfaceSecondary, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 }]}>
-            <ThemedText style={[styles.pageIndicatorText, { color: colors.text }]}>
-              Page {displayChapter + 1} of {bookData.chapters.length}
-            </ThemedText>
+      {/* Bookmark Controls */}
+      {showBookmarkControls && (
+        <View style={[styles.bookmarkControls, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <View style={styles.bookmarkStatus}>
+            {hasBookmark ? (
+              <View style={styles.bookmarkInfo}>
+                <Ionicons name="bookmark" size={20} color={colors.tint} />
+                <ThemedText style={[styles.bookmarkText, { fontFamily: 'Outfit_400Regular' }]}>
+                  Word {bookmarkPosition + 1}
+                  {bookmarkData && bookmarkData.wordText ? ` "${bookmarkData.wordText}"` : ''}
+                </ThemedText>
+                <TouchableOpacity
+                  style={[styles.removeBookmarkButton, { backgroundColor: colors.error }]}
+                  onPress={removeCurrentBookmark}
+                >
+                  <Ionicons name="close" size={16} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.bookmarkInfo}>
+                <Ionicons name="bookmark-outline" size={20} color={colors.icon} />
+                <ThemedText style={[styles.noBookmarkText, { fontFamily: 'Outfit_400Regular' }]}>
+                  Tap any word to set bookmark
+                </ThemedText>
+              </View>
+            )}
           </View>
           
-          {/* Navigation Buttons */}
-          <View style={styles.navButtonsContainer}>
+          <View style={styles.bookmarkActions}>
             <TouchableOpacity
-              style={[
-                styles.navButton, 
-                { backgroundColor: colors.tint },
-                currentChapter === 0 && styles.navButtonDisabled
-              ]}
-              onPress={prevChapter}
-              disabled={currentChapter === 0}
+              style={[styles.bookmarkActionButton, !hasBookmark && styles.disabledButton]}
+              onPress={moveBookmarkPrevious}
+              disabled={!hasBookmark}
             >
-              <Text style={[
-                styles.navButtonText, 
-                currentChapter === 0 && styles.navButtonTextDisabled
-              ]}>
-                ← Previous
-              </Text>
+              <Ionicons name="chevron-back" size={20} color={hasBookmark ? colors.text : colors.icon} />
+              <ThemedText style={[styles.bookmarkActionText, { fontFamily: 'Outfit_400Regular' }]}>
+                Previous
+              </ThemedText>
             </TouchableOpacity>
             
             <TouchableOpacity
-              style={[
-                styles.navButton, 
-                { backgroundColor: colors.tint },
-                currentChapter === bookData.chapters.length - 1 && styles.navButtonDisabled
-              ]}
-              onPress={nextChapter}
-              disabled={currentChapter === bookData.chapters.length - 1}
+              style={[styles.bookmarkActionButton, !hasBookmark && styles.disabledButton]}
+              onPress={moveBookmarkNext}
+              disabled={!hasBookmark}
             >
-              <Text style={[
-                styles.navButtonText, 
-                currentChapter === bookData.chapters.length - 1 && styles.navButtonTextDisabled
-              ]}>
-                Next →
-              </Text>
+              <ThemedText style={[styles.bookmarkActionText, { fontFamily: 'Outfit_400Regular' }]}>
+                Next
+              </ThemedText>
+              <Ionicons name="chevron-forward" size={20} color={hasBookmark ? colors.text : colors.icon} />
             </TouchableOpacity>
           </View>
-          
-          {isLoadingMore && (
-            <View style={styles.loadingMoreIndicator}>
-              <ThemedText variant="secondary" style={styles.loadingMoreText}>
-                Loading more chapters...
-              </ThemedText>
+        </View>
+      )}
+
+      {/* Font Controls */}
+      <View style={[styles.fontControls, { backgroundColor: colors.surfaceSecondary, borderBottomColor: colors.border }]}>
+        <TouchableOpacity 
+          style={[styles.fontButton, { backgroundColor: colors.tint }]} 
+          onPress={() => adjustFontSize(Math.max(12, fontSize - 2))}
+        >
+          <Ionicons name="remove" size={20} color="#fff" />
+        </TouchableOpacity>
+        
+        <ThemedText style={[styles.fontSizeText, { fontFamily: 'Outfit_700Bold' }]}>
+          {fontSize}px
+        </ThemedText>
+        
+        <TouchableOpacity 
+          style={[styles.fontButton, { backgroundColor: colors.tint }]} 
+          onPress={() => adjustFontSize(Math.min(24, fontSize + 2))}
+        >
+          <Ionicons name="add" size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Content */}
+      <View style={styles.contentContainer}>
+        <WebView
+          ref={webViewRef}
+          source={{ html: chapterContent }}
+          style={styles.webView}
+          showsVerticalScrollIndicator={true}
+          bounces={true}
+          scalesPageToFit={false}
+          startInLoadingState={true}
+          scrollEnabled={true}
+          nestedScrollEnabled={true}
+          automaticallyAdjustContentInsets={false}
+          contentInsetAdjustmentBehavior="never"
+          allowsInlineMediaPlayback={true}
+          mediaPlaybackRequiresUserAction={false}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          onMessage={handleWebViewMessage}
+          renderLoading={() => (
+            <View style={styles.webViewLoading}>
+              <ThemedText style={{ fontFamily: 'Outfit_400Regular' }}>Loading chapter...</ThemedText>
             </View>
           )}
-        </View>
+        />
+        
+        {/* In-page loader for content loading */}
+        {contentLoading && (
+          <InPageLoader message="Loading page..." />
+        )}
+      </View>
 
-    </ThemedView>
+      {/* Navigation */}
+      <View style={[styles.navigationContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+        {/* Page Number */}
+        <View style={[styles.pageIndicator, { backgroundColor: colors.surfaceSecondary }]}>
+          <ThemedText style={[styles.pageIndicatorText, { fontFamily: 'Outfit_700Bold' }]}>
+            Page {displayChapter + 1} of {bookData.chapters.length}
+          </ThemedText>
+        </View>
+        
+        {/* Navigation Buttons */}
+        <View style={styles.navButtonsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.navButton, 
+              { backgroundColor: colors.tint },
+              currentChapter === 0 && styles.navButtonDisabled
+            ]}
+            onPress={prevChapter}
+            disabled={currentChapter === 0}
+          >
+            <Ionicons name="chevron-back" size={20} color="#fff" />
+            <ThemedText style={[styles.navButtonText, { fontFamily: 'Outfit_700Bold' }]}>
+              Previous
+            </ThemedText>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.navButton, 
+              { backgroundColor: colors.tint },
+              currentChapter === bookData.chapters.length - 1 && styles.navButtonDisabled
+            ]}
+            onPress={nextChapter}
+            disabled={currentChapter === bookData.chapters.length - 1}
+          >
+            <ThemedText style={[styles.navButtonText, { fontFamily: 'Outfit_700Bold' }]}>
+              Next
+            </ThemedText>
+            <Ionicons name="chevron-forward" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        
+        {isLoadingMore && (
+          <View style={styles.loadingMoreIndicator}>
+            <ThemedText style={[styles.loadingMoreText, { fontFamily: 'Outfit_400Regular' }]}>
+              Loading more chapters...
+            </ThemedText>
+          </View>
+        )}
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   errorContainer: {
     flex: 1,
@@ -904,6 +688,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#e74c3c',
     marginBottom: 20,
+    fontFamily: 'Outfit_400Regular',
   },
   retryButton: {
     paddingHorizontal: 20,
@@ -913,13 +698,15 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: '#fff',
     fontWeight: 'bold',
+    fontFamily: 'Outfit_700Bold',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 15,
     borderBottomWidth: 1,
     elevation: 2,
     shadowColor: '#000',
@@ -927,127 +714,35 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  closeButton: {
-    padding: 8,
+  headerButton: {
+    padding: 12,
     borderRadius: 25,
-  },
-  closeButtonText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chapterInfo: {
     alignItems: 'center',
+    flex: 1,
   },
   chapterText: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  fontControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-  },
-  fontControlsCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  backButton: {
-    padding: 12,
-    borderRadius: 25,
-  },
-  backButtonText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  fontButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginHorizontal: 10,
-  },
-  fontButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  fontSizeText: {
-    fontSize: 14,
-    fontWeight: '500',
-    minWidth: 40,
-    textAlign: 'center',
-  },
-  contentContainer: {
-    flex: 1,
-    position: 'relative',
-  },
-  webView: {
-    flex: 1,
-    backgroundColor: '#fefefe',
-  },
-  webViewLoading: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  navigationContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    minHeight: 75,
+    fontSize: 16,
+    fontWeight: '600',
   },
   progressSection: {
-    paddingVertical: 15,
+    paddingVertical: 18,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-  },
-  navButtonsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 6,
-  },
-  navButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 25,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  navButtonDisabled: {
-    backgroundColor: '#bdc3c7',
-  },
-  navButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  navButtonTextDisabled: {
-    color: '#95a5a6',
   },
   progressContainer: {
     flex: 1,
-  },
-  pageIndicator: {
-    alignItems: 'center',
-    marginBottom: 8,
-    alignSelf: 'center',
-  },
-  pageIndicatorText: {
-    fontSize: 16,
-    fontWeight: '700',
-    textAlign: 'center',
   },
   progressBar: {
     height: 8,
     borderRadius: 4,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#e0e0e0',
   },
   progressFill: {
     height: '100%',
@@ -1073,8 +768,131 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
+  bookmarkControls: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+  },
+  bookmarkStatus: {
+    marginBottom: 15,
+  },
+  bookmarkInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bookmarkText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginHorizontal: 10,
+  },
+  removeBookmarkButton: {
+    padding: 8,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noBookmarkText: {
+    fontSize: 14,
+    opacity: 0.7,
+    fontStyle: 'italic',
+    marginLeft: 10,
+  },
+  bookmarkActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  bookmarkActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  bookmarkActionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginHorizontal: 8,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  fontControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+  },
+  fontButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginHorizontal: 20,
+  },
+  fontSizeText: {
+    fontSize: 16,
+    fontWeight: '700',
+    minWidth: 50,
+    textAlign: 'center',
+  },
+  contentContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  webView: {
+    flex: 1,
+  },
+  webViewLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navigationContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderTopWidth: 1,
+  },
+  pageIndicator: {
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  pageIndicatorText: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  navButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    minWidth: 120,
+    justifyContent: 'center',
+  },
+  navButtonDisabled: {
+    backgroundColor: '#bdc3c7',
+  },
+  navButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginHorizontal: 8,
+  },
   loadingMoreIndicator: {
-    marginTop: 8,
+    marginTop: 10,
     alignItems: 'center',
   },
   loadingMoreText: {
