@@ -223,12 +223,7 @@ class SimpleEpubParser {
             
             /* Only interactive when in bookmark selection mode */
             .bookmark-selection-mode .word {
-              cursor: pointer;
-            }
-            
-            .bookmark-selection-mode .word:hover {
-              background-color: rgba(255, 165, 0, 0.1);
-              transform: scale(1.02);
+              /* Mobile touch interaction only */
             }
             
             /* Bookmark highlight */
@@ -278,7 +273,6 @@ class SimpleEpubParser {
               border: none;
               color: white;
               font-size: 20px;
-              cursor: pointer;
               box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
               transition: all 0.3s ease;
               z-index: 1000;
@@ -287,10 +281,6 @@ class SimpleEpubParser {
               justify-content: center;
             }
             
-            .bookmark-button:hover {
-              transform: scale(1.1);
-              box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-            }
             
             .bookmark-button.active {
               background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
@@ -309,17 +299,12 @@ class SimpleEpubParser {
               border-radius: 20px;
               font-size: 12px;
               font-weight: bold;
-              cursor: pointer;
               box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
               transition: all 0.3s ease;
               z-index: 1000;
               display: none;
             }
             
-            .cancel-button:hover {
-              background: rgba(255, 0, 0, 1);
-              transform: scale(1.05);
-            }
             
             .bookmark-selection-mode .cancel-button {
               display: block;
@@ -421,9 +406,9 @@ class SimpleEpubParser {
               words = Array.from(document.querySelectorAll('.word'));
               console.log('📚 Total words found:', words.length);
               
-              // Add click listeners to each word (only active in selection mode)
+              // Add touch listeners to each word (only active in selection mode)
               words.forEach((word, index) => {
-                word.addEventListener('click', (e) => {
+                word.addEventListener('touchstart', (e) => {
                   e.preventDefault();
                   
                   // Only allow bookmark creation in selection mode

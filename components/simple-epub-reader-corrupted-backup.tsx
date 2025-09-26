@@ -1,3 +1,7 @@
+// This is a backup of the original corrupted file
+// The main functionality has been moved to modular components
+// This file is kept for reference only
+
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { EpubReaderMain } from './epub-reader/EpubReaderMain';
