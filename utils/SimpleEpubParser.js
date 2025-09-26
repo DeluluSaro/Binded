@@ -207,11 +207,11 @@ class SimpleEpubParser {
             }
             
             :root {
-              /* COLOR FIX: Changed to a classic beige color */
-              --primary-bg: #F5F5DC;
-              --secondary-bg: #F5F5DC;
+              /* COLOR FIX: Using your requested background color */
+              --primary-bg: #b7aa99;
+              --secondary-bg: #b7aa99;
               --text-primary: #2A2A2A;
-              --text-secondary: #666666;
+              --text-secondary: #5c554c; /* Darkened for better contrast on new BG */
               --accent-color: #E74C3C;
               --accent-light: #FF6B5B;
               --border-color: #E8E6E3;
@@ -318,10 +318,10 @@ class SimpleEpubParser {
               width: 100%;
               max-width: 680px;
               height: 80px;
-              background: rgba(245, 245, 220, 0.85); /* Adjusted for new beige background */
+              background: rgba(183, 170, 153, 0.85); /* Adjusted for new BG */
               backdrop-filter: blur(20px);
               -webkit-backdrop-filter: blur(20px);
-              border-bottom: 1px solid var(--border-color);
+              border-bottom: 1px solid rgba(0,0,0,0.1);
               z-index: 1000;
               display: flex;
               align-items: center;
@@ -340,9 +340,9 @@ class SimpleEpubParser {
               width: 44px;
               height: 44px;
               border-radius: 50%;
-              background: var(--secondary-bg);
-              border: 1px solid var(--border-color);
-              color: var(--text-secondary);
+              background: rgba(255, 255, 255, 0.1);
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              color: #FFFFFF;
               font-size: 18px;
               display: flex;
               align-items: center;
@@ -353,9 +353,7 @@ class SimpleEpubParser {
             }
             
             .nav-btn:hover {
-              background: #fff;
-              border-color: var(--text-secondary);
-              color: var(--text-primary);
+              background: rgba(255, 255, 255, 0.2);
               transform: translateY(-1px);
               box-shadow: 0 4px 12px var(--shadow-medium);
             }
@@ -491,7 +489,7 @@ class SimpleEpubParser {
             blockquote {
               margin: 32px 0;
               padding: 24px 28px;
-              background: #fff;
+              background: rgba(0,0,0,0.05);
               border-left: 4px solid var(--accent-color);
               border-radius: 0 var(--border-radius-small) var(--border-radius-small) 0;
               font-style: italic;
@@ -1065,8 +1063,8 @@ class SimpleEpubParser {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 0;
-            background: #F5F5DC; /* Beige background */
-            color: #2A2A2A;
+            background: #b7aa99; /* New BG Color */
+            color: #FFFFFF; /* White text for contrast */
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -1100,15 +1098,15 @@ class SimpleEpubParser {
           .blank-container {
             max-width: 480px;
             padding: 48px 32px;
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid rgba(232, 230, 227, 0.8);
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 24px;
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             box-shadow: 
               0 20px 40px rgba(0, 0, 0, 0.06),
               0 8px 16px rgba(0, 0, 0, 0.04),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
             position: relative;
             z-index: 2;
             animation: slideUp 0.6s ease-out;
@@ -1129,15 +1127,16 @@ class SimpleEpubParser {
             width: 80px;
             height: 80px;
             margin: 0 auto 24px auto;
-            background: linear-gradient(135deg, #F7F5F3 0%, #E8E6E3 100%);
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
             border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 36px;
+            color: #FFFFFF;
             box-shadow: 
               0 8px 16px rgba(0, 0, 0, 0.08),
-              inset 0 1px 0 rgba(255, 255, 255, 0.9);
+              inset 0 1px 0 rgba(255, 255, 255, 0.3);
             animation: iconFloat 3s ease-in-out infinite alternate;
           }
           
@@ -1150,7 +1149,7 @@ class SimpleEpubParser {
             font-size: 28px;
             font-weight: 700;
             margin-bottom: 12px;
-            color: #2A2A2A;
+            color: #FFFFFF;
             letter-spacing: -0.02em;
           }
           
@@ -1158,7 +1157,7 @@ class SimpleEpubParser {
             font-size: 16px;
             font-weight: 400;
             margin-bottom: 32px;
-            color: #666666;
+            color: rgba(255,255,255,0.8);
             line-height: 1.6;
             letter-spacing: -0.01em;
           }
@@ -1166,17 +1165,17 @@ class SimpleEpubParser {
           .auto-navigate {
             font-size: 14px;
             font-weight: 500;
-            color: #666666;
+            color: rgba(255,255,255,0.9);
             margin-top: 24px;
             padding: 16px 20px;
-            background: #b7aa99;
+            background: rgba(0,0,0,0.2);
             border-radius: 16px;
-            border: 1px solid #E8E6E3;
+            border: 1px solid rgba(255,255,255,0.2);
           }
           
           .countdown {
             font-weight: 700;
-            color: #E74C3C;
+            color: #FFFFFF;
             font-size: 16px;
           }
           
@@ -1188,7 +1187,7 @@ class SimpleEpubParser {
           }
           
           .progress-ring-circle {
-            stroke: #E74C3C;
+            stroke: #FFFFFF;
             stroke-width: 3;
             fill: transparent;
             stroke-dasharray: 144;
@@ -1203,7 +1202,7 @@ class SimpleEpubParser {
           }
           
           .progress-ring-bg {
-            stroke: #b7aa99;
+            stroke: rgba(255,255,255,0.3);
             stroke-width: 3;
             fill: transparent;
           }
