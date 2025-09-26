@@ -161,7 +161,6 @@ class SimpleEpubParser {
       />([^<]*)</g, 
       (match, textContent) => {
         // Only wrap words in the text content between tags
-        // FIX: Replaced '\\b' with '\b' for correct regex word boundary
         const wrappedText = textContent.replace(
           /\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, 
           '<span class="word">$1</span>'
@@ -172,12 +171,10 @@ class SimpleEpubParser {
     
     // Handle text at the beginning and end of content
     content = content.replace(/^([^<]+)/, (match) => {
-      // FIX: Replaced '\\b' with '\b' for correct regex word boundary
       return match.replace(/\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, '<span class="word">$1</span>');
     });
     
     content = content.replace(/([^>]+)$/, (match) => {
-      // FIX: Replaced '\\b' with '\b' for correct regex word boundary
       return match.replace(/\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, '<span class="word">$1</span>');
     });
     
@@ -210,9 +207,9 @@ class SimpleEpubParser {
             }
             
             :root {
-              /* COLOR FIX: Updated colors to match the warm, off-white UI */
-              --primary-bg: #F3EFE9;
-              --secondary-bg: #F3EFE9;
+              /* COLOR FIX: Changed to a classic beige color */
+              --primary-bg: #F5F5DC;
+              --secondary-bg: #F5F5DC;
               --text-primary: #2A2A2A;
               --text-secondary: #666666;
               --accent-color: #E74C3C;
@@ -248,7 +245,6 @@ class SimpleEpubParser {
               margin: 0 auto;
               background: var(--secondary-bg);
               min-height: 100vh;
-              /* Adjusted shadow for the new background */
               box-shadow: 
                 0 0 0 1px rgba(0,0,0,0.03),
                 0 8px 32px var(--shadow-light);
@@ -322,8 +318,7 @@ class SimpleEpubParser {
               width: 100%;
               max-width: 680px;
               height: 80px;
-              /* Adjusted for new background color */
-              background: rgba(243, 239, 233, 0.85);
+              background: rgba(245, 245, 220, 0.85); /* Adjusted for new beige background */
               backdrop-filter: blur(20px);
               -webkit-backdrop-filter: blur(20px);
               border-bottom: 1px solid var(--border-color);
@@ -358,7 +353,7 @@ class SimpleEpubParser {
             }
             
             .nav-btn:hover {
-              background: #fff; /* A slightly brighter hover */
+              background: #fff;
               border-color: var(--text-secondary);
               color: var(--text-primary);
               transform: translateY(-1px);
@@ -433,7 +428,6 @@ class SimpleEpubParser {
               box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
               backdrop-filter: blur(20px);
               animation: slideDown 0.3s ease;
-              /* OVERLAP FIX: Prevents the notification from blocking clicks on the text below */
               pointer-events: none;
             }
             
@@ -497,7 +491,7 @@ class SimpleEpubParser {
             blockquote {
               margin: 32px 0;
               padding: 24px 28px;
-              background: #fff; /* Use a slightly brighter background for quotes */
+              background: #fff;
               border-left: 4px solid var(--accent-color);
               border-radius: 0 var(--border-radius-small) var(--border-radius-small) 0;
               font-style: italic;
@@ -966,17 +960,17 @@ class SimpleEpubParser {
       
       // STEP 4: Clean XML namespaces and attributes (but keep the tags)
       // Remove XML namespace declarations
-      bodyContent = bodyContent.replace(/\s*xmlns.*?="[^"]*"/gi, '');
-      bodyContent = bodyContent.replace(/\s*xml:space="[^"]*"/gi, '');
-      bodyContent = bodyContent.replace(/\s*xml:lang="[^"]*"/gi, '');
+      bodyContent = bodyContent.replace(/\s*xmlns.*?=".*?"/gi, '');
+      bodyContent = bodyContent.replace(/\s*xml:space=".*?"/gi, '');
+      bodyContent = bodyContent.replace(/\s*xml:lang=".*?"/gi, '');
       
       // STEP 5: Convert common EPUB elements to standard HTML
-      bodyContent = bodyContent.replace(/<epub:type="[^"]*"/gi, '');
+      bodyContent = bodyContent.replace(/<epub:type=".*?"/gi, '');
       bodyContent = bodyContent.replace(/<(\/?)(div|p|span|h[1-6]|br|hr|img|a|em|strong|i|b|u|blockquote|ul|ol|li)[^>]*epub:[^>]*>/gi, '<$1$2>');
       
       // STEP 6: Clean up attributes while preserving essential ones
       // Keep important attributes: href, src, alt, title, class (for our word spans)
-      bodyContent = bodyContent.replace(/\s+(id|style|data-.*?|role|aria-.*?|tabindex)="[^"]*"/gi, '');
+      bodyContent = bodyContent.replace(/\s+(id|style|data-.*?|role|aria-.*?|tabindex)=".*?"/gi, '');
       
       // STEP 7: Normalize whitespace but preserve paragraph structure
       // Don't collapse all whitespace - preserve line breaks and paragraph structure
@@ -1071,7 +1065,7 @@ class SimpleEpubParser {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 0;
-            background: #F3EFE9;
+            background: #F5F5DC; /* Beige background */
             color: #2A2A2A;
             min-height: 100vh;
             display: flex;
@@ -1175,7 +1169,7 @@ class SimpleEpubParser {
             color: #666666;
             margin-top: 24px;
             padding: 16px 20px;
-            background: #F7F5F3;
+            background: #b7aa99;
             border-radius: 16px;
             border: 1px solid #E8E6E3;
           }
@@ -1209,7 +1203,7 @@ class SimpleEpubParser {
           }
           
           .progress-ring-bg {
-            stroke: #E8E6E3;
+            stroke: #b7aa99;
             stroke-width: 3;
             fill: transparent;
           }
