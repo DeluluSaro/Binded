@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, PanResponder } from 'react-native';
 import { BookmarkManager } from '../utils/BookmarkManager';
 import SimpleEpubParser from '../utils/SimpleEpubParser';
@@ -74,12 +74,13 @@ export const useEpubReader = (epubUrl: string) => {
         setHasBookmark(false);
       }
       
-      console.log(`📖 Loading chapter ${chapterIndex}...`);
+      console.log(`📖 Loading chapter ${chapterIndex} with fontSize: ${fontSize}px...`);
       let content = await epubParser.current.getChapterContent(
         chapterIndex, 
         fontSize, 
         bookmarkWordIndex
       );
+      console.log(`📖 Chapter ${chapterIndex} loaded with fontSize: ${fontSize}px`);
       
       // Enhanced HTML wrapper for better display
       content = `
@@ -599,8 +600,39 @@ export const useEpubReader = (epubUrl: string) => {
   };
 
   const adjustFontSize = async (newSize: number) => {
+    console.log(`📝 adjustFontSize called: ${fontSize}px → ${newSize}px`);
+    console.log(`📝 Current state - bookData: ${!!bookData}, loading: ${loading}, contentLoading: ${contentLoading}`);
+    
     setFontSize(newSize);
     await AsyncStorage.setItem('epub_font_size', newSize.toString());
+    
+    console.log(`📝 Font size state updated to: ${newSize}px`);
+    
+    // Directly reload the current chapter with new font size
+    if (bookData && bookData.chapters.length > 0 && !loading && !contentLoading) {
+      console.log(`🔄 Directly reloading chapter ${currentChapter} with new font size ${newSize}px`);
+      
+      // Clear cache first
+      setLoadedChapters(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(currentChapter);
+        console.log(`🗑️ Cleared chapter ${currentChapter} from loaded chapters`);
+        return newSet;
+      });
+      
+      setChapterCache(prev => {
+        const newCache = new Map(prev);
+        newCache.delete(currentChapter);
+        console.log(`🗑️ Cleared chapter ${currentChapter} from cache`);
+        return newCache;
+      });
+      
+      // Wait a bit for state to update, then reload with new font size
+      setTimeout(async () => {
+        console.log(`🔄 Reloading chapter ${currentChapter} after state update with fontSize: ${newSize}px`);
+        await loadSingleChapter(currentChapter);
+      }, 100);
+    }
   };
 
   const resetToBeginning = async () => {
@@ -742,6 +774,36 @@ export const useEpubReader = (epubUrl: string) => {
   const cleanup = useCallback(() => {
     epubParser.current.cleanup();
   }, []);
+
+  // Effect to reload current chapter when font size changes
+  useEffect(() => {
+    console.log(`🔍 Font size useEffect triggered with fontSize: ${fontSize}, bookData: ${!!bookData}, loading: ${loading}, contentLoading: ${contentLoading}`);
+    
+    if (bookData && bookData.chapters.length > 0 && !loading && !contentLoading && fontSize > 0) {
+      console.log(`🔄 Font size changed to ${fontSize}px, reloading current chapter...`);
+      
+      // Clear cache first
+      setLoadedChapters(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(currentChapter);
+        console.log(`🗑️ Cleared chapter ${currentChapter} from loaded chapters`);
+        return newSet;
+      });
+      
+      setChapterCache(prev => {
+        const newCache = new Map(prev);
+        newCache.delete(currentChapter);
+        console.log(`🗑️ Cleared chapter ${currentChapter} from cache`);
+        return newCache;
+      });
+      
+      // Then reload
+      console.log(`🔄 Calling loadSingleChapter(${currentChapter}) with fontSize: ${fontSize}`);
+      loadSingleChapter(currentChapter);
+    } else {
+      console.log(`❌ Font size useEffect conditions not met`);
+    }
+  }, [fontSize]); // Only depend on fontSize
 
   return {
     // State

@@ -82,14 +82,14 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
   };
 
   return (
-    <>
-      {/* Bookmark Status Display */}
-      <View style={styles.bookmarkStatus}>
+    <View style={styles.container}>
+      {/* Bookmark Status Display - Made more prominent */}
+      <View style={[styles.bookmarkStatus, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.bookmarkInfo}>
           {hasBookmark ? (
             <>
               <Text style={styles.bookmarkIcon}>🔖</Text>
-              <ThemedText style={styles.bookmarkText}>
+              <ThemedText style={[styles.bookmarkText, { color: colors.text }]}>
                 Word {bookmarkPosition + 1}
                 {bookmarkData && bookmarkData.wordText ? ` "${bookmarkData.wordText}"` : ''}
               </ThemedText>
@@ -103,7 +103,7 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
           ) : (
             <>
               <Text style={styles.noBookmarkIcon}>📖</Text>
-              <ThemedText style={styles.noBookmarkText}>
+              <ThemedText style={[styles.noBookmarkText, { color: colors.text }]}>
                 Tap any word to set bookmark
               </ThemedText>
             </>
@@ -232,20 +232,36 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
           <ThemedText style={styles.quickActionText}>🗑️ Clear All</ThemedText>
         </TouchableOpacity>
       </View>
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  // Container
+  container: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderTopWidth: 2,
+    borderTopColor: '#FFD700',
+  },
   // Bookmark Status Styles
   bookmarkStatus: {
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 8,
     padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.3)',
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   bookmarkInfo: {
     flexDirection: 'row',
@@ -293,11 +309,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
     borderRadius: 20,
     marginHorizontal: 16,
     marginVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
   },
   bookmarkNavButton: {
     backgroundColor: '#4CAF50',
@@ -398,11 +416,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingVertical: 12,
+    backgroundColor: 'rgba(100, 149, 237, 0.1)',
     borderRadius: 15,
     marginHorizontal: 16,
     marginVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(100, 149, 237, 0.3)',
   },
   quickActionButton: {
     backgroundColor: 'rgba(100, 149, 237, 0.1)',

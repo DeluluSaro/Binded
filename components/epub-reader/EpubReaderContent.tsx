@@ -20,6 +20,7 @@ export const EpubReaderContent: React.FC<EpubReaderContentProps> = ({
   return (
     <View style={styles.contentContainer}>
       <WebView
+        key={chapterContent} // Force re-render when content changes
         ref={webViewRef}
         source={{ html: chapterContent }}
         style={styles.webView}
@@ -55,6 +56,8 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     position: 'relative',
+    paddingTop: 100, // Add space for the header
+    paddingBottom: 200, // Add space for the bookmark section
   },
   webView: {
     flex: 1,
