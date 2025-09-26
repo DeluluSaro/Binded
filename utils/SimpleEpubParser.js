@@ -135,37 +135,55 @@ class SimpleEpubParser {
 
   // Word wrapping function for HTML content
   wrapWordsInSpans(htmlContent) {
-    // Remove any existing word spans
-    htmlContent = htmlContent.replace(/<span class="word"[^>]*>(.*?)<\/span>/g, '$1');
+    if (!htmlContent) return '';
     
-    // First, clean up the content to ensure we only wrap actual text
-    let cleanContent = htmlContent;
+    // Don't wrap words inside these tags
+    const preserveTags = ['script', 'style', 'pre', 'code', 'textarea'];
+    let content = htmlContent;
     
-    // Remove empty tags and normalize whitespace
-    cleanContent = cleanContent.replace(/<[^>]*>\s*<\/[^>]*>/g, '');
-    cleanContent = cleanContent.replace(/\s+/g, ' ');
+    // Temporarily replace preserve tags with placeholders
+    const preservedContent = {};
+    let placeholderIndex = 0;
     
-    // Remove metadata and attributes that might interfere
-    cleanContent = cleanContent
-      .replace(/class="[^"]*"/g, '')
-      .replace(/id="[^"]*"/g, '')
-      .replace(/style="[^"]*"/g, '')
-      .replace(/href="[^"]*"/g, '')
-      .replace(/src="[^"]*"/g, '')
-      .replace(/alt="[^"]*"/g, '')
-      .replace(/title="[^"]*"/g, '')
-      .replace(/data-[^=]*="[^"]*"/g, '')
-      .replace(/xmlns="[^"]*"/g, '')
-      .replace(/xml:space="[^"]*"/g, '')
-      .replace(/xml:lang="[^"]*"/g, '')
-      .replace(/xmlns:[^=]*="[^"]*"/g, '');
+    preserveTags.forEach(tag => {
+      const regex = new RegExp(`<${tag}[^>]*>[\s\S]*?<\/${tag}>`, 'gi');
+      content = content.replace(regex, (match) => {
+        const placeholder = `__PRESERVE_${placeholderIndex}__`;
+        preservedContent[placeholder] = match;
+        placeholderIndex++;
+        return placeholder;
+      });
+    });
     
-    // Wrap individual words in spans, but only for meaningful text content
-    // This regex matches words that are at least 3 characters, start with a letter, and are not metadata
-    return cleanContent.replace(
-      /\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, 
-      '<span class="word">$1</span>'
+    // Wrap words in text content only (not in HTML tags)
+    // This regex matches words that are not inside HTML tag attributes
+    content = content.replace(
+      />([^<]*)</g, 
+      (match, textContent) => {
+        // Only wrap words in the text content between tags
+        const wrappedText = textContent.replace(
+          /\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, 
+          '<span class="word">$1</span>'
+        );
+        return `>${wrappedText}<`;
+      }
     );
+    
+    // Handle text at the beginning and end of content
+    content = content.replace(/^([^<]+)/, (match) => {
+      return match.replace(/\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, '<span class="word">$1</span>');
+    });
+    
+    content = content.replace(/([^>]+)$/, (match) => {
+      return match.replace(/\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, '<span class="word">$1</span>');
+    });
+    
+    // Restore preserved content
+    Object.keys(preservedContent).forEach(placeholder => {
+      content = content.replace(placeholder, preservedContent[placeholder]);
+    });
+    
+    return content;
   }
 
   // Enhanced HTML generation with manual bookmark support
@@ -695,63 +713,84 @@ class SimpleEpubParser {
   // Extract body content from XHTML
   extractBodyContent(xhtmlContent) {
     try {
-      console.log('Raw content preview:', xhtmlContent.substring(0, 200));
+      console.log('📄 Original content length:', xhtmlContent.length);
       
-      // Remove XML declaration and DOCTYPE
-      let content = xhtmlContent.replace(/<\?xml[^>]*\?>/g, '');
-      content = content.replace(/<!DOCTYPE[^>]*>/g, '');
+      let content = xhtmlContent;
       
-      // Extract body content - try different patterns
+      // STEP 1: Remove XML declarations and DOCTYPE (these are not content)
+      content = content.replace(/<\?xml[^>]*\?>\s*/gi, '');
+      content = content.replace(/<!DOCTYPE[^>]*>\s*/gi, '');
+      
+      // STEP 2: Extract body content with multiple fallback strategies
+      let bodyContent = '';
+      
+      // Strategy 1: Look for <body> tags
       let bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      if (!bodyMatch) {
-        // Try without body tags - some EPUBs have content directly
-        bodyMatch = content.match(/<div[^>]*class="[^"]*body[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
-      }
-      if (!bodyMatch) {
-        // Try to find any content between HTML tags
-        bodyMatch = content.match(/<html[^>]*>([\s\S]*?)<\/html>/i);
-      }
-      
       if (bodyMatch) {
-        content = bodyMatch[1];
+        bodyContent = bodyMatch[1];
+        console.log('✅ Found body tag');
+      } else {
+        // Strategy 2: Look for main content div
+        bodyMatch = content.match(/<div[^>]*(?:class|id)="[^"]*(?:body|content|main|text)[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+        if (bodyMatch) {
+          bodyContent = bodyMatch[1];
+          console.log('✅ Found content div');
+        } else {
+          // Strategy 3: Remove head and take everything else
+          let withoutHead = content.replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '');
+          withoutHead = withoutHead.replace(/<html[^>]*>/gi, '').replace(/<\/html>/gi, '');
+          bodyContent = withoutHead;
+          console.log('✅ Using fallback content extraction');
+        }
       }
       
-      // Remove head section completely
-      content = content.replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '');
+      // STEP 3: Remove unwanted elements (but preserve text content)
+      // Remove scripts completely
+      bodyContent = bodyContent.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
       
-      // Remove any remaining XML namespaces and attributes
-      content = content.replace(/xmlns[^=]*="[^"]*"/g, '');
-      content = content.replace(/xml:space[^=]*="[^"]*"/g, '');
-      content = content.replace(/xml:lang[^=]*="[^"]*"/g, '');
-      
-      // Remove any remaining XML processing instructions
-      content = content.replace(/<\?[^>]*\?>/g, '');
-      
-      // Remove script and style tags completely
-      content = content.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-      content = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+      // Remove style tags completely
+      bodyContent = bodyContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
       
       // Remove comments
-      content = content.replace(/<!--[\s\S]*?-->/g, '');
+      bodyContent = bodyContent.replace(/<!--[\s\S]*?-->/g, '');
       
-      // Remove navigation and metadata elements
-      content = content.replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '');
-      content = content.replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '');
-      content = content.replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '');
-      content = content.replace(/<aside[^>]*>[\s\S]*?<\/aside>/gi, '');
+      // STEP 4: Clean XML namespaces and attributes (but keep the tags)
+      // Remove XML namespace declarations
+      bodyContent = bodyContent.replace(/\s*xmlns[^=]*="[^"]*"/gi, '');
+      bodyContent = bodyContent.replace(/\s*xml:space="[^"]*"/gi, '');
+      bodyContent = bodyContent.replace(/\s*xml:lang="[^"]*"/gi, '');
       
-      // Remove empty tags
-      content = content.replace(/<[^>]*>\s*<\/[^>]*>/g, '');
+      // STEP 5: Convert common EPUB elements to standard HTML
+      bodyContent = bodyContent.replace(/<epub:type="[^"]*"/gi, '');
+      bodyContent = bodyContent.replace(/<(\/?)(div|p|span|h[1-6]|br|hr|img|a|em|strong|i|b|u|blockquote|ul|ol|li)[^>]*epub:[^>]*>/gi, '<$1$2>');
       
-      // Normalize whitespace
-      content = content.replace(/\s+/g, ' ');
+      // STEP 6: Clean up attributes while preserving essential ones
+      // Keep important attributes: href, src, alt, title, class (for our word spans)
+      bodyContent = bodyContent.replace(/\s+(id|style|data-[^=]*|role|aria-[^=]*|tabindex)="[^"]*"/gi, '');
       
-      console.log('Processed content preview:', content.substring(0, 200));
+      // STEP 7: Normalize whitespace but preserve paragraph structure
+      // Don't collapse all whitespace - preserve line breaks and paragraph structure
+      bodyContent = bodyContent.replace(/[ \t]+/g, ' '); // Only collapse spaces and tabs
+      bodyContent = bodyContent.replace(/\n\s*\n/g, '\n'); // Remove extra blank lines
       
-      return content;
+      // STEP 8: Remove empty tags but preserve meaningful structure
+      bodyContent = bodyContent.replace(/<(p|div|span|h[1-6])\s*>\s*<\/\1>/gi, '');
+      
+      // STEP 9: Handle CDATA sections properly
+      bodyContent = bodyContent.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
+      
+      // STEP 10: Final cleanup
+      bodyContent = bodyContent.trim();
+      
+      console.log('📄 Cleaned content length:', bodyContent.length);
+      console.log('📄 First 200 chars:', bodyContent.substring(0, 200));
+      
+      return bodyContent;
+      
     } catch (error) {
-      console.error('Error extracting body content:', error);
-      return xhtmlContent; // Return original if extraction fails
+      console.error('❌ Error in content extraction:', error);
+      // Return original content if extraction fails
+      return xhtmlContent;
     }
   }
 
@@ -759,105 +798,43 @@ class SimpleEpubParser {
   countWords(content) {
     if (!content || typeof content !== 'string') return 0;
     
-    // First, extract only the body content from XHTML
-    let bodyContent = this.extractBodyContent(content);
+    // First extract text content using DOM parsing approach
+    let textContent = '';
     
-    // Remove ALL HTML tags completely - no spaces between tags
-    let cleanText = bodyContent.replace(/<[^>]*>/g, '');
+    try {
+      // Create a temporary div to parse HTML properly
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = content;
+      
+      // Remove script and style elements
+      const scripts = tempDiv.querySelectorAll('script, style');
+      scripts.forEach(el => el.remove());
+      
+      // Get only the text content
+      textContent = tempDiv.textContent || tempDiv.innerText || '';
+    } catch (_e) {
+      // Fallback: strip HTML tags manually
+      textContent = content.replace(/<[^>]*>/g, ' ');
+    }
     
-    // Decode HTML entities
-    cleanText = cleanText
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&mdash;/g, '—')
-      .replace(/&ndash;/g, '–')
-      .replace(/&hellip;/g, '…')
-      .replace(/&ldquo;/g, '\u201C')
-      .replace(/&rdquo;/g, '\u201D')
-      .replace(/&lsquo;/g, '\u2018')
-      .replace(/&rsquo;/g, '\u2019')
-      .replace(/&apos;/g, "'");
+    // Clean the text
+    textContent = textContent
+      .replace(/&[a-zA-Z0-9#]+;/g, ' ') // Remove HTML entities
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
     
-    // Remove all XML/HTML attributes and metadata
-    cleanText = cleanText
-      .replace(/class="[^"]*"/g, '')
-      .replace(/id="[^"]*"/g, '')
-      .replace(/style="[^"]*"/g, '')
-      .replace(/href="[^"]*"/g, '')
-      .replace(/src="[^"]*"/g, '')
-      .replace(/alt="[^"]*"/g, '')
-      .replace(/title="[^"]*"/g, '')
-      .replace(/data-[^=]*="[^"]*"/g, '')
-      .replace(/xmlns="[^"]*"/g, '')
-      .replace(/xml:space="[^"]*"/g, '')
-      .replace(/xml:lang="[^"]*"/g, '')
-      .replace(/xmlns:[^=]*="[^"]*"/g, '');
+    // Count actual words (letters + numbers, minimum 2 characters)
+    const words = textContent.match(/\b[a-zA-Z0-9][a-zA-Z0-9']{1,}\b/g);
+    const wordCount = words ? words.length : 0;
     
-    // Remove common EPUB metadata and navigation elements
-    cleanText = cleanText
-      .replace(/calibre[0-9]+/g, '')
-      .replace(/calibre[0-9]+_[0-9]+/g, '')
-      .replace(/FIGURE\s+[0-9]+/gi, '')
-      .replace(/TABLE\s+[0-9]+/gi, '')
-      .replace(/CHAPTER\s+[0-9]+/gi, '')
-      .replace(/SECTION\s+[0-9]+/gi, '')
-      .replace(/PAGE\s+[0-9]+/gi, '')
-      .replace(/INDEX\s+[0-9]+/gi, '')
-      .replace(/BIBLIOGRAPHY/gi, '')
-      .replace(/REFERENCES/gi, '')
-      .replace(/ACKNOWLEDGMENTS/gi, '')
-      .replace(/DEDICATION/gi, '')
-      .replace(/COPYRIGHT/gi, '')
-      .replace(/ISBN/gi, '')
-      .replace(/PUBLISHER/gi, '')
-      .replace(/AUTHOR/gi, '')
-      .replace(/TITLE/gi, '')
-      .replace(/SUBTITLE/gi, '')
-      .replace(/EDITION/gi, '')
-      .replace(/VOLUME/gi, '')
-      .replace(/PART\s+[0-9]+/gi, '')
-      .replace(/BOOK\s+[0-9]+/gi, '')
-      .replace(/SERIES/gi, '')
-      .replace(/COLLECTION/gi, '');
-    
-    // Remove URLs and email addresses
-    cleanText = cleanText
-      .replace(/https?:\/\/[^\s]+/g, '')
-      .replace(/www\.[^\s]+/g, '')
-      .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '');
-    
-    // Remove standalone numbers
-    cleanText = cleanText.replace(/\b\d+\b/g, '');
-    
-    // Remove punctuation except sentence endings and common punctuation
-    cleanText = cleanText.replace(/[^\w\s.!?,'"-]/g, ' ');
-    
-    // Normalize whitespace
-    cleanText = cleanText.replace(/\s+/g, ' ').trim();
-    
-    // Split into words and filter for meaningful content
-    const words = cleanText.split(/\s+/).filter(word => 
-      word.length >= 3 && 
-      /^[a-zA-Z]/.test(word) && // Must start with a letter
-      !/^[A-Z]{2,}$/.test(word) && // Not all caps (likely metadata)
-      !/^[a-z]+[A-Z]/.test(word) && // Not camelCase (likely metadata)
-      !/^[A-Z][a-z]*[A-Z]/.test(word) // Not PascalCase (likely metadata)
-    );
-    
-    console.log('Enhanced word count debug:', {
-      originalLength: content.length,
-      bodyLength: bodyContent.length,
-      cleanTextLength: cleanText.length,
-      wordCount: words.length,
-      sampleWords: words.slice(0, 10),
-      sampleText: cleanText.substring(0, 200)
+    console.log('📊 Word count analysis:', {
+      contentLength: content.length,
+      textLength: textContent.length,
+      wordCount: wordCount,
+      sampleText: textContent.substring(0, 100)
     });
     
-    return words.length;
+    return wordCount;
   }
   
   // Generate HTML for blank pages with auto-navigation
