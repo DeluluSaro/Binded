@@ -161,6 +161,7 @@ const EpubReaderMain: React.FC<EpubReaderMainProps> = ({ epubUrl, onClose }) => 
         onMoveBookmarkNext={moveBookmarkNext}
         onMoveBookmarkPrevious={moveBookmarkPrevious}
         onRemoveBookmark={removeCurrentBookmark}
+        onGoToChapter={goToChapter}
         webViewRef={webViewRef}
         bookData={bookData}
       />

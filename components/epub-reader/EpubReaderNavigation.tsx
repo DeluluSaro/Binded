@@ -18,6 +18,7 @@ interface EpubReaderNavigationProps {
   onMoveBookmarkNext: () => void;
   onMoveBookmarkPrevious: () => void;
   onRemoveBookmark: () => void;
+  onGoToChapter: (chapterIndex: number) => void;
   webViewRef: React.RefObject<WebView>;
   bookData: any;
 }
@@ -35,28 +36,68 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
   onMoveBookmarkNext,
   onMoveBookmarkPrevious,
   onRemoveBookmark,
+  onGoToChapter,
   webViewRef,
   bookData
 }) => {
   const colors = useThemeColors();
 
   const handleViewAllBookmarks = async () => {
-    const bookmarks = await BookmarkManager.getBookBookmarks(bookData?.title || 'Unknown Book');
-    Alert.alert(
-      'Bookmarks',
-      bookmarks.length > 0 
-        ? `You have ${bookmarks.length} bookmark(s) in this book`
-        : 'No bookmarks in this book',
-      [{ text: 'OK' }]
-    );
+    try {
+      const bookmarks = await BookmarkManager.getBookBookmarks(bookData?.title || 'Unknown Book');
+      
+      if (bookmarks.length === 0) {
+        Alert.alert('No bookmarks found', 'Set a bookmark by long-pressing any word while reading.', [{ text: 'OK' }]);
+        return;
+      }
+
+      // Sort bookmarks by chapter index for better organization
+      const sortedBookmarks = bookmarks.sort((a, b) => a.chapterIndex - b.chapterIndex);
+      
+      // Create bookmark options for Alert
+      const bookmarkOptions = sortedBookmarks.map((bookmark, index) => ({
+        text: `Chapter ${bookmark.chapterIndex + 1}: "${bookmark.wordText || 'Bookmarked word'}"`,
+        onPress: () => {
+          console.log('🔖 Navigating to bookmark:', bookmark);
+          onGoToChapter(bookmark.chapterIndex);
+        }
+      }));
+
+      // Add cancel option
+      bookmarkOptions.push({ text: 'Cancel', onPress: () => {} });
+
+      Alert.alert(
+        'All Bookmarks',
+        `Choose a bookmark to navigate to (${bookmarks.length} available):`,
+        bookmarkOptions
+      );
+    } catch (error) {
+      console.error('❌ Error loading bookmarks:', error);
+      Alert.alert('Error', 'Failed to load bookmarks. Please try again.', [{ text: 'OK' }]);
+    }
   };
 
   const handleJumpToLastBookmark = async () => {
-    const stats = await BookmarkManager.getBookmarkStats(bookData?.title || 'Unknown Book');
-    if (stats.lastBookmark) {
-      Alert.alert('Jumped to last bookmark!', '', [{ text: 'OK' }]);
-    } else {
-      Alert.alert('No bookmarks found', '', [{ text: 'OK' }]);
+    try {
+      const stats = await BookmarkManager.getBookmarkStats(bookData?.title || 'Unknown Book');
+      if (stats.lastBookmark) {
+        const lastBookmarkChapter = stats.lastBookmark.chapterIndex;
+        console.log('🔖 Jumping to last bookmark at chapter:', lastBookmarkChapter);
+        
+        // Navigate to the last bookmark chapter
+        onGoToChapter(lastBookmarkChapter);
+        
+        Alert.alert(
+          'Jumped to Last Bookmark!', 
+          `Chapter ${lastBookmarkChapter + 1}: "${stats.lastBookmark.wordText || 'Bookmarked word'}"`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('No bookmarks found', 'Set a bookmark by long-pressing any word while reading.', [{ text: 'OK' }]);
+      }
+    } catch (error) {
+      console.error('❌ Error jumping to last bookmark:', error);
+      Alert.alert('Error', 'Failed to jump to last bookmark. Please try again.', [{ text: 'OK' }]);
     }
   };
 
@@ -84,7 +125,7 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
   return (
     <View style={[styles.container, { backgroundColor: colors.background, borderTopColor: colors.tint }]}>
       {/* Bookmark Status Display - Made more prominent */}
-      <View style={[styles.bookmarkStatus, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      {/* <View style={[styles.bookmarkStatus, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.bookmarkInfo}>
           {hasBookmark ? (
             <>
@@ -112,7 +153,7 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
       </View>
 
       {/* Bookmark Navigation Controls */}
-      <View style={[styles.bookmarkControls, { backgroundColor: colors.surfaceSecondary }]}>
+      {/* <View style={[styles.bookmarkControls, { backgroundColor: colors.surfaceSecondary }]}>
         <TouchableOpacity
           style={[styles.bookmarkNavButton, { backgroundColor: colors.tint }, !hasBookmark && styles.disabledButton]}
           onPress={onMoveBookmarkPrevious}
@@ -152,7 +193,7 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
             Next Word ➡️
           </ThemedText>
         </TouchableOpacity>
-      </View>
+      </View>  */}
 
       {/* Navigation Container */}
       <View style={[styles.navigationContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>

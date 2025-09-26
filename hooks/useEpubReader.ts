@@ -1,10 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, PanResponder } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 import { BookmarkManager } from '../utils/BookmarkManager';
 import SimpleEpubParser from '../utils/SimpleEpubParser';
 
 export const useEpubReader = (epubUrl: string) => {
+  const { isDark } = useTheme();
+  
   // State
   const [currentChapter, setCurrentChapter] = useState(0);
   const [chapterContent, setChapterContent] = useState('');
@@ -28,7 +31,7 @@ export const useEpubReader = (epubUrl: string) => {
   const epubParser = useRef(new SimpleEpubParser());
 
   // Load a single chapter and cache it
-  const loadSingleChapter = useCallback(async (chapterIndex: number) => {
+  const loadSingleChapter = useCallback(async (chapterIndex: number, isDarkTheme: boolean = false) => {
     if (loadedChapters.has(chapterIndex) || chapterCache.has(chapterIndex)) {
       const cachedContent = chapterCache.get(chapterIndex);
       if (cachedContent) {
@@ -82,44 +85,61 @@ export const useEpubReader = (epubUrl: string) => {
       );
       console.log(`📖 Chapter ${chapterIndex} loaded with fontSize: ${fontSize}px`);
       
-      // Enhanced HTML wrapper for better display
+      // Enhanced HTML wrapper matching code.html design
       content = `
         <!DOCTYPE html>
         <html>
           <head>
             <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
             <meta charset="UTF-8">
+            <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
             <style>
+              :root {
+                --light-bg: #b7aa99;
+                --dark-bg: #010101;
+                --accent: #eb5838;
+                --light-text: #3a2e24;
+                --dark-text: #e0e0e0;
+              }
+              
               html {
                 height: 100%;
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
               }
+              
               body {
-                font-family: Georgia, 'Times New Roman', serif;
+                font-family: 'Lora', serif;
                 font-size: ${fontSize}px;
-                line-height: 1.6;
-                margin: 20px;
-                padding: 20px;
-                color: #2c3e50;
-                background-color: #fff8f0;
+                line-height: 1.8;
+                margin: 0;
+                padding: 24px;
+                color: ${isDarkTheme ? 'var(--dark-text)' : 'var(--light-text)'};
+                background-color: ${isDarkTheme ? 'var(--dark-bg)' : 'var(--light-bg)'};
                 text-align: justify;
                 user-select: none;
                 -webkit-user-select: none;
                 -webkit-touch-callout: none;
                 min-height: 100vh;
+                transition: all 0.3s ease;
               }
+              
               p { 
-                margin-bottom: 1.2em; 
-                text-indent: 1.5em;
+                margin-bottom: 1.5em; 
+                text-indent: 0;
+                line-height: 1.8;
               }
+              
               h1, h2, h3, h4, h5, h6 { 
-                color: #34495e;
+                color: ${isDarkTheme ? 'var(--dark-text)' : 'var(--light-text)'};
                 margin-top: 2em;
                 margin-bottom: 1em;
                 text-align: left;
-                line-height: 1.3;
+                line-height: 1.4;
+                font-family: 'Plus Jakarta Sans', sans-serif;
+                font-weight: 600;
               }
+              
               h1 { font-size: 1.8em; }
               h2 { font-size: 1.5em; }
               h3 { font-size: 1.3em; }
@@ -128,35 +148,51 @@ export const useEpubReader = (epubUrl: string) => {
                 max-width: 100%; 
                 height: auto; 
                 display: block;
-                margin: 1em auto;
+                margin: 1.5em auto;
+                border-radius: 8px;
               }
               
               blockquote {
-                border-left: 4px solid #bdc3c7;
+                border-left: 4px solid var(--accent);
                 margin: 1.5em 0;
                 padding-left: 1em;
                 font-style: italic;
-                color: #7f8c8d;
+                color: ${isDarkTheme ? 'var(--dark-text)' : 'var(--light-text)'};
+                opacity: 0.8;
               }
               
               .chapter-title {
                 font-size: 1.5em;
                 font-weight: bold;
-                margin-bottom: 1em;
+                margin-bottom: 1.5em;
                 text-align: center;
-                color: #2980b9;
+                color: var(--accent);
+                font-family: 'Plus Jakarta Sans', sans-serif;
               }
               
               body > *:first-child { margin-top: 0; }
               body > *:last-child { margin-bottom: 0; }
               
               .word-highlight {
-                background-color: #ff9800;
-                color: #000000;
-                padding: 2px 4px;
-                border-radius: 3px;
+                background-color: var(--accent);
+                color: #ffffff;
+                padding: 2px 6px;
+                border-radius: 4px;
                 font-weight: bold;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                box-shadow: 0 2px 8px rgba(235, 88, 56, 0.3);
+                transition: all 0.2s ease;
+              }
+              
+              /* Enhanced spacing for better readability */
+              .content-wrapper {
+                max-width: 100%;
+                margin: 0 auto;
+                padding: 0 16px;
+              }
+              
+              /* Smooth transitions for theme changes */
+              * {
+                transition: color 0.3s ease, background-color 0.3s ease;
               }
             </style>
             <script>
@@ -444,7 +480,19 @@ export const useEpubReader = (epubUrl: string) => {
             </script>
           </head>
           <body>
-            ${content}
+            <div class="content-wrapper">
+              ${content}
+            </div>
+            <script>
+              // Theme is already applied via CSS variables
+              // Notify parent about content height
+              setTimeout(() => {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'contentHeight',
+                  height: document.body.scrollHeight
+                }));
+              }, 100);
+            </script>
           </body>
         </html>
       `;
@@ -464,7 +512,7 @@ export const useEpubReader = (epubUrl: string) => {
           await epubParser.current.loadEpubFromUrl(epubUrl);
           console.log('✅ EPUB reloaded successfully, retrying chapter load...');
           // Wait a bit and retry
-          setTimeout(() => loadSingleChapter(chapterIndex), 1000);
+                  setTimeout(() => loadSingleChapter(chapterIndex, isDark), 1000);
         } catch (reloadError) {
           console.error('❌ Failed to reload EPUB:', reloadError);
           Alert.alert('Error', 'Failed to load EPUB data. Please try again.');
@@ -476,7 +524,7 @@ export const useEpubReader = (epubUrl: string) => {
     } finally {
       setContentLoading(false);
     }
-  }, [bookData, chapterCache, loadedChapters, currentChapter, fontSize, epubUrl]);
+  }, [bookData, chapterCache, loadedChapters, currentChapter, fontSize, epubUrl, isDark]);
 
   // Load next batch of chapters
   const loadNextBatch = useCallback(async () => {
@@ -491,7 +539,7 @@ export const useEpubReader = (epubUrl: string) => {
     console.log(`Loading next batch: chapters ${nextBatchStart} to ${nextBatchEnd - 1}`);
     
     for (let i = nextBatchStart; i < nextBatchEnd; i++) {
-      await loadSingleChapter(i);
+      await loadSingleChapter(i, isDark);
     }
     
     setIsLoadingMore(false);
@@ -506,7 +554,7 @@ export const useEpubReader = (epubUrl: string) => {
       return;
     }
     
-    await loadSingleChapter(chapterIndex);
+    await loadSingleChapter(chapterIndex, isDark);
     
     if (loadedChapters.size > 0) {
       const maxLoadedChapter = Math.max(...Array.from(loadedChapters));
@@ -526,7 +574,7 @@ export const useEpubReader = (epubUrl: string) => {
     console.log(`Loading initial batch of ${chaptersToLoad} chapters...`);
     
     for (let i = 0; i < chaptersToLoad; i++) {
-      await loadSingleChapter(i);
+      await loadSingleChapter(i, isDark);
     }
     
     if (chapterCache.has(currentChapter)) {
@@ -569,7 +617,7 @@ export const useEpubReader = (epubUrl: string) => {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       if (bookInfo && bookInfo.chapters.length > 0) {
-        await loadSingleChapter(0);
+        await loadSingleChapter(0, isDark);
       }
       
     } catch (error) {
@@ -587,7 +635,7 @@ export const useEpubReader = (epubUrl: string) => {
     if (currentChapter < bookData.chapters.length - 1) {
       const nextChapterIndex = currentChapter + 1;
       setCurrentChapter(nextChapterIndex);
-      await loadSingleChapter(nextChapterIndex);
+      await loadSingleChapter(nextChapterIndex, isDark);
     }
   };
 
@@ -595,7 +643,7 @@ export const useEpubReader = (epubUrl: string) => {
     if (currentChapter > 0) {
       const prevChapterIndex = currentChapter - 1;
       setCurrentChapter(prevChapterIndex);
-      await loadSingleChapter(prevChapterIndex);
+      await loadSingleChapter(prevChapterIndex, isDark);
     }
   };
 
@@ -630,7 +678,7 @@ export const useEpubReader = (epubUrl: string) => {
       // Wait a bit for state to update, then reload with new font size
       setTimeout(async () => {
         console.log(`🔄 Reloading chapter ${currentChapter} after state update with fontSize: ${newSize}px`);
-        await loadSingleChapter(currentChapter);
+        await loadSingleChapter(currentChapter, isDark);
       }, 100);
     }
   };
@@ -640,7 +688,7 @@ export const useEpubReader = (epubUrl: string) => {
     setCurrentChapter(0);
     await AsyncStorage.removeItem(`reading_position_${epubUrl}`);
     if (bookData && bookData.chapters.length > 0) {
-      await loadSingleChapter(0);
+      await loadSingleChapter(0, isDark);
     }
   };
 
@@ -654,12 +702,12 @@ export const useEpubReader = (epubUrl: string) => {
           break;
         case 'requestNextChapter':
           if (currentChapter < bookData.chapters.length - 1) {
-            loadSingleChapter(currentChapter + 1);
+            loadSingleChapter(currentChapter + 1, isDark);
           }
           break;
         case 'requestPreviousChapter':
           if (currentChapter > 0) {
-            loadSingleChapter(currentChapter - 1);
+            loadSingleChapter(currentChapter - 1, isDark);
           }
           break;
         case 'bookmarkPosition':
@@ -727,7 +775,7 @@ export const useEpubReader = (epubUrl: string) => {
   const goToChapter = async (targetChapter: number) => {
     if (targetChapter >= 0 && targetChapter < bookData.chapters.length && targetChapter !== currentChapter) {
       setCurrentChapter(targetChapter);
-      await loadSingleChapter(targetChapter);
+      await loadSingleChapter(targetChapter, isDark);
     }
   };
 
@@ -799,7 +847,7 @@ export const useEpubReader = (epubUrl: string) => {
       
       // Then reload
       console.log(`🔄 Calling loadSingleChapter(${currentChapter}) with fontSize: ${fontSize}`);
-      loadSingleChapter(currentChapter);
+      loadSingleChapter(currentChapter, isDark);
     } else {
       console.log(`❌ Font size useEffect conditions not met`);
     }
