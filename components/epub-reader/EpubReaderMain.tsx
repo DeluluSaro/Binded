@@ -1,16 +1,18 @@
 import { useTheme } from '@/contexts/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-color';
-import React, { useEffect, useRef } from 'react';
-import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useEpubReader } from '../../hooks/useEpubReader';
 import { BookmarkManager } from '../../utils/BookmarkManager';
 import Loading from '../loading';
 import { ThemedText } from '../themed-text';
 import { ThemedView } from '../themed-view';
+import { BookmarkListModal } from './BookmarkListModal';
 import { EpubReaderContent } from './EpubReaderContent';
 import { EpubReaderControls } from './EpubReaderControls';
 import { EpubReaderNavigation } from './EpubReaderNavigation';
+import { ModernModal } from './ModernModal';
 
 interface EpubReaderMainProps {
   epubUrl: string;
@@ -21,6 +23,18 @@ const EpubReaderMain: React.FC<EpubReaderMainProps> = ({ epubUrl, onClose }) => 
   const { isDark } = useTheme();
   const colors = useThemeColors();
   const webViewRef = useRef<WebView>(null);
+  
+  // Modal states
+  const [showBookmarkList, setShowBookmarkList] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [modalData, setModalData] = useState<{
+    title: string;
+    message: string;
+    type: 'info' | 'success' | 'warning' | 'error';
+  }>({ title: '', message: '', type: 'info' });
+  const [bookmarks, setBookmarks] = useState<any[]>([]);
   
   const {
     // State
@@ -81,37 +95,30 @@ const EpubReaderMain: React.FC<EpubReaderMainProps> = ({ epubUrl, onClose }) => 
   // Bookmark functions
   const handleViewAllBookmarks = async () => {
     try {
-      const bookmarks = await BookmarkManager.getBookBookmarks(bookData?.title || 'Unknown Book');
+      const bookmarksData = await BookmarkManager.getBookBookmarks(bookData?.title || 'Unknown Book');
       
-      if (bookmarks.length === 0) {
-        Alert.alert('No bookmarks found', 'Set a bookmark by long-pressing any word while reading.', [{ text: 'OK' }]);
+      if (bookmarksData.length === 0) {
+        setModalData({
+          title: 'No Bookmarks Found',
+          message: 'Set a bookmark by long-pressing any word while reading.',
+          type: 'info'
+        });
+        setShowErrorModal(true);
         return;
       }
 
       // Sort bookmarks by chapter index for better organization
-      const sortedBookmarks = bookmarks.sort((a, b) => a.chapterIndex - b.chapterIndex);
-      
-      // Create bookmark options for Alert
-      const bookmarkOptions = sortedBookmarks.map((bookmark, index) => ({
-        text: `Chapter ${bookmark.chapterIndex + 1}: "${bookmark.wordText || 'Bookmarked word'}"`,
-        onPress: () => {
-          console.log('🔖 Navigating to bookmark:', bookmark);
-          console.log('🔖 Chapter:', bookmark.chapterIndex, 'Word Index:', bookmark.wordIndex, 'Word Text:', bookmark.wordText);
-          goToChapter(bookmark.chapterIndex, bookmark.wordIndex);
-        }
-      }));
-
-      // Add cancel option
-      bookmarkOptions.push({ text: 'Cancel', onPress: () => {} });
-
-      Alert.alert(
-        'All Bookmarks',
-        `Choose a bookmark to navigate to (${bookmarks.length} available):`,
-        bookmarkOptions
-      );
+      const sortedBookmarks = bookmarksData.sort((a, b) => a.chapterIndex - b.chapterIndex);
+      setBookmarks(sortedBookmarks);
+      setShowBookmarkList(true);
     } catch (error) {
       console.error('❌ Error loading bookmarks:', error);
-      Alert.alert('Error', 'Failed to load bookmarks. Please try again.', [{ text: 'OK' }]);
+      setModalData({
+        title: 'Error',
+        message: 'Failed to load bookmarks. Please try again.',
+        type: 'error'
+      });
+      setShowErrorModal(true);
     }
   };
 
@@ -126,47 +133,70 @@ const EpubReaderMain: React.FC<EpubReaderMainProps> = ({ epubUrl, onClose }) => 
         console.log('🔖 Jumping to last bookmark - Chapter:', lastBookmarkChapter, 'Word Index:', stats.lastBookmark.wordIndex, 'Word Text:', stats.lastBookmark.wordText);
         goToChapter(lastBookmarkChapter, stats.lastBookmark.wordIndex);
         
-        Alert.alert(
-          'Jumped to Last Bookmark!', 
-          `Chapter ${lastBookmarkChapter + 1}: "${stats.lastBookmark.wordText || 'Bookmarked word'}"`,
-          [{ text: 'OK' }]
-        );
+        setModalData({
+          title: 'Jumped to Last Bookmark!',
+          message: `Chapter ${lastBookmarkChapter + 1}: "${stats.lastBookmark.wordText || 'Bookmarked word'}"`,
+          type: 'success'
+        });
+        setShowSuccessModal(true);
       } else {
-        Alert.alert('No bookmarks found', 'Set a bookmark by long-pressing any word while reading.', [{ text: 'OK' }]);
+        setModalData({
+          title: 'No Bookmarks Found',
+          message: 'Set a bookmark by long-pressing any word while reading.',
+          type: 'info'
+        });
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('❌ Error jumping to last bookmark:', error);
-      Alert.alert('Error', 'Failed to jump to last bookmark. Please try again.', [{ text: 'OK' }]);
+      setModalData({
+        title: 'Error',
+        message: 'Failed to jump to last bookmark. Please try again.',
+        type: 'error'
+      });
+      setShowErrorModal(true);
     }
   };
 
   const handleClearAllBookmarks = async () => {
-    Alert.alert(
-      'Clear All Bookmarks',
-      'Are you sure you want to remove all bookmarks from this book?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear All',
-          style: 'destructive',
-          onPress: async () => {
-            const bookmarks = await BookmarkManager.getBookBookmarks(bookData?.title || 'Unknown Book');
-            for (const bookmark of bookmarks) {
-              await BookmarkManager.removeBookmark(bookData?.title || 'Unknown Book', bookmark.chapterIndex);
-            }
-            Alert.alert('All bookmarks cleared!', '', [{ text: 'OK' }]);
-          }
-        }
-      ]
-    );
+    setModalData({
+      title: 'Clear All Bookmarks',
+      message: 'Are you sure you want to remove all bookmarks from this book?',
+      type: 'warning'
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmClearBookmarks = async () => {
+    try {
+      const bookmarksData = await BookmarkManager.getBookBookmarks(bookData?.title || 'Unknown Book');
+      for (const bookmark of bookmarksData) {
+        await BookmarkManager.removeBookmark(bookData?.title || 'Unknown Book', bookmark.chapterIndex);
+      }
+      setModalData({
+        title: 'All Bookmarks Cleared!',
+        message: 'All bookmarks have been successfully removed.',
+        type: 'success'
+      });
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error('❌ Error clearing bookmarks:', error);
+      setModalData({
+        title: 'Error',
+        message: 'Failed to clear bookmarks. Please try again.',
+        type: 'error'
+      });
+      setShowErrorModal(true);
+    }
   };
 
   const handleBookmarkCurrentPage = () => {
-    Alert.alert(
-      'Bookmark Current Page',
-      'Long-press any word in the text to set a bookmark at that position.',
-      [{ text: 'OK' }]
-    );
+    setModalData({
+      title: 'Bookmark Current Page',
+      message: 'Long-press any word in the text to set a bookmark at that position.',
+      type: 'info'
+    });
+    setShowErrorModal(true);
   };
 
   useEffect(() => {
@@ -262,6 +292,48 @@ const EpubReaderMain: React.FC<EpubReaderMainProps> = ({ epubUrl, onClose }) => 
         onGoToChapter={goToChapter}
         webViewRef={webViewRef}
         bookData={bookData}
+      />
+
+      {/* Modern Modals */}
+      <BookmarkListModal
+        visible={showBookmarkList}
+        onClose={() => setShowBookmarkList(false)}
+        bookmarks={bookmarks}
+        onBookmarkSelect={(bookmark) => {
+          console.log('🔖 Navigating to bookmark:', bookmark);
+          console.log('🔖 Chapter:', bookmark.chapterIndex, 'Word Index:', bookmark.wordIndex, 'Word Text:', bookmark.wordText);
+          goToChapter(bookmark.chapterIndex, bookmark.wordIndex);
+        }}
+      />
+
+      <ModernModal
+        visible={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title={modalData.title}
+        message={modalData.message}
+        type={modalData.type}
+        options={[{ text: 'OK', onPress: () => {} }]}
+      />
+
+      <ModernModal
+        visible={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        title={modalData.title}
+        message={modalData.message}
+        type={modalData.type}
+        options={[{ text: 'OK', onPress: () => {} }]}
+      />
+
+      <ModernModal
+        visible={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        title={modalData.title}
+        message={modalData.message}
+        type={modalData.type}
+        options={[
+          { text: 'Cancel', onPress: () => {}, style: 'cancel' },
+          { text: 'Clear All', onPress: handleConfirmClearBookmarks, style: 'destructive' }
+        ]}
       />
     </View>
   );

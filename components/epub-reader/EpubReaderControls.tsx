@@ -1,6 +1,9 @@
 import { useTheme } from '@/contexts/ThemeContext';
-import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import { useThemeColors } from '@/hooks/use-theme-color';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface EpubReaderControlsProps {
@@ -37,10 +40,41 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
   onBookmarkCurrentPage
 }) => {
   const { toggleTheme, isDark } = useTheme();
+  const colors = useThemeColors();
   const [isBookmarkDropdownOpen, setIsBookmarkDropdownOpen] = useState(false);
   const [dropdownOpacity] = useState(new Animated.Value(0));
   const [dropdownScale] = useState(new Animated.Value(0.8));
   const [iconRotation] = useState(new Animated.Value(0));
+  
+  // Theme toggle animation
+  const translateX = useRef(new Animated.Value(isDark ? 1 : 0)).current;
+  const scaleValue = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.timing(translateX, {
+      toValue: isDark ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [isDark, translateX]);
+
+  const handleThemeToggle = () => {
+    // Scale animation on press
+    Animated.sequence([
+      Animated.timing(scaleValue, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleValue, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    toggleTheme();
+  };
 
   const handleFontSizeIncrease = () => {
     const newSize = Math.min(24, fontSize + 2);
@@ -147,7 +181,7 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
               style={[
                 styles.bookmarkDropdown,
                 {
-                  backgroundColor: isDark ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+                  backgroundColor: isDark ? 'rgba(0, 0, 0, 0.85)' : 'rgba(255, 255, 255, 0.9)',
                   opacity: dropdownOpacity,
                   transform: [{ scale: dropdownScale }],
                 }
@@ -155,31 +189,64 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
             >
               
               <TouchableOpacity 
-                style={styles.dropdownItem}
+                style={[
+                  styles.dropdownItem,
+                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)' }
+                ]}
                 onPress={() => {
                   onViewAllBookmarks?.();
                   setIsBookmarkDropdownOpen(false);
                 }}
+                activeOpacity={0.7}
               >
+                <Ionicons 
+                  name="bookmark-outline" 
+                  size={18} 
+                  color={isDark ? '#e0e0e0' : '#3a2e24'} 
+                  style={{ marginRight: 12 }}
+                />
                 <Text style={[styles.dropdownText, { color: isDark ? '#e0e0e0' : '#3a2e24' }]}>View Bookmarks</Text>
               </TouchableOpacity>
+              
               <TouchableOpacity 
-                style={styles.dropdownItem}
+                style={[
+                  styles.dropdownItem,
+                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)' }
+                ]}
                 onPress={() => {
                   onGoToLastBookmark?.();
                   setIsBookmarkDropdownOpen(false);
                 }}
+                activeOpacity={0.7}
               >
+                <Ionicons 
+                  name="arrow-forward-circle-outline" 
+                  size={18} 
+                  color={isDark ? '#e0e0e0' : '#3a2e24'} 
+                  style={{ marginRight: 12 }}
+                />
                 <Text style={[styles.dropdownText, { color: isDark ? '#e0e0e0' : '#3a2e24' }]}>Go to Last Bookmark</Text>
               </TouchableOpacity>
+              
               <TouchableOpacity 
-                style={[styles.dropdownItem, styles.lastDropdownItem]}
+                style={[
+                  styles.dropdownItem, 
+                  styles.lastDropdownItem,
+                  { backgroundColor: isDark ? 'rgba(255, 59, 48, 0.1)' : 'rgba(255, 59, 48, 0.08)' }
+                ]}
                 onPress={() => {
                   onClearAllBookmarks?.();
                   setIsBookmarkDropdownOpen(false);
                 }}
+                activeOpacity={0.7}
               >
-                <Text style={[styles.dropdownText, { color: 'red' }]}>Clear Bookmarks</Text>
+                <Ionicons 
+                  name="trash-outline" 
+                  size={18} 
+                  color="#ff3b30" 
+                  style={{ marginRight: 12 }}
+                />
+                <Text style={[styles.dropdownText, { color: '#ff3b30' }]}>Clear Bookmarks</Text>
               </TouchableOpacity>
             </Animated.View>
           )}
@@ -190,24 +257,74 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
           style={[styles.headerButton, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.1)' }]}
           onPress={handleFontSizeDecrease}
         >
-          <Text style={[styles.headerButtonText, { color: isDark ? '#e0e0e0' : '#3a2e24' }]}>A-</Text>
+          <MaterialCommunityIcons 
+            name="format-font-size-decrease" 
+            size={24} 
+            color={isDark ? '#e0e0e0' : '#3a2e24'} 
+          />
         </TouchableOpacity>
         
         <TouchableOpacity
           style={[styles.headerButton, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.1)' }]}
           onPress={handleFontSizeIncrease}
         >
-          <Text style={[styles.headerButtonText, { color: isDark ? '#e0e0e0' : '#3a2e24' }]}>A+</Text>
+          <MaterialCommunityIcons 
+            name="format-font-size-increase" 
+            size={24} 
+            color={isDark ? '#e0e0e0' : '#3a2e24'} 
+          />
         </TouchableOpacity>
 
         {/* Theme Toggle */}
         <TouchableOpacity
-          style={[styles.headerButton, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.1)' }]}
-          onPress={toggleTheme}
+          onPress={handleThemeToggle}
+          activeOpacity={0.8}
+          style={styles.themeToggleTouchable}
         >
-          <Text style={[styles.headerButtonText, { color: isDark ? '#e0e0e0' : '#3a2e24' }]}>
-            {isDark ? '☀️' : '🌙'}
-          </Text>
+          <Animated.View
+            style={[
+              styles.themeToggleContainer,
+              {
+                backgroundColor: colors.background,
+                shadowColor: colors.tint,
+                transform: [{ scale: scaleValue }],
+              },
+            ]}
+          >
+            <LinearGradient
+              colors={colors.gradient as [string, string]}
+              style={styles.themeToggleGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            />
+            
+            <Animated.View
+              style={[
+                styles.themeToggleButton,
+                {
+                  transform: [{ 
+                    translateX: translateX.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [2, 30],
+                    })
+                  }],
+                },
+              ]}
+            >
+              <LinearGradient
+                colors={[colors.tint, colors.tint]}
+                style={styles.themeToggleButtonGradient}
+              />
+              
+              <View style={styles.themeToggleIconContainer}>
+                <Ionicons
+                  name={isDark ? 'moon' : 'sunny'}
+                  size={14}
+                  color={colors.text}
+                />
+              </View>
+            </Animated.View>
+          </Animated.View>
         </TouchableOpacity>
       </View>
     </View>
@@ -255,29 +372,83 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     right: 0,
-    width: 200,
-    borderRadius: 16,
-    padding: 0,
+    width: 220,
+    borderRadius: 20,
+    padding: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 15,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 20,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    backdropFilter: 'blur(20px)',
   },
   dropdownItem: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginVertical: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
   },
   lastDropdownItem: {
-    borderBottomWidth: 0,
+    marginBottom: 0,
   },
   dropdownText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     textAlign: 'center',
     fontFamily: 'Outfit_400Regular',
+    letterSpacing: 0.2,
+  },
+  themeToggleTouchable: {
+    borderRadius: 20,
+  },
+  themeToggleContainer: {
+    width: 50,
+    height: 30,
+    borderRadius: 20,
+    justifyContent: 'center',
+    position: 'relative',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  themeToggleGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 20,
+  },
+  themeToggleButton: {
+    position: 'absolute',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  themeToggleButtonGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 13,
+  },
+  themeToggleIconContainer: {
+    zIndex: 1,
   },
 });
