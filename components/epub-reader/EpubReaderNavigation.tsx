@@ -48,9 +48,6 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
           <Text style={[styles.pageText, { color: isDark ? 'rgba(224, 224, 224, 0.8)' : 'rgba(58, 46, 36, 0.8)' }]}>
             Page {displayChapter + 1} of {totalChapters}
           </Text>
-          <Text style={[styles.timeText, { color: isDark ? 'rgba(224, 224, 224, 0.8)' : 'rgba(58, 46, 36, 0.8)' }]}>
-            4 hours left
-          </Text>
         </View>
 
         {/* Progress Bar */}
@@ -113,11 +110,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   pageText: {
-    fontSize: 12,
-    fontWeight: '500',
-    fontFamily: 'Outfit_400Regular',
-  },
-  timeText: {
     fontSize: 12,
     fontWeight: '500',
     fontFamily: 'Outfit_400Regular',

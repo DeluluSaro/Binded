@@ -46,6 +46,12 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
     onFontSizeChange(newSize);
   };
 
+  const handleFontSizeDecrease = () => {
+    const newSize = Math.max(12, fontSize - 2);
+    console.log(`📝 Decreasing font size from ${fontSize}px to ${newSize}px`);
+    onFontSizeChange(newSize);
+  };
+
   const toggleBookmarkDropdown = () => {
     const newState = !isBookmarkDropdownOpen;
     setIsBookmarkDropdownOpen(newState);
@@ -144,7 +150,14 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
           )}
         </View>
 
-        {/* Font Size Button */}
+        {/* Font Size Buttons */}
+        <TouchableOpacity
+          style={[styles.headerButton, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.1)' }]}
+          onPress={handleFontSizeDecrease}
+        >
+          <Text style={[styles.headerButtonText, { color: isDark ? '#e0e0e0' : '#3a2e24' }]}>A-</Text>
+        </TouchableOpacity>
+        
         <TouchableOpacity
           style={[styles.headerButton, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.1)' }]}
           onPress={handleFontSizeIncrease}
