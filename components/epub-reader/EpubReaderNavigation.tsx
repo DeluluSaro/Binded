@@ -1,4 +1,3 @@
-import { useTheme } from '@/contexts/ThemeContext';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -37,21 +36,20 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
   webViewRef,
   bookData
 }) => {
-  const { isDark } = useTheme();
 
   return (
     <View style={[styles.container, { backgroundColor: 'transparent' }]}>
       {/* Footer with glassmorphism effect matching the image */}
-      <View style={[styles.footer, { backgroundColor: isDark ? 'rgba(1, 1, 1, 0.8)' : 'rgba(183, 170, 153, 0.8)' }]}>
+      <View style={[styles.footer, { backgroundColor: 'rgba(183, 170, 153, 0.8)' }]}>
         {/* Page Info Row */}
         <View style={styles.pageInfo}>
-          <Text style={[styles.pageText, { color: isDark ? 'rgba(224, 224, 224, 0.8)' : 'rgba(58, 46, 36, 0.8)' }]}>
+          <Text style={[styles.pageText, { color: 'rgba(58, 46, 36, 0.8)' }]}>
             Page {displayChapter + 1} of {totalChapters}
           </Text>
         </View>
 
         {/* Progress Bar */}
-        <View style={[styles.progressContainer, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }]}>
+        <View style={[styles.progressContainer, { backgroundColor: 'rgba(0, 0, 0, 0.1)' }]}>
           <View style={[styles.progressBar, { width: `${((displayChapter + 1) / totalChapters) * 100}%` }]} />
         </View>
 
@@ -62,7 +60,7 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
             onPress={onPrevious}
             disabled={currentChapter === 0}
           >
-            <Text style={[styles.chapterButtonText, { color: isDark ? '#e0e0e0' : '#3a2e24' }]}>‹</Text>
+            <Text style={[styles.chapterButtonText, { color: '#3a2e24' }]}>‹</Text>
           </TouchableOpacity>
           
           <Text style={[styles.chapterText, { color: '#eb5838' }]}>
@@ -74,7 +72,7 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
             onPress={onNext}
             disabled={currentChapter === totalChapters - 1}
           >
-            <Text style={[styles.chapterButtonText, { color: isDark ? '#e0e0e0' : '#3a2e24' }]}>›</Text>
+            <Text style={[styles.chapterButtonText, { color: '#3a2e24' }]}>›</Text>
           </TouchableOpacity>
         </View>
       </View>

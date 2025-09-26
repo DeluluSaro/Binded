@@ -1,4 +1,3 @@
-import { useTheme } from '@/contexts/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-color';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -20,15 +19,14 @@ export const EpubReaderContent: React.FC<EpubReaderContentProps> = ({
   onMessage
 }) => {
   const colors = useThemeColors();
-  const { isDark } = useTheme();
 
   return (
-    <View style={styles.contentContainer}>
+    <View style={[styles.contentContainer, { backgroundColor: '#b7aa99' }]}>
       <WebView
-        key={`${chapterContent}-${isDark}`} // Force re-render when content or theme changes
+        key={chapterContent} // Force re-render when content changes
         ref={webViewRef}
         source={{ html: chapterContent }}
-        style={[styles.webView, { backgroundColor: colors.background }]}
+        style={[styles.webView, { backgroundColor: '#b7aa99' }]}
         showsVerticalScrollIndicator={true}
         bounces={true}
         scalesPageToFit={false}
@@ -43,7 +41,7 @@ export const EpubReaderContent: React.FC<EpubReaderContentProps> = ({
         domStorageEnabled={true}
         onMessage={onMessage}
         renderLoading={() => (
-          <View style={[styles.webViewLoading, { backgroundColor: colors.background }]}>
+          <View style={[styles.webViewLoading, { backgroundColor: '#b7aa99' }]}>
             <ThemedText>Loading chapter...</ThemedText>
           </View>
         )}

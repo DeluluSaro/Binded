@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, PanResponder } from 'react-native';
-import { useTheme } from '../contexts/ThemeContext';
 import { BookmarkManager } from '../utils/BookmarkManager';
 import SimpleEpubParser from '../utils/SimpleEpubParser';
 
 export const useEpubReader = (epubUrl: string) => {
-  const { isDark } = useTheme();
+  // Force light theme (beige) for EPUB reader
+  const isDark = false;
   
   // State
   const [currentChapter, setCurrentChapter] = useState(0);
@@ -661,7 +661,7 @@ export const useEpubReader = (epubUrl: string) => {
     } finally {
       setContentLoading(false);
     }
-  }, [bookData, chapterCache, loadedChapters, currentChapter, fontSize, epubUrl, isDark]);
+  }, [bookData, chapterCache, loadedChapters, currentChapter, fontSize, epubUrl]);
 
   // Load next batch of chapters
   const loadNextBatch = useCallback(async () => {

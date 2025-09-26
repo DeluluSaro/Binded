@@ -1,4 +1,3 @@
-import { useTheme } from '@/contexts/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-color';
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -20,7 +19,6 @@ interface EpubReaderMainProps {
 }
 
 const EpubReaderMain: React.FC<EpubReaderMainProps> = ({ epubUrl, onClose }) => {
-  const { isDark } = useTheme();
   const colors = useThemeColors();
   const webViewRef = useRef<WebView>(null);
   
@@ -241,7 +239,7 @@ const EpubReaderMain: React.FC<EpubReaderMainProps> = ({ epubUrl, onClose }) => 
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#010101' : '#b7aa99' }]}>
+    <View style={[styles.container, { backgroundColor: '#b7aa99' }]}>
       {/* <EpubReaderHeader 
         currentChapter={currentChapter}
         totalChapters={bookData.chapters.length}
@@ -342,13 +340,13 @@ const EpubReaderMain: React.FC<EpubReaderMainProps> = ({ epubUrl, onClose }) => 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#b7aa99',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#b7aa99',
   },
   errorText: {
     fontSize: 18,

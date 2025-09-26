@@ -36,7 +36,7 @@ export default function Loading({ message = 'Opening Book...' }: LoadingProps) {
             &ldquo;Emptiness is the best way to start new life&rdquo;
           </ThemedText>
           <View style={styles.divider} />
-          <ThemedText style={[styles.titleText, { fontFamily: 'Silkscreen-Regular' }]}>VINLAND SAGA</ThemedText>
+          {/* <ThemedText style={[styles.titleText, { fontFamily: 'Silkscreen-Regular' }]}>VINLAND SAGA</ThemedText> */}
           <ThemedText style={[styles.subtitleText, { fontFamily: 'Silkscreen-Regular' }]}>{message}</ThemedText>
         </View>
       </View>
