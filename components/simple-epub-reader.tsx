@@ -533,42 +533,11 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
           <Ionicons name="arrow-back" size={24} color={colors.text} />
            </TouchableOpacity>
            
-           <TouchableOpacity 
-          onPress={() => setIsBookmarkSelectionMode(!isBookmarkSelectionMode)} 
-          style={[
-            styles.headerButton, 
-            { 
-              backgroundColor: isBookmarkSelectionMode ? colors.tint : colors.surfaceSecondary,
-              borderWidth: isBookmarkSelectionMode ? 2 : 0,
-              borderColor: colors.tint
-            }
-          ]}
-          activeOpacity={0.7}
-        >
-          <Ionicons 
-            name={isBookmarkSelectionMode ? "add-circle" : "add-circle-outline"} 
-            size={24} 
-            color={isBookmarkSelectionMode ? '#fff' : colors.text} 
-          />
-           </TouchableOpacity>
-           
         <View style={styles.chapterInfo}>
           <ThemedText style={[styles.chapterText, { fontFamily: 'Outfit_400Regular' }]}>
             Chapter {currentChapter + 1} of {bookData.chapters.length}
           </ThemedText>
         </View>
-           
-           <TouchableOpacity 
-          onPress={() => setShowBookmarkControls(!showBookmarkControls)} 
-          style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary }]}
-          activeOpacity={0.7}
-        >
-          <Ionicons 
-            name={showBookmarkControls ? "bookmark" : "bookmark-outline"} 
-            size={24} 
-            color={colors.tint} 
-          />
-           </TouchableOpacity>
          </View>
 
       {/* Progress Bar */}

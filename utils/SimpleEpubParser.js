@@ -162,9 +162,9 @@ class SimpleEpubParser {
       (match, textContent) => {
         // Only wrap words in the text content between tags
         const wrappedText = textContent.replace(
-          /\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, 
-          '<span class="word">$1</span>'
-        );
+      /\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, 
+      '<span class="word">$1</span>'
+    );
         return `>${wrappedText}<`;
       }
     );
@@ -269,15 +269,15 @@ class SimpleEpubParser {
             /* Manual bookmark button */
             .bookmark-button {
               position: fixed;
-              bottom: 20px;
+              top: 20px;
               right: 20px;
-              width: 60px;
-              height: 60px;
+              width: 50px;
+              height: 50px;
               border-radius: 50%;
               background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
               border: none;
               color: white;
-              font-size: 24px;
+              font-size: 20px;
               cursor: pointer;
               box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
               transition: all 0.3s ease;
@@ -300,14 +300,14 @@ class SimpleEpubParser {
             /* Cancel button */
             .cancel-button {
               position: fixed;
-              bottom: 20px;
+              top: 20px;
               left: 20px;
-              padding: 12px 24px;
+              padding: 10px 20px;
               background: rgba(255, 0, 0, 0.8);
               color: white;
               border: none;
-              border-radius: 25px;
-              font-size: 14px;
+              border-radius: 20px;
+              font-size: 12px;
               font-weight: bold;
               cursor: pointer;
               box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
