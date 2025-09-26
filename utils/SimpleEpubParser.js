@@ -168,7 +168,7 @@ class SimpleEpubParser {
     );
   }
 
-  // Enhanced HTML generation with bookmark support
+  // Enhanced HTML generation with manual bookmark support
   generateEnhancedHTML(content, fontSize, bookmarkPosition = -1, chapterIndex = 0) {
     // First, wrap words in spans for individual targeting
     const wrappedContent = this.wrapWordsInSpans(content);
@@ -194,22 +194,21 @@ class SimpleEpubParser {
               -webkit-touch-callout: none;
             }
             
-            /* Word styling */
-            .word-wrapper {
-              display: inline;
-              position: relative;
-            }
-            
+            /* Word styling - default state (no interaction) */
             .word {
               display: inline;
               padding: 1px 2px;
               border-radius: 3px;
-              cursor: pointer;
               transition: all 0.2s ease;
               position: relative;
             }
             
-            .word:hover {
+            /* Only interactive when in bookmark selection mode */
+            .bookmark-selection-mode .word {
+              cursor: pointer;
+            }
+            
+            .bookmark-selection-mode .word:hover {
               background-color: rgba(255, 165, 0, 0.1);
               transform: scale(1.02);
             }
@@ -249,21 +248,96 @@ class SimpleEpubParser {
               50% { opacity: 0.7; transform: translateX(-50%) scale(1.1); }
             }
             
-            /* Drag indicator */
-            .drag-indicator {
+            /* Manual bookmark button */
+            .bookmark-button {
               position: fixed;
-              top: 10px;
+              bottom: 20px;
+              right: 20px;
+              width: 60px;
+              height: 60px;
+              border-radius: 50%;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              border: none;
+              color: white;
+              font-size: 24px;
+              cursor: pointer;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+              transition: all 0.3s ease;
+              z-index: 1000;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            
+            .bookmark-button:hover {
+              transform: scale(1.1);
+              box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+            }
+            
+            .bookmark-button.active {
+              background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+              color: #2c3e50;
+            }
+            
+            /* Cancel button */
+            .cancel-button {
+              position: fixed;
+              bottom: 20px;
+              left: 20px;
+              padding: 12px 24px;
+              background: rgba(255, 0, 0, 0.8);
+              color: white;
+              border: none;
+              border-radius: 25px;
+              font-size: 14px;
+              font-weight: bold;
+              cursor: pointer;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+              transition: all 0.3s ease;
+              z-index: 1000;
+              display: none;
+            }
+            
+            .cancel-button:hover {
+              background: rgba(255, 0, 0, 1);
+              transform: scale(1.05);
+            }
+            
+            .bookmark-selection-mode .cancel-button {
+              display: block;
+            }
+            
+            /* Notification system */
+            .bookmark-notification {
+              position: fixed;
+              top: 20px;
               left: 50%;
               transform: translateX(-50%);
-              background: rgba(0, 0, 0, 0.8);
+              background: rgba(0, 0, 0, 0.9);
               color: white;
-              padding: 8px 16px;
-              border-radius: 20px;
+              padding: 12px 24px;
+              border-radius: 25px;
               font-size: 14px;
               font-weight: bold;
               z-index: 1000;
               display: none;
               box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+              animation: slideDown 0.3s ease;
+            }
+            
+            .bookmark-selection-mode .bookmark-notification {
+              display: block;
+            }
+            
+            @keyframes slideDown {
+              from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+              }
             }
             
             /* Enhanced typography */
@@ -301,8 +375,19 @@ class SimpleEpubParser {
           </style>
         </head>
         <body>
-          <div class="drag-indicator" id="dragIndicator">
-            📖 Drag to move bookmark
+          <!-- Manual bookmark button -->
+          <button class="bookmark-button" id="bookmarkButton" onclick="toggleBookmarkMode()">
+            📖
+          </button>
+          
+          <!-- Cancel button (only visible in selection mode) -->
+          <button class="cancel-button" id="cancelButton" onclick="cancelBookmarkMode()">
+            Cancel
+          </button>
+          
+          <!-- Notification -->
+          <div class="bookmark-notification" id="bookmarkNotification">
+            Touch any word to create bookmark
           </div>
           
           <div id="content">${wrappedContent}</div>
@@ -310,56 +395,25 @@ class SimpleEpubParser {
           <script>
             let currentBookmarkWordIndex = ${bookmarkPosition};
             let currentChapterIndex = ${chapterIndex};
-            let isDragging = false;
             let words = [];
-            let dragStarted = false;
+            let bookmarkSelectionMode = false;
             
             // Initialize word tracking system
             function initializeWordTracking() {
               words = Array.from(document.querySelectorAll('.word'));
               console.log('📚 Total words found:', words.length);
               
-              // Add interaction listeners to each word
+              // Add click listeners to each word (only active in selection mode)
               words.forEach((word, index) => {
-                // Click to set bookmark
                 word.addEventListener('click', (e) => {
                   e.preventDefault();
                   
-                  // Check if we're in bookmark selection mode
-                  if (window.bookmarkSelectionMode) {
-                    // Highlight word temporarily
-                    word.style.backgroundColor = '#FFE082';
-                    word.style.color = '#2c3e50';
-                    word.style.fontWeight = 'bold';
-                    word.style.borderRadius = '4px';
-                    word.style.padding = '2px 4px';
-                    
-                    // Send word selection message
-                    window.ReactNativeWebView.postMessage(JSON.stringify({
-                      type: 'wordSelected',
-                      word: word.textContent.trim(),
-                      wordIndex: index
-                    }));
-                } else {
-                    // Original bookmark behavior
-                    setBookmark(index);
+                  // Only allow bookmark creation in selection mode
+                  if (bookmarkSelectionMode) {
+                    createBookmark(index);
                   }
                 });
-                
-                // Touch events for mobile
-                word.addEventListener('touchstart', handleTouchStart, { passive: false });
-                word.addEventListener('touchmove', handleTouchMove, { passive: false });
-                word.addEventListener('touchend', handleTouchEnd, { passive: false });
-                
-                // Mouse events for desktop
-                word.addEventListener('mousedown', handleMouseDown);
-                word.addEventListener('mouseover', handleMouseOver);
               });
-              
-              // Global touch/mouse end events
-              document.addEventListener('touchend', handleGlobalTouchEnd);
-              document.addEventListener('mouseup', handleGlobalMouseUp);
-              document.addEventListener('mousemove', handleGlobalMouseMove);
               
               // Restore bookmark if exists
               if (currentBookmarkWordIndex >= 0 && currentBookmarkWordIndex < words.length) {
@@ -367,83 +421,79 @@ class SimpleEpubParser {
               }
             }
             
-            // Touch event handlers
-            function handleTouchStart(e) {
-              const wordIndex = words.indexOf(e.target);
-              if (wordIndex === currentBookmarkWordIndex) {
-                isDragging = true;
-                dragStarted = true;
-                showDragIndicator();
-              e.preventDefault();
-              }
-            }
-            
-            function handleTouchMove(e) {
-              if (!isDragging) return;
-              e.preventDefault();
+            // Toggle bookmark selection mode
+            function toggleBookmarkMode() {
+              bookmarkSelectionMode = !bookmarkSelectionMode;
+              const body = document.body;
+              const button = document.getElementById('bookmarkButton');
+              const notification = document.getElementById('bookmarkNotification');
               
-              const touch = e.touches[0];
-              const elementAtPoint = document.elementFromPoint(touch.clientX, touch.clientY);
+              if (bookmarkSelectionMode) {
+                // Enter selection mode
+                body.classList.add('bookmark-selection-mode');
+                button.textContent = '⭐';
+                button.classList.add('active');
+                notification.style.display = 'block';
+                
+                console.log('📖 Bookmark selection mode enabled');
+              } else {
+                // Exit selection mode
+                body.classList.remove('bookmark-selection-mode');
+                button.textContent = '📖';
+                button.classList.remove('active');
+                notification.style.display = 'none';
+                
+                console.log('📖 Bookmark selection mode disabled');
+              }
+            }
+            
+            // Cancel bookmark mode
+            function cancelBookmarkMode() {
+              bookmarkSelectionMode = false;
+              const body = document.body;
+              const button = document.getElementById('bookmarkButton');
+              const notification = document.getElementById('bookmarkNotification');
               
-              if (elementAtPoint && elementAtPoint.classList.contains('word')) {
-                const newWordIndex = words.indexOf(elementAtPoint);
-                if (newWordIndex !== -1 && newWordIndex !== currentBookmarkWordIndex) {
-                  setBookmark(newWordIndex, false);
+              body.classList.remove('bookmark-selection-mode');
+              button.textContent = '📖';
+              button.classList.remove('active');
+              notification.style.display = 'none';
+              
+              console.log('📖 Bookmark selection mode cancelled');
+            }
+            
+            // Create bookmark at specific word
+            function createBookmark(wordIndex) {
+              if (wordIndex < 0 || wordIndex >= words.length) return;
+              
+              const targetWord = words[wordIndex];
+              const wordText = targetWord.textContent.trim();
+              
+              // Exit selection mode
+              cancelBookmarkMode();
+              
+              // Set the bookmark
+              setBookmark(wordIndex, true);
+              
+              // Send bookmark data to React Native
+              const wordPosition = calculateWordPosition(targetWord);
+              
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'bookmarkSet',
+                data: {
+                  wordIndex: wordIndex,
+                  chapterIndex: currentChapterIndex,
+                  wordText: wordText,
+                  totalWords: words.length,
+                  position: wordPosition,
+                  timestamp: new Date().toISOString()
                 }
-              }
+              }));
+              
+              console.log('📖 Bookmark created at:', wordText);
             }
             
-            function handleTouchEnd(e) {
-              if (isDragging && dragStarted) {
-                finalizeDrag();
-              }
-            }
-            
-            // Mouse event handlers
-            function handleMouseDown(e) {
-              const wordIndex = words.indexOf(e.target);
-              if (wordIndex === currentBookmarkWordIndex) {
-                isDragging = true;
-                dragStarted = true;
-                showDragIndicator();
-                e.preventDefault();
-              }
-            }
-            
-            function handleMouseOver(e) {
-              if (isDragging && dragStarted) {
-                const wordIndex = words.indexOf(e.target);
-                if (wordIndex !== -1 && wordIndex !== currentBookmarkWordIndex) {
-                  setBookmark(wordIndex, false);
-                }
-              }
-            }
-            
-            function handleGlobalTouchEnd(e) {
-              if (isDragging && dragStarted) {
-                finalizeDrag();
-              }
-            }
-            
-            function handleGlobalMouseUp(e) {
-              if (isDragging && dragStarted) {
-                finalizeDrag();
-              }
-            }
-            
-            function handleGlobalMouseMove(e) {
-              if (isDragging && dragStarted) {
-                const elementAtPoint = document.elementFromPoint(e.clientX, e.clientY);
-                if (elementAtPoint && elementAtPoint.classList.contains('word')) {
-                  const wordIndex = words.indexOf(elementAtPoint);
-                  if (wordIndex !== -1 && wordIndex !== currentBookmarkWordIndex) {
-                    setBookmark(wordIndex, false);
-                  }
-                }
-              }
-            }
-            
-            // Set bookmark at specific word
+            // Set bookmark at specific word (internal function)
             function setBookmark(wordIndex, shouldSave = true) {
               if (wordIndex < 0 || wordIndex >= words.length) return;
               
@@ -472,24 +522,6 @@ class SimpleEpubParser {
               });
               
               currentBookmarkWordIndex = wordIndex;
-              
-              if (shouldSave) {
-                // Send data to React Native for saving
-                const wordText = targetWord.textContent.trim();
-                const wordPosition = calculateWordPosition(targetWord);
-                
-                window.ReactNativeWebView.postMessage(JSON.stringify({
-                  type: 'bookmarkSet',
-                  data: {
-                    wordIndex: wordIndex,
-                    chapterIndex: currentChapterIndex,
-                    wordText: wordText,
-                    totalWords: words.length,
-                    position: wordPosition,
-                    timestamp: new Date().toISOString()
-                  }
-                }));
-              }
             }
             
             // Calculate word position relative to chapter
@@ -531,28 +563,6 @@ class SimpleEpubParser {
             function jumpToWord(wordIndex) {
               if (wordIndex >= 0 && wordIndex < words.length) {
                 setBookmark(wordIndex);
-              }
-            }
-            
-            // Show/hide drag indicator
-            function showDragIndicator() {
-              const indicator = document.getElementById('dragIndicator');
-              indicator.style.display = 'block';
-            }
-            
-            function hideDragIndicator() {
-              const indicator = document.getElementById('dragIndicator');
-              indicator.style.display = 'none';
-            }
-            
-            function finalizeDrag() {
-              isDragging = false;
-              dragStarted = false;
-              hideDragIndicator();
-              
-              // Send final position to React Native
-              if (currentBookmarkWordIndex >= 0) {
-                setBookmark(currentBookmarkWordIndex, true);
               }
             }
             
@@ -599,33 +609,15 @@ class SimpleEpubParser {
                   }
                   currentBookmarkWordIndex = -1;
                   break;
-                case 'setBookmarkSelectionMode':
-                  window.bookmarkSelectionMode = data.enabled;
-                  console.log('Bookmark selection mode:', data.enabled);
-                  break;
-                case 'confirmBookmark':
-                  // Find and highlight the confirmed word permanently
-                  const confirmedWord = words.find(word => word.textContent.trim() === data.word);
-                  if (confirmedWord) {
-                    confirmedWord.classList.add('bookmark-active');
-                    confirmedWord.style.backgroundColor = '';
-                    confirmedWord.style.color = '';
-                    confirmedWord.style.fontWeight = '';
-                    confirmedWord.style.borderRadius = '';
-                    confirmedWord.style.padding = '';
+                case 'enableBookmarkMode':
+                  if (!bookmarkSelectionMode) {
+                    toggleBookmarkMode();
                   }
                   break;
-                case 'cancelBookmark':
-                  // Remove temporary highlights
-                  words.forEach(word => {
-                    if (word.style.backgroundColor === 'rgb(255, 224, 130)') {
-                      word.style.backgroundColor = '';
-                      word.style.color = '';
-                      word.style.fontWeight = '';
-                      word.style.borderRadius = '';
-                      word.style.padding = '';
-                    }
-                  });
+                case 'disableBookmarkMode':
+                  if (bookmarkSelectionMode) {
+                    cancelBookmarkMode();
+                  }
                   break;
               }
             });
@@ -639,13 +631,6 @@ class SimpleEpubParser {
             setTimeout(() => {
               initializeWordTracking();
             }, 300);
-            
-            // Prevent context menu on long press
-            document.addEventListener('contextmenu', (e) => {
-              if (isDragging) {
-                e.preventDefault();
-              }
-            });
           </script>
         </body>
       </html>
@@ -659,7 +644,6 @@ class SimpleEpubParser {
         throw new Error('EPUB data not loaded. Please load the EPUB first.');
       }
       
-      // Get book info to access chapters
       const bookInfo = await this.getBookInfo();
       
       if (!bookInfo || !bookInfo.chapters || !Array.isArray(bookInfo.chapters)) {
@@ -679,29 +663,23 @@ class SimpleEpubParser {
         return this.chapterCache.get(cacheKey);
       }
 
-      // Get raw chapter content
       const chapterFile = this.epubData.file(fullChapterPath);
       if (!chapterFile) {
         throw new Error(`Chapter file not found: ${fullChapterPath}`);
       }
 
       let content = await chapterFile.async('string');
-      
-      // Extract only the body content from XHTML
       content = this.extractBodyContent(content);
       
-      // Check if page is blank or has no meaningful content
       const wordCount = this.countWords(content);
-      if (wordCount < 10) { // Increased threshold to 10 words for better filtering
+      if (wordCount < 10) {
         console.log(`⚠️ Chapter ${chapterIndex} has very little content (${wordCount} words), showing blank page...`);
-        // Return a special indicator for blank pages
         return this.generateBlankPageHTML(chapterIndex, bookInfo.chapters.length);
       }
       
-      // Process and enhance the content with bookmark support
+      // Use the new manual bookmark system
       const processedContent = this.generateEnhancedHTML(content, fontSize, bookmarkPosition, chapterIndex);
 
-      // Cache the processed content
       if (!this.chapterCache) {
         this.chapterCache = new Map();
       }

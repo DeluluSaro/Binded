@@ -525,15 +525,15 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: 25 }]}>
-        <TouchableOpacity 
+           <TouchableOpacity 
           onPress={onClose} 
           style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary }]}
           activeOpacity={0.7}
-        >
+           >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
+           </TouchableOpacity>
+           
+           <TouchableOpacity 
           onPress={() => setIsBookmarkSelectionMode(!isBookmarkSelectionMode)} 
           style={[
             styles.headerButton, 
@@ -550,15 +550,15 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
             size={24} 
             color={isBookmarkSelectionMode ? '#fff' : colors.text} 
           />
-        </TouchableOpacity>
-        
+           </TouchableOpacity>
+           
         <View style={styles.chapterInfo}>
           <ThemedText style={[styles.chapterText, { fontFamily: 'Outfit_400Regular' }]}>
             Chapter {currentChapter + 1} of {bookData.chapters.length}
           </ThemedText>
         </View>
-        
-        <TouchableOpacity 
+           
+           <TouchableOpacity 
           onPress={() => setShowBookmarkControls(!showBookmarkControls)} 
           style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary }]}
           activeOpacity={0.7}
@@ -568,8 +568,8 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
             size={24} 
             color={colors.tint} 
           />
-        </TouchableOpacity>
-      </View>
+           </TouchableOpacity>
+         </View>
 
       {/* Progress Bar */}
       <View style={[styles.progressSection, { backgroundColor: colors.surfaceSecondary, borderBottomColor: colors.border }]}>
@@ -596,13 +596,13 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
               <View style={[styles.progressIndicator, { backgroundColor: colors.tint }]}>
                 <ThemedText style={[styles.progressIndicatorText, { color: '#fff', fontFamily: 'Outfit_700Bold' }]}>
                   {displayChapter + 1}
-                </ThemedText>
-              </View>
+               </ThemedText>
+             </View>
             )}
-          </View>
-        </View>
-      </View>
-
+         </View>
+               </View>
+                 </View>
+                 
       {/* Bookmark Controls */}
       {showBookmarkControls && (
         <View style={[styles.bookmarkControls, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
@@ -613,53 +613,53 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
                 <ThemedText style={[styles.bookmarkText, { fontFamily: 'Outfit_400Regular' }]}>
                   Word {bookmarkPosition + 1}
                   {bookmarkData && bookmarkData.wordText ? ` "${bookmarkData.wordText}"` : ''}
-                </ThemedText>
-                <TouchableOpacity
+                 </ThemedText>
+               <TouchableOpacity
                   style={[styles.removeBookmarkButton, { backgroundColor: colors.error }]}
                   onPress={removeCurrentBookmark}
                 >
                   <Ionicons name="close" size={16} color="#fff" />
-                </TouchableOpacity>
+               </TouchableOpacity>
               </View>
             ) : (
               <View style={styles.bookmarkInfo}>
                 <Ionicons name="bookmark-outline" size={20} color={colors.icon} />
                 <ThemedText style={[styles.noBookmarkText, { fontFamily: 'Outfit_400Regular' }]}>
                   Tap any word to set bookmark
-                </ThemedText>
-              </View>
-            )}
+                   </ThemedText>
+           </View>
+         )}
           </View>
-          
+
           <View style={styles.bookmarkActions}>
-            <TouchableOpacity
+         <TouchableOpacity
               style={[styles.bookmarkActionButton, !hasBookmark && styles.disabledButton]}
-              onPress={moveBookmarkPrevious}
-              disabled={!hasBookmark}
-            >
+           onPress={moveBookmarkPrevious}
+           disabled={!hasBookmark}
+         >
               <Ionicons name="chevron-back" size={20} color={hasBookmark ? colors.text : colors.icon} />
               <ThemedText style={[styles.bookmarkActionText, { fontFamily: 'Outfit_400Regular' }]}>
                 Previous
-              </ThemedText>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
+             </ThemedText>
+         </TouchableOpacity>
+         
+           <TouchableOpacity
               style={[styles.bookmarkActionButton, !hasBookmark && styles.disabledButton]}
               onPress={moveBookmarkNext}
               disabled={!hasBookmark}
             >
               <ThemedText style={[styles.bookmarkActionText, { fontFamily: 'Outfit_400Regular' }]}>
                 Next
-              </ThemedText>
+             </ThemedText>
               <Ionicons name="chevron-forward" size={20} color={hasBookmark ? colors.text : colors.icon} />
-            </TouchableOpacity>
-          </View>
+           </TouchableOpacity>
+         </View>
         </View>
       )}
-
+         
       {/* Font Controls */}
       <View style={[styles.fontControls, { backgroundColor: colors.surfaceSecondary, borderBottomColor: colors.border }]}>
-        <TouchableOpacity 
+         <TouchableOpacity
           style={[styles.fontButton, { backgroundColor: colors.tint }]} 
           onPress={() => adjustFontSize(Math.max(12, fontSize - 2))}
         >
@@ -668,22 +668,22 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
         
         <ThemedText style={[styles.fontSizeText, { fontFamily: 'Outfit_700Bold' }]}>
           {fontSize}px
-        </ThemedText>
+             </ThemedText>
         
         <TouchableOpacity 
           style={[styles.fontButton, { backgroundColor: colors.tint }]} 
           onPress={() => adjustFontSize(Math.min(24, fontSize + 2))}
         >
           <Ionicons name="add" size={20} color="#fff" />
-        </TouchableOpacity>
-      </View>
+         </TouchableOpacity>
+       </View>
 
       {/* Content */}
       <View style={styles.contentContainer}>
-        <WebView
-          ref={webViewRef}
-          source={{ html: chapterContent }}
-          style={styles.webView}
+          <WebView
+            ref={webViewRef}
+            source={{ html: chapterContent }}
+            style={styles.webView}
           showsVerticalScrollIndicator={true}
           bounces={true}
           scalesPageToFit={false}
@@ -694,8 +694,8 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
           contentInsetAdjustmentBehavior="never"
           allowsInlineMediaPlayback={true}
           mediaPlaybackRequiresUserAction={false}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
           onMessage={handleWebViewMessage}
           renderLoading={() => (
             <View style={styles.webViewLoading}>
@@ -721,7 +721,7 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
         
         {/* Navigation Buttons */}
         <View style={styles.navButtonsContainer}>
-          <TouchableOpacity
+        <TouchableOpacity
             style={[
               styles.navButton, 
               { backgroundColor: colors.tint },
@@ -734,9 +734,9 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
             <ThemedText style={[styles.navButtonText, { fontFamily: 'Outfit_700Bold' }]}>
               Previous
             </ThemedText>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
+        </TouchableOpacity>
+        
+        <TouchableOpacity
             style={[
               styles.navButton, 
               { backgroundColor: colors.tint },
@@ -749,7 +749,7 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
               Next
             </ThemedText>
             <Ionicons name="chevron-forward" size={20} color="#fff" />
-          </TouchableOpacity>
+        </TouchableOpacity>
         </View>
         
         {isLoadingMore && (
@@ -772,7 +772,7 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
               Add "{selectedWord}" to bookmarks?
             </ThemedText>
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
+        <TouchableOpacity
                 onPress={cancelBookmark}
                 style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.surfaceSecondary }]}
                 activeOpacity={0.7}
@@ -789,8 +789,8 @@ const SimpleEpubReader: React.FC<SimpleEpubReaderProps> = ({ epubUrl, onClose })
                 <ThemedText style={[styles.modalButtonText, { color: '#fff', fontFamily: 'Outfit_700Bold' }]}>
                   Add Bookmark
                 </ThemedText>
-              </TouchableOpacity>
-            </View>
+        </TouchableOpacity>
+      </View>
           </View>
         </View>
       )}
@@ -982,7 +982,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   pageIndicator: {
-    alignItems: 'center',
+      alignItems: 'center',
     marginBottom: 15,
     paddingVertical: 8,
     paddingHorizontal: 16,
@@ -998,20 +998,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   navButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 25,
     minWidth: 120,
-    justifyContent: 'center',
-  },
+      justifyContent: 'center',
+    },
   navButtonDisabled: {
     backgroundColor: '#bdc3c7',
   },
   navButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
+      fontWeight: 'bold',
     fontSize: 14,
     marginHorizontal: 8,
   },
@@ -1022,65 +1022,65 @@ const styles = StyleSheet.create({
   loadingMoreText: {
     fontSize: 12,
     fontStyle: 'italic',
-  },
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    },
+    modalOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+    },
   modalContent: {
-    margin: 20,
+      margin: 20,
     borderRadius: 15,
     padding: 24,
     alignItems: 'center',
-    shadowColor: '#000',
+      shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
     minWidth: 280,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
     marginBottom: 12,
     textAlign: 'center',
   },
   modalText: {
-    fontSize: 16,
-    textAlign: 'center',
+      fontSize: 16,
+      textAlign: 'center',
     marginBottom: 24,
-    lineHeight: 22,
-  },
-  modalButtons: {
-    flexDirection: 'row',
+      lineHeight: 22,
+    },
+    modalButtons: {
+      flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-  },
-  modalButton: {
-    flex: 1,
+    },
+    modalButton: {
+      flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 20,
+      paddingHorizontal: 20,
     borderRadius: 25,
     marginHorizontal: 6,
-    alignItems: 'center',
-  },
-  cancelButton: {
+      alignItems: 'center',
+    },
+    cancelButton: {
     // backgroundColor will be set dynamically
-  },
-  confirmButton: {
+    },
+    confirmButton: {
     // backgroundColor will be set dynamically
-  },
+    },
   modalButtonText: {
-    fontSize: 16,
+      fontSize: 16,
     fontWeight: '600',
-  },
-});
+    },
+  });
 
 export default SimpleEpubReader;
