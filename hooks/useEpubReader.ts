@@ -832,17 +832,24 @@ export const useEpubReader = (epubUrl: string) => {
   const handleWebViewMessage = (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
+      console.log('📨 WebView message received:', data);
       
       switch (data.type) {
         case 'bookmarkSet':
           handleBookmarkSet(data.data);
           break;
         case 'requestNextChapter':
+          console.log('🔄 Requesting next chapter from blank page...');
+          console.log('📊 Current chapter:', currentChapter, 'Total chapters:', bookData?.chapters?.length);
           if (currentChapter < bookData.chapters.length - 1) {
+            console.log('✅ Loading next chapter:', currentChapter + 1);
             loadSingleChapter(currentChapter + 1, isDark);
+          } else {
+            console.log('❌ No more chapters available');
           }
           break;
         case 'requestPreviousChapter':
+          console.log('🔄 Requesting previous chapter...');
           if (currentChapter > 0) {
             loadSingleChapter(currentChapter - 1, isDark);
           }

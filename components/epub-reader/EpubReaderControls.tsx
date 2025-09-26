@@ -1,4 +1,5 @@
 import { useTheme } from '@/contexts/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -39,6 +40,7 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
   const [isBookmarkDropdownOpen, setIsBookmarkDropdownOpen] = useState(false);
   const [dropdownOpacity] = useState(new Animated.Value(0));
   const [dropdownScale] = useState(new Animated.Value(0.8));
+  const [iconRotation] = useState(new Animated.Value(0));
 
   const handleFontSizeIncrease = () => {
     const newSize = Math.min(24, fontSize + 2);
@@ -52,8 +54,30 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
     onFontSizeChange(newSize);
   };
 
+  const spinIcon = (direction: 'right' | 'left') => {
+    // Reset rotation to 0
+    iconRotation.setValue(0);
+    
+    // Animate rotation based on direction
+    Animated.timing(iconRotation, {
+      toValue: direction === 'right' ? 1 : -1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+  };
+
   const toggleBookmarkDropdown = () => {
     const newState = !isBookmarkDropdownOpen;
+    
+    // Spin the icon based on action
+    if (newState) {
+      // Opening - spin right
+      spinIcon('right');
+    } else {
+      // Closing - spin left
+      spinIcon('left');
+    }
+    
     setIsBookmarkDropdownOpen(newState);
     
     if (newState) {
@@ -103,7 +127,18 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
             style={[styles.headerButton, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.1)' }]}
             onPress={toggleBookmarkDropdown}
           >
-            <Text style={[styles.headerButtonText, { color: isDark ? '#e0e0e0' : '#3a2e24' }]}>🔖</Text>
+            <Animated.View
+              style={{
+                transform: [{
+                  rotate: iconRotation.interpolate({
+                    inputRange: [-1, 0, 1],
+                    outputRange: ['-360deg', '0deg', '360deg'],
+                  }),
+                }],
+              }}
+            >
+              <Ionicons name="cog" size={20} color={isDark ? '#e0e0e0' : '#3a2e24'} />
+            </Animated.View>
           </TouchableOpacity>
           
           {/* Bookmark Dropdown */}

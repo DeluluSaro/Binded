@@ -276,11 +276,11 @@ class SimpleEpubParser {
             
             /* Bookmark highlight */
             .bookmark-active {
-              background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%) !important;
-              color: var(--text-primary) !important;
+              background: linear-gradient(135deg, #E74C3C 0%, #FF6B5B 100%) !important;
+              color: #FFFFFF !important;
               font-weight: 600;
-              box-shadow: 0 2px 12px rgba(255, 215, 0, 0.4);
-              border: 2px solid #FF8C00;
+              box-shadow: 0 2px 12px rgba(231, 76, 60, 0.4);
+              border: 2px solid #E74C3C;
               padding: 4px 8px !important;
               margin: 0 2px;
               border-radius: var(--border-radius-small);
@@ -299,7 +299,7 @@ class SimpleEpubParser {
               height: 0;
               border-left: 8px solid transparent;
               border-right: 8px solid transparent;
-              border-bottom: 12px solid #FFD700;
+              border-bottom: 12px solid #E74C3C;
               z-index: 20;
               animation: bookmarkPulse 2s infinite;
             }
@@ -366,46 +366,65 @@ class SimpleEpubParser {
             
             /* Manual bookmark button */
             .bookmark-button {
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              border: none;
+              background: var(--accent-color);
+              border: 2px solid var(--accent-color);
               color: white;
-              font-size: 20px;
+              font-size: 18px;
+              font-weight: 600;
+              transition: all 0.3s ease;
             }
             
             .bookmark-button:hover {
-              background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-            }
-            
-            .bookmark-button.active {
-              background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-              color: var(--text-primary);
-            }
-            
-            /* Cancel button */
-            .cancel-button {
-              padding: 8px 20px;
-              background: var(--accent-color);
-              color: white;
-              border: none;
-              border-radius: 22px;
-              font-size: 14px;
-              font-weight: 600;
-              font-family: 'Plus Jakarta Sans', sans-serif;
-              box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
-              transition: all 0.3s ease;
-              z-index: 1000;
-              display: none;
-              cursor: pointer;
-            }
-            
-            .cancel-button:hover {
               background: var(--accent-light);
+              border-color: var(--accent-light);
               transform: translateY(-1px);
               box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
             }
             
+            .bookmark-button.active {
+              background: linear-gradient(135deg, #E74C3C 0%, #FF6B5B 100%);
+              border-color: #E74C3C;
+              color: white;
+              box-shadow: 0 4px 16px rgba(231, 76, 60, 0.5);
+            }
+            
+            /* Cancel button */
+            .cancel-button {
+              width: 44px;
+              height: 44px;
+              padding: 0;
+              background: rgba(255, 255, 255, 0.15);
+              color: #FFFFFF;
+              border: 2px solid rgba(255, 255, 255, 0.3);
+              border-radius: 50%;
+              font-size: 18px;
+              font-weight: 600;
+              font-family: 'Plus Jakarta Sans', sans-serif;
+              box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+              transition: all 0.3s ease;
+              z-index: 1000;
+              display: none;
+              cursor: pointer;
+              backdrop-filter: blur(10px);
+              -webkit-backdrop-filter: blur(10px);
+              align-items: center;
+              justify-content: center;
+            }
+            
+            .cancel-button:hover {
+              background: rgba(255, 255, 255, 0.25);
+              border-color: rgba(255, 255, 255, 0.5);
+              transform: translateY(-2px);
+              box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            }
+            
+            .cancel-button:active {
+              transform: translateY(0);
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            
             .bookmark-selection-mode .cancel-button {
-              display: block;
+              display: flex;
             }
             
             /* Notification system */
@@ -592,13 +611,17 @@ class SimpleEpubParser {
           <div class="top-nav">
             <div class="nav-section">
               <button class="nav-btn cancel-button" id="cancelButton" onclick="cancelBookmarkMode()">
-                Cancel
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>
+                </svg>
               </button>
             </div>
             
             <div class="nav-section">
               <button class="nav-btn bookmark-button" id="bookmarkButton" onclick="toggleBookmarkMode()">
-                📖
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
+                </svg>
               </button>
             </div>
           </div>
@@ -650,7 +673,7 @@ class SimpleEpubParser {
               if (bookmarkSelectionMode) {
                 // Enter selection mode
                 body.classList.add('bookmark-selection-mode');
-                button.textContent = '⭐';
+                button.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>';
                 button.classList.add('active');
                 notification.style.display = 'block';
                 
@@ -658,7 +681,7 @@ class SimpleEpubParser {
               } else {
                 // Exit selection mode
                 body.classList.remove('bookmark-selection-mode');
-                button.textContent = '📖';
+                button.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>';
                 button.classList.remove('active');
                 notification.style.display = 'none';
                 
@@ -675,7 +698,7 @@ class SimpleEpubParser {
               const notification = document.getElementById('bookmarkNotification');
               
               body.classList.remove('bookmark-selection-mode');
-              button.textContent = '📖';
+              button.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>';
               button.classList.remove('active');
               notification.style.display = 'none';
               
@@ -1258,18 +1281,31 @@ class SimpleEpubParser {
             let countdown = 3;
             const countdownElement = document.getElementById('countdown');
             
+            console.log('🔄 Blank page auto-navigation initialized');
+            console.log('🔄 Next chapter available:', ${hasNextChapter});
+            console.log('🔄 WebView available:', typeof window.ReactNativeWebView !== 'undefined');
+            
             const timer = setInterval(() => {
               countdown--;
               if (countdownElement) {
                 countdownElement.textContent = countdown;
               }
               
+              console.log('⏰ Countdown:', countdown);
+              
               if (countdown <= 0) {
                 clearInterval(timer);
+                console.log('🚀 Attempting to navigate to next chapter...');
+                
                 // Notify React Native to go to next chapter
-                window.ReactNativeWebView.postMessage(JSON.stringify({
-                  type: 'requestNextChapter'
-                }));
+                if (window.ReactNativeWebView) {
+                  console.log('📤 Sending requestNextChapter message...');
+                  window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'requestNextChapter'
+                  }));
+                } else {
+                  console.error('❌ ReactNativeWebView not available');
+                }
               }
             }, 1000);
           ` : ''}
