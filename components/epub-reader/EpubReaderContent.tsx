@@ -62,7 +62,8 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
     paddingTop: 100, // Add space for the header
-    paddingBottom: 200, // Add space for the bookmark section
+    paddingBottom: 120, // Add space for the footer
+    paddingHorizontal: 24, // Match the image padding
   },
   webView: {
     flex: 1,

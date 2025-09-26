@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Book Reader</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&amp;family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<style type="text/tailwindcss">
+    :root {
+      --light-bg: #b7aa99;
+      --dark-bg: #010101;
+      --accent: #eb5838;
+      --light-text: #3a2e24;
+      --dark-text: #e0e0e0;
+    }
+    .bg-light-theme {
+      background-color: var(--light-bg);
+      color: var(--light-text);
+    }
+    .bg-dark-theme {
+      background-color: var(--dark-bg);
+      color: var(--dark-text);
+    }
+    .text-accent {
+      color: var(--accent);
+    }
+    .bg-accent {
+      background-color: var(--accent);
+    }
+    .ring-accent {
+        ring-color: var(--accent);
+    }
+    .glassmorphism-light {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .glassmorphism-dark {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .dark .glassmorphism-light {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    body {
+        font-family: 'Lora', serif;
+    }
+    .font-sans {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .group:focus-within .group-focus-within\:block {
+        display: block;
+    }
+    .group:focus-within .group-focus-within\:opacity-100 {
+        opacity: 1;
+    }
+    .group:focus-within .group-focus-within\:translate-y-0 {
+        transform: translateY(0);
+    }
+    </style>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+      };
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-light-theme dark:bg-dark-theme transition-colors duration-500">
+<div class="relative min-h-screen w-full flex flex-col" id="reader-container">
+<header class="fixed top-0 left-0 right-0 z-50 p-4 flex justify-between items-center">
+<button class="w-12 h-12 flex items-center justify-center rounded-full glassmorphism-light dark:glassmorphism-dark text-light-text dark:text-dark-text">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<div class="relative group">
+<button class="w-12 h-12 flex items-center justify-center rounded-full glassmorphism-light dark:glassmorphism-dark text-light-text dark:text-dark-text">
+<span class="material-symbols-outlined">bookmark</span>
+</button>
+<div class="absolute top-full right-0 mt-2 w-56 rounded-xl glassmorphism-light dark:glassmorphism-dark text-light-text dark:text-dark-text p-2 font-sans text-sm origin-top-right transition-all duration-300 ease-in-out opacity-0 translate-y-2 group-focus-within:opacity-100 group-focus-within:translate-y-0 hidden group-focus-within:block">
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10" href="#">
+<span class="material-symbols-outlined text-base">bookmark_add</span>
+<span>Bookmark Current Page</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10" href="#">
+<span class="material-symbols-outlined text-base">bookmarks</span>
+<span>View Bookmarks</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10" href="#">
+<span class="material-symbols-outlined text-base">bookmark_added</span>
+<span>Go to Last Bookmark</span>
+</a>
+<div class="h-px bg-black/10 dark:bg-white/10 my-1"></div>
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-accent hover:bg-accent/20" href="#">
+<span class="material-symbols-outlined text-base">delete</span>
+<span>Clear Bookmarks</span>
+</a>
+</div>
+</div>
+<button class="w-12 h-12 flex items-center justify-center rounded-full glassmorphism-light dark:glassmorphism-dark text-light-text dark:text-dark-text">
+<span class="material-symbols-outlined">text_increase</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center rounded-full glassmorphism-light dark:glassmorphism-dark text-light-text dark:text-dark-text" id="theme-toggle">
+<span class="material-symbols-outlined block dark:hidden">dark_mode</span>
+<span class="material-symbols-outlined hidden dark:block">light_mode</span>
+</button>
+</div>
+</header>
+<main class="flex-1 px-6 pb-48 pt-24 text-lg leading-relaxed antialiased">
+<div class="space-y-6">
+<p>
+          The old man was thin and gaunt with deep wrinkles at the back of his neck. The brown blotches of benevolent skin cancer the sun brings from its reflection on the tropic sea were on his cheeks. The blotches ran well down the sides of his face and his hands had the deep, creased scars from handling heavy fish on the cords. But none of these scars were fresh. They were as old as erosions in a fishless desert.
+        </p>
+<p>Everything about him was old except his eyes and they were the same color as the sea and were cheerful and undefeated.</p>
+<p>Santiago, he said to the boy as they climbed the bank from where the skiff was hauled up. I could go with you again. We've made some money.</p>
+<p>The boy said, No. I'm with another boat now. But you go with good luck.</p>
+</div>
+</main>
+<footer class="fixed bottom-0 left-0 right-0 z-50 p-4 pt-0">
+<div class="glassmorphism-light dark:glassmorphism-dark rounded-2xl p-4 space-y-4 font-sans">
+<div class="flex justify-between items-center text-xs font-medium text-light-text/80 dark:text-dark-text/80">
+<span>Page 12 of 345</span>
+<span>4 hours left</span>
+</div>
+<div class="w-full bg-black/10 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
+<div class="bg-accent h-full" style="width: 25%;"></div>
+</div>
+<div class="flex justify-between items-center">
+<button class="w-14 h-14 flex items-center justify-center rounded-full text-light-text dark:text-dark-text">
+<span class="material-symbols-outlined text-4xl">chevron_left</span>
+</button>
+<div class="flex-1 text-center font-medium text-accent">Chapter 3</div>
+<button class="w-14 h-14 flex items-center justify-center rounded-full text-light-text dark:text-dark-text">
+<span class="material-symbols-outlined text-4xl">chevron_right</span>
+</button>
+</div>
+</div>
+</footer>
+</div>
+<script>
+    const themeToggle = document.getElementById('theme-toggle');
+    const htmlEl = document.documentElement;
+    // Check for saved theme in localStorage
+    if (localStorage.getItem('theme') === 'dark') {
+        htmlEl.classList.add('dark');
+    }
+    themeToggle.addEventListener('click', () => {
+        if (htmlEl.classList.contains('dark')) {
+            htmlEl.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        } else {
+            htmlEl.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        }
+    });
+  </script>
+
+</body></html>

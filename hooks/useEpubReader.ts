@@ -31,7 +31,7 @@ export const useEpubReader = (epubUrl: string) => {
   const epubParser = useRef(new SimpleEpubParser());
 
   // Load a single chapter and cache it
-  const loadSingleChapter = useCallback(async (chapterIndex: number, isDarkTheme: boolean = false) => {
+  const loadSingleChapter = useCallback(async (chapterIndex: number, isDarkTheme: boolean = false, wordIndex?: number) => {
     if (loadedChapters.has(chapterIndex) || chapterCache.has(chapterIndex)) {
       const cachedContent = chapterCache.get(chapterIndex);
       if (cachedContent) {
@@ -109,7 +109,7 @@ export const useEpubReader = (epubUrl: string) => {
               }
               
               body {
-                font-family: 'Lora', serif;
+                font-family: 'Outfit_400Regular', 'Outfit', sans-serif;
                 font-size: ${fontSize}px;
                 line-height: 1.8;
                 margin: 0;
@@ -136,7 +136,7 @@ export const useEpubReader = (epubUrl: string) => {
                 margin-bottom: 1em;
                 text-align: left;
                 line-height: 1.4;
-                font-family: 'Plus Jakarta Sans', sans-serif;
+                font-family: 'Outfit_700Bold', 'Outfit', sans-serif;
                 font-weight: 600;
               }
               
@@ -167,7 +167,7 @@ export const useEpubReader = (epubUrl: string) => {
                 margin-bottom: 1.5em;
                 text-align: center;
                 color: var(--accent);
-                font-family: 'Plus Jakarta Sans', sans-serif;
+                font-family: 'Outfit_700Bold', 'Outfit', sans-serif;
               }
               
               body > *:first-child { margin-top: 0; }
@@ -492,6 +492,143 @@ export const useEpubReader = (epubUrl: string) => {
                   height: document.body.scrollHeight
                 }));
               }, 100);
+              
+              // Scroll to specific word if wordIndex is provided
+              ${wordIndex !== undefined ? `
+                setTimeout(() => {
+                  try {
+                    console.log('Attempting to scroll to word index:', ${wordIndex});
+                    
+                    // Get all text content and split into words
+                    const allText = document.body.innerText || document.body.textContent || '';
+                    const allWords = allText.split(/\\s+/).filter(word => word.length > 0);
+                    
+                    console.log('Total words found:', allWords.length);
+                    console.log('Target word index:', ${wordIndex});
+                    
+                    if (allWords.length > ${wordIndex}) {
+                      const targetWord = allWords[${wordIndex}];
+                      console.log('Target word:', targetWord);
+                      
+                      // Find all text nodes
+                      const textNodes = [];
+                      const walker = document.createTreeWalker(
+                        document.body,
+                        NodeFilter.SHOW_TEXT,
+                        null,
+                        false
+                      );
+                      
+                      let node;
+                      while (node = walker.nextNode()) {
+                        if (node.textContent.trim().length > 0) {
+                          textNodes.push(node);
+                        }
+                      }
+                      
+                      console.log('Text nodes found:', textNodes.length);
+                      
+                      // Find the text node containing our target word
+                      let currentWordIndex = 0;
+                      let targetTextNode = null;
+                      let wordPositionInNode = 0;
+                      
+                      for (let i = 0; i < textNodes.length; i++) {
+                        const textNode = textNodes[i];
+                        const nodeWords = textNode.textContent.split(/\\s+/).filter(word => word.length > 0);
+                        
+                        if (currentWordIndex + nodeWords.length > ${wordIndex}) {
+                          targetTextNode = textNode;
+                          wordPositionInNode = ${wordIndex} - currentWordIndex;
+                          break;
+                        }
+                        currentWordIndex += nodeWords.length;
+                      }
+                      
+                      if (targetTextNode) {
+                        console.log('Found target text node, word position in node:', wordPositionInNode);
+                        
+                        // Create a range to select the specific word
+                        const range = document.createRange();
+                        const text = targetTextNode.textContent;
+                        const words = text.split(/\\s+/).filter(word => word.length > 0);
+                        
+                        if (wordPositionInNode < words.length) {
+                          // Find the start and end positions of the target word
+                          let charIndex = 0;
+                          for (let i = 0; i < wordPositionInNode; i++) {
+                            charIndex += words[i].length + 1; // +1 for space
+                          }
+                          
+                          const wordStart = charIndex;
+                          const wordEnd = charIndex + words[wordPositionInNode].length;
+                          
+                          try {
+                            range.setStart(targetTextNode, wordStart);
+                            range.setEnd(targetTextNode, wordEnd);
+                            
+                            // Create a temporary span to highlight the word
+                            const span = document.createElement('span');
+                            span.style.backgroundColor = '#eb5838';
+                            span.style.color = 'white';
+                            span.style.padding = '2px 4px';
+                            span.style.borderRadius = '3px';
+                            span.style.fontWeight = 'bold';
+                            span.style.boxShadow = '0 2px 8px rgba(235, 88, 56, 0.3)';
+                            
+                            try {
+                              range.surroundContents(span);
+                            } catch (e) {
+                              // If surroundContents fails, try a different approach
+                              const contents = range.extractContents();
+                              span.appendChild(contents);
+                              range.insertNode(span);
+                            }
+                            
+                            // Scroll to the highlighted word
+                            span.scrollIntoView({ 
+                              behavior: 'smooth', 
+                              block: 'center',
+                              inline: 'nearest'
+                            });
+                            
+                            // Remove highlight after 3 seconds
+                            setTimeout(() => {
+                              try {
+                                const parent = span.parentNode;
+                                if (parent) {
+                                  parent.replaceChild(document.createTextNode(span.textContent), span);
+                                  parent.normalize();
+                                }
+                              } catch (e) {
+                                console.log('Error removing highlight:', e);
+                              }
+                            }, 3000);
+                            
+                            console.log('Successfully scrolled to and highlighted word');
+                            
+                          } catch (rangeError) {
+                            console.log('Range error, trying alternative approach:', rangeError);
+                            
+                            // Alternative: just scroll to the text node
+                            targetTextNode.scrollIntoView({ 
+                              behavior: 'smooth', 
+                              block: 'center',
+                              inline: 'nearest'
+                            });
+                          }
+                        }
+                      } else {
+                        console.log('Target text node not found');
+                      }
+                    } else {
+                      console.log('Word index out of bounds');
+                    }
+                  } catch (error) {
+                    console.log('Error scrolling to word:', error);
+                  }
+                }, 1000); // Increased delay to ensure content is fully loaded
+              ` : ''}
             </script>
           </body>
         </html>
@@ -772,10 +909,27 @@ export const useEpubReader = (epubUrl: string) => {
     }
   };
 
-  const goToChapter = async (targetChapter: number) => {
-    if (targetChapter >= 0 && targetChapter < bookData.chapters.length && targetChapter !== currentChapter) {
-      setCurrentChapter(targetChapter);
-      await loadSingleChapter(targetChapter, isDark);
+  const goToChapter = async (targetChapter: number, wordIndex?: number) => {
+    if (targetChapter >= 0 && targetChapter < bookData.chapters.length) {
+      // If navigating to a different chapter or if we need to scroll to a specific word
+      if (targetChapter !== currentChapter || wordIndex !== undefined) {
+        // Clear the chapter cache to force reload with word scrolling
+        if (wordIndex !== undefined) {
+          setChapterCache(prev => {
+            const newCache = new Map(prev);
+            newCache.delete(targetChapter);
+            return newCache;
+          });
+          setLoadedChapters(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(targetChapter);
+            return newSet;
+          });
+        }
+        
+        setCurrentChapter(targetChapter);
+        await loadSingleChapter(targetChapter, isDark, wordIndex);
+      }
     }
   };
 
