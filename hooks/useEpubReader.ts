@@ -842,8 +842,9 @@ export const useEpubReader = (epubUrl: string) => {
           console.log('🔄 Requesting next chapter from blank page...');
           console.log('📊 Current chapter:', currentChapter, 'Total chapters:', bookData?.chapters?.length);
           if (currentChapter < bookData.chapters.length - 1) {
-            console.log('✅ Loading next chapter:', currentChapter + 1);
-            loadSingleChapter(currentChapter + 1, isDark);
+            console.log('✅ Navigating to next chapter:', currentChapter + 1);
+            // Use the proper navigation function that updates state
+            nextChapter();
           } else {
             console.log('❌ No more chapters available');
           }
@@ -851,7 +852,9 @@ export const useEpubReader = (epubUrl: string) => {
         case 'requestPreviousChapter':
           console.log('🔄 Requesting previous chapter...');
           if (currentChapter > 0) {
-            loadSingleChapter(currentChapter - 1, isDark);
+            console.log('✅ Navigating to previous chapter:', currentChapter - 1);
+            // Use the proper navigation function that updates state
+            prevChapter();
           }
           break;
         case 'bookmarkPosition':
