@@ -146,7 +146,7 @@ class SimpleEpubParser {
     let placeholderIndex = 0;
     
     preserveTags.forEach(tag => {
-      const regex = new RegExp(`<${tag}[^>]*>[\s\S]*?<\/${tag}>`, 'gi');
+      const regex = new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, 'gi');
       content = content.replace(regex, (match) => {
         const placeholder = `__PRESERVE_${placeholderIndex}__`;
         preservedContent[placeholder] = match;
@@ -161,20 +161,23 @@ class SimpleEpubParser {
       />([^<]*)</g, 
       (match, textContent) => {
         // Only wrap words in the text content between tags
+        // FIX: Replaced '\\b' with '\b' for correct regex word boundary
         const wrappedText = textContent.replace(
-      /\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, 
-      '<span class="word">$1</span>'
-    );
+          /\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, 
+          '<span class="word">$1</span>'
+        );
         return `>${wrappedText}<`;
       }
     );
     
     // Handle text at the beginning and end of content
     content = content.replace(/^([^<]+)/, (match) => {
+      // FIX: Replaced '\\b' with '\b' for correct regex word boundary
       return match.replace(/\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, '<span class="word">$1</span>');
     });
     
     content = content.replace(/([^>]+)$/, (match) => {
+      // FIX: Replaced '\\b' with '\b' for correct regex word boundary
       return match.replace(/\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, '<span class="word">$1</span>');
     });
     
@@ -186,7 +189,7 @@ class SimpleEpubParser {
     return content;
   }
 
-  // Enhanced HTML generation with manual bookmark support
+  // Enhanced HTML generation with premium design
   generateEnhancedHTML(content, fontSize, bookmarkPosition = -1, chapterIndex = 0) {
     // First, wrap words in spans for individual targeting
     const wrappedContent = this.wrapWordsInSpans(content);
@@ -196,23 +199,72 @@ class SimpleEpubParser {
       <html>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
           <style>
-            body {
-              font-family: 'Outfit-Regular', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              font-size: ${fontSize}px;
-              line-height: 1.7;
-              margin: 20px;
+            * {
+              margin: 0;
               padding: 0;
-              color: #2c3e50;
-              background-color: #fefefe;
-              text-align: justify;
+              box-sizing: border-box;
+            }
+            
+            :root {
+              /* COLOR FIX: Updated colors to match the warm, off-white UI */
+              --primary-bg: #F3EFE9;
+              --secondary-bg: #F3EFE9;
+              --text-primary: #2A2A2A;
+              --text-secondary: #666666;
+              --accent-color: #E74C3C;
+              --accent-light: #FF6B5B;
+              --border-color: #E8E6E3;
+              --shadow-light: rgba(0, 0, 0, 0.05);
+              --shadow-medium: rgba(0, 0, 0, 0.1);
+              --shadow-heavy: rgba(0, 0, 0, 0.15);
+              --border-radius: 16px;
+              --border-radius-small: 8px;
+            }
+            
+            body {
+              font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              font-size: ${fontSize}px;
+              font-weight: 400;
+              line-height: 1.75;
+              color: var(--text-primary);
+              background: var(--primary-bg);
+              padding: 0;
+              margin: 0;
+              min-height: 100vh;
               position: relative;
               user-select: none;
               -webkit-user-select: none;
               -webkit-touch-callout: none;
+              overflow-x: hidden;
             }
             
-            /* Word styling - default state (no interaction) */
+            /* Main content container */
+            .content-container {
+              max-width: 680px;
+              margin: 0 auto;
+              background: var(--secondary-bg);
+              min-height: 100vh;
+              /* Adjusted shadow for the new background */
+              box-shadow: 
+                0 0 0 1px rgba(0,0,0,0.03),
+                0 8px 32px var(--shadow-light);
+              position: relative;
+            }
+            
+            /* Content area */
+            #content {
+              padding: 120px 40px 80px 40px;
+              text-align: justify;
+              text-justify: inter-word;
+              position: relative;
+              z-index: 1;
+            }
+            
+            /* Word styling - default state */
             .word {
               display: inline;
               padding: 1px 2px;
@@ -223,20 +275,20 @@ class SimpleEpubParser {
             
             /* Only interactive when in bookmark selection mode */
             .bookmark-selection-mode .word {
-              /* Mobile touch interaction only */
+              cursor: pointer;
             }
             
             /* Bookmark highlight */
             .bookmark-active {
               background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%) !important;
-              color: #2c3e50 !important;
-              font-weight: bold;
-              box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+              color: var(--text-primary) !important;
+              font-weight: 600;
+              box-shadow: 0 2px 12px rgba(255, 215, 0, 0.4);
               border: 2px solid #FF8C00;
-              padding: 3px 6px !important;
+              padding: 4px 8px !important;
               margin: 0 2px;
-              border-radius: 8px;
-              transform: scale(1.05);
+              border-radius: var(--border-radius-small);
+              transform: scale(1.02);
               z-index: 10;
               position: relative;
             }
@@ -244,14 +296,14 @@ class SimpleEpubParser {
             /* Floating bookmark indicator */
             .bookmark-indicator {
               position: absolute;
-              top: -15px;
+              top: -18px;
               left: 50%;
               transform: translateX(-50%);
               width: 0;
               height: 0;
-              border-left: 6px solid transparent;
-              border-right: 6px solid transparent;
-              border-bottom: 10px solid #FFD700;
+              border-left: 8px solid transparent;
+              border-right: 8px solid transparent;
+              border-bottom: 12px solid #FFD700;
               z-index: 20;
               animation: bookmarkPulse 2s infinite;
             }
@@ -261,50 +313,103 @@ class SimpleEpubParser {
               50% { opacity: 0.7; transform: translateX(-50%) scale(1.1); }
             }
             
+            /* Top navigation bar */
+            .top-nav {
+              position: fixed;
+              top: 0;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 100%;
+              max-width: 680px;
+              height: 80px;
+              /* Adjusted for new background color */
+              background: rgba(243, 239, 233, 0.85);
+              backdrop-filter: blur(20px);
+              -webkit-backdrop-filter: blur(20px);
+              border-bottom: 1px solid var(--border-color);
+              z-index: 1000;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 0 24px;
+            }
+            
+            .nav-section {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+            }
+            
+            /* Navigation buttons */
+            .nav-btn {
+              width: 44px;
+              height: 44px;
+              border-radius: 50%;
+              background: var(--secondary-bg);
+              border: 1px solid var(--border-color);
+              color: var(--text-secondary);
+              font-size: 18px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.2s ease;
+              box-shadow: 0 2px 8px var(--shadow-light);
+              cursor: pointer;
+            }
+            
+            .nav-btn:hover {
+              background: #fff; /* A slightly brighter hover */
+              border-color: var(--text-secondary);
+              color: var(--text-primary);
+              transform: translateY(-1px);
+              box-shadow: 0 4px 12px var(--shadow-medium);
+            }
+            
+            .nav-btn.active {
+              background: var(--accent-color);
+              border-color: var(--accent-color);
+              color: white;
+            }
+            
             /* Manual bookmark button */
             .bookmark-button {
-              position: fixed;
-              top: 20px;
-              right: 20px;
-              width: 50px;
-              height: 50px;
-              border-radius: 50%;
               background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
               border: none;
               color: white;
               font-size: 20px;
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-              transition: all 0.3s ease;
-              z-index: 1000;
-              display: flex;
-              align-items: center;
-              justify-content: center;
             }
             
+            .bookmark-button:hover {
+              background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            }
             
             .bookmark-button.active {
               background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-              color: #2c3e50;
+              color: var(--text-primary);
             }
             
             /* Cancel button */
             .cancel-button {
-              position: fixed;
-              top: 20px;
-              left: 20px;
-              padding: 10px 20px;
-              background: rgba(255, 0, 0, 0.8);
+              padding: 8px 20px;
+              background: var(--accent-color);
               color: white;
               border: none;
-              border-radius: 20px;
-              font-size: 12px;
-              font-weight: bold;
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+              border-radius: 22px;
+              font-size: 14px;
+              font-weight: 600;
+              font-family: 'Plus Jakarta Sans', sans-serif;
+              box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
               transition: all 0.3s ease;
               z-index: 1000;
               display: none;
+              cursor: pointer;
             }
             
+            .cancel-button:hover {
+              background: var(--accent-light);
+              transform: translateY(-1px);
+              box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+            }
             
             .bookmark-selection-mode .cancel-button {
               display: block;
@@ -313,19 +418,23 @@ class SimpleEpubParser {
             /* Notification system */
             .bookmark-notification {
               position: fixed;
-              top: 20px;
+              top: 100px;
               left: 50%;
               transform: translateX(-50%);
-              background: rgba(0, 0, 0, 0.9);
+              background: rgba(42, 42, 42, 0.95);
               color: white;
-              padding: 12px 24px;
-              border-radius: 25px;
+              padding: 16px 28px;
+              border-radius: 28px;
               font-size: 14px;
-              font-weight: bold;
+              font-weight: 500;
+              font-family: 'Plus Jakarta Sans', sans-serif;
               z-index: 1000;
               display: none;
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+              backdrop-filter: blur(20px);
               animation: slideDown 0.3s ease;
+              /* OVERLAP FIX: Prevents the notification from blocking clicks on the text below */
+              pointer-events: none;
             }
             
             .bookmark-selection-mode .bookmark-notification {
@@ -345,55 +454,170 @@ class SimpleEpubParser {
             
             /* Enhanced typography */
             h1, h2, h3, h4, h5, h6 {
-              font-family: 'Outfit-Bold', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              color: #2c3e50;
-              margin: 24px 0 16px 0;
-              font-weight: bold;
+              font-family: 'Plus Jakarta Sans', sans-serif;
+              color: var(--text-primary);
+              margin: 32px 0 20px 0;
+              font-weight: 700;
               line-height: 1.3;
+              letter-spacing: -0.02em;
             }
             
-            h1 { font-size: 1.8em; }
-            h2 { font-size: 1.5em; }
-            h3 { font-size: 1.3em; }
+            h1 { 
+              font-size: 2.2em; 
+              font-weight: 800;
+              margin: 40px 0 24px 0;
+            }
+            h2 { 
+              font-size: 1.8em; 
+              font-weight: 700;
+            }
+            h3 { 
+              font-size: 1.4em; 
+              font-weight: 600;
+            }
             
             p {
-              margin: 16px 0;
-              text-indent: 1.5em;
-              line-height: 1.7;
+              margin: 20px 0;
+              text-indent: 2em;
+              line-height: 1.75;
+              font-weight: 400;
+              color: var(--text-primary);
             }
             
+            p:first-of-type {
+              text-indent: 0;
+              margin-top: 0;
+            }
+            
+            p:last-of-type {
+              margin-bottom: 0;
+            }
+            
+            /* Quote styling */
+            blockquote {
+              margin: 32px 0;
+              padding: 24px 28px;
+              background: #fff; /* Use a slightly brighter background for quotes */
+              border-left: 4px solid var(--accent-color);
+              border-radius: 0 var(--border-radius-small) var(--border-radius-small) 0;
+              font-style: italic;
+              color: var(--text-secondary);
+            }
+            
+            /* Image styling */
             img {
               max-width: 100%;
               height: auto;
               display: block;
-              margin: 16px auto;
-              border-radius: 8px;
-              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+              margin: 32px auto;
+              border-radius: var(--border-radius);
+              box-shadow: 0 8px 32px var(--shadow-medium);
+            }
+            
+            /* Emphasis styling */
+            em, i {
+              font-style: italic;
+              color: var(--text-secondary);
+            }
+            
+            strong, b {
+              font-weight: 600;
+              color: var(--text-primary);
+            }
+            
+            /* Link styling */
+            a {
+              color: var(--accent-color);
+              text-decoration: none;
+              font-weight: 500;
+              transition: all 0.2s ease;
+            }
+            
+            a:hover {
+              color: var(--accent-light);
+            }
+            
+            /* List styling */
+            ul, ol {
+              margin: 20px 0;
+              padding-left: 24px;
+            }
+            
+            li {
+              margin: 8px 0;
+              line-height: 1.6;
             }
             
             /* Smooth scrolling */
             html {
               scroll-behavior: smooth;
             }
+            
+            /* Mobile responsiveness */
+            @media (max-width: 768px) {
+              .content-container {
+                margin: 0;
+                box-shadow: none;
+                border-radius: 0;
+              }
+              
+              #content {
+                padding: 100px 24px 60px 24px;
+              }
+              
+              .top-nav {
+                padding: 0 20px;
+              }
+              
+              .nav-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+              }
+            }
+            
+            @media (max-width: 480px) {
+              #content {
+                padding: 90px 20px 50px 20px;
+              }
+              
+              .top-nav {
+                padding: 0 16px;
+                gap: 8px;
+              }
+              
+              .nav-section {
+                gap: 8px;
+              }
+              
+              p {
+                text-indent: 1.5em;
+              }
+            }
           </style>
         </head>
         <body>
-          <!-- Manual bookmark button -->
-          <button class="bookmark-button" id="bookmarkButton" onclick="toggleBookmarkMode()">
-            📖
-          </button>
+          <div class="top-nav">
+            <div class="nav-section">
+              <button class="nav-btn cancel-button" id="cancelButton" onclick="cancelBookmarkMode()">
+                Cancel
+              </button>
+            </div>
+            
+            <div class="nav-section">
+              <button class="nav-btn bookmark-button" id="bookmarkButton" onclick="toggleBookmarkMode()">
+                📖
+              </button>
+            </div>
+          </div>
           
-          <!-- Cancel button (only visible in selection mode) -->
-          <button class="cancel-button" id="cancelButton" onclick="cancelBookmarkMode()">
-            Cancel
-          </button>
-          
-          <!-- Notification -->
           <div class="bookmark-notification" id="bookmarkNotification">
             Touch any word to create bookmark
           </div>
           
-          <div id="content">${wrappedContent}</div>
+          <div class="content-container">
+            <div id="content">${wrappedContent}</div>
+          </div>
           
           <script>
             let currentBookmarkWordIndex = ${bookmarkPosition};
@@ -408,7 +632,7 @@ class SimpleEpubParser {
               
               // Add touch listeners to each word (only active in selection mode)
               words.forEach((word, index) => {
-                word.addEventListener('touchstart', (e) => {
+                word.addEventListener('click', (e) => {
                   e.preventDefault();
                   
                   // Only allow bookmark creation in selection mode
@@ -452,6 +676,7 @@ class SimpleEpubParser {
             
             // Cancel bookmark mode
             function cancelBookmarkMode() {
+              if (!bookmarkSelectionMode) return;
               bookmarkSelectionMode = false;
               const body = document.body;
               const button = document.getElementById('bookmarkButton');
@@ -680,7 +905,7 @@ class SimpleEpubParser {
         return this.generateBlankPageHTML(chapterIndex, bookInfo.chapters.length);
       }
       
-      // Use the new manual bookmark system
+      // Use the enhanced HTML generation
       const processedContent = this.generateEnhancedHTML(content, fontSize, bookmarkPosition, chapterIndex);
 
       if (!this.chapterCache) {
@@ -741,7 +966,7 @@ class SimpleEpubParser {
       
       // STEP 4: Clean XML namespaces and attributes (but keep the tags)
       // Remove XML namespace declarations
-      bodyContent = bodyContent.replace(/\s*xmlns[^=]*="[^"]*"/gi, '');
+      bodyContent = bodyContent.replace(/\s*xmlns.*?="[^"]*"/gi, '');
       bodyContent = bodyContent.replace(/\s*xml:space="[^"]*"/gi, '');
       bodyContent = bodyContent.replace(/\s*xml:lang="[^"]*"/gi, '');
       
@@ -751,7 +976,7 @@ class SimpleEpubParser {
       
       // STEP 6: Clean up attributes while preserving essential ones
       // Keep important attributes: href, src, alt, title, class (for our word spans)
-      bodyContent = bodyContent.replace(/\s+(id|style|data-[^=]*|role|aria-[^=]*|tabindex)="[^"]*"/gi, '');
+      bodyContent = bodyContent.replace(/\s+(id|style|data-.*?|role|aria-.*?|tabindex)="[^"]*"/gi, '');
       
       // STEP 7: Normalize whitespace but preserve paragraph structure
       // Don't collapse all whitespace - preserve line breaks and paragraph structure
@@ -822,7 +1047,7 @@ class SimpleEpubParser {
     return wordCount;
   }
   
-  // Generate HTML for blank pages with auto-navigation
+  // Generate HTML for blank pages with premium design and theme colors
   generateBlankPageHTML(chapterIndex, totalChapters) {
     const nextChapter = chapterIndex + 1;
     const hasNextChapter = nextChapter < totalChapters;
@@ -834,68 +1059,205 @@ class SimpleEpubParser {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Blank Page</title>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         <style>
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          * {
             margin: 0;
-            padding: 40px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #F3EFE9;
+            color: #2A2A2A;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
+            position: relative;
+            overflow: hidden;
           }
+          
+          /* Background decoration */
+          .background-decoration {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.03;
+            background-image: 
+              radial-gradient(circle at 20% 20%, #E74C3C 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, #667eea 0%, transparent 50%),
+              radial-gradient(circle at 40% 60%, #764ba2 0%, transparent 50%);
+            animation: floatBackground 20s ease-in-out infinite alternate;
+          }
+          
+          @keyframes floatBackground {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-20px) rotate(2deg); }
+          }
+          
           .blank-container {
-            max-width: 400px;
-            padding: 40px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 480px;
+            padding: 48px 32px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(232, 230, 227, 0.8);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 
+              0 20px 40px rgba(0, 0, 0, 0.06),
+              0 8px 16px rgba(0, 0, 0, 0.04),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            position: relative;
+            z-index: 2;
+            animation: slideUp 0.6s ease-out;
           }
+          
+          @keyframes slideUp {
+            from {
+              opacity: 0;
+              transform: translateY(40px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
           .blank-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-            opacity: 0.8;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px auto;
+            background: linear-gradient(135deg, #F7F5F3 0%, #E8E6E3 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            box-shadow: 
+              0 8px 16px rgba(0, 0, 0, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            animation: iconFloat 3s ease-in-out infinite alternate;
           }
+          
+          @keyframes iconFloat {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-8px); }
+          }
+          
           .blank-title {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #2A2A2A;
+            letter-spacing: -0.02em;
           }
+          
           .blank-message {
             font-size: 16px;
-            margin-bottom: 30px;
-            opacity: 0.9;
-            line-height: 1.5;
+            font-weight: 400;
+            margin-bottom: 32px;
+            color: #666666;
+            line-height: 1.6;
+            letter-spacing: -0.01em;
           }
+          
           .auto-navigate {
             font-size: 14px;
-            opacity: 0.7;
-            margin-top: 20px;
+            font-weight: 500;
+            color: #666666;
+            margin-top: 24px;
+            padding: 16px 20px;
+            background: #F7F5F3;
+            border-radius: 16px;
+            border: 1px solid #E8E6E3;
           }
+          
           .countdown {
-            font-weight: bold;
-            color: #FFD700;
+            font-weight: 700;
+            color: #E74C3C;
+            font-size: 16px;
+          }
+          
+          .progress-ring {
+            width: 48px;
+            height: 48px;
+            margin: 16px auto 0 auto;
+            position: relative;
+          }
+          
+          .progress-ring-circle {
+            stroke: #E74C3C;
+            stroke-width: 3;
+            fill: transparent;
+            stroke-dasharray: 144;
+            stroke-dashoffset: 144;
+            animation: countdown-progress 3s linear;
+            transform-origin: center;
+            transform: rotate(-90deg);
+          }
+          
+          @keyframes countdown-progress {
+            to { stroke-dashoffset: 0; }
+          }
+          
+          .progress-ring-bg {
+            stroke: #E8E6E3;
+            stroke-width: 3;
+            fill: transparent;
+          }
+          
+          /* Mobile responsiveness */
+          @media (max-width: 480px) {
+            .blank-container {
+              margin: 20px;
+              padding: 40px 24px;
+            }
+            
+            .blank-title {
+              font-size: 24px;
+            }
+            
+            .blank-message {
+              font-size: 15px;
+            }
           }
         </style>
       </head>
       <body>
+        <div class="background-decoration"></div>
+        
         <div class="blank-container">
           <div class="blank-icon">📄</div>
-          <div class="blank-title">Blank Page</div>
+          <div class="blank-title">Empty Chapter</div>
           <div class="blank-message">
-            This page appears to be empty or contains no readable content.
-            ${hasNextChapter ? 'Automatically navigating to the next chapter...' : 'This is the last chapter.'}
+            This chapter appears to be empty or contains no readable content.
+            ${hasNextChapter ? 'Automatically navigating to the next chapter...' : 'You have reached the end of this book.'}
           </div>
+          
           ${hasNextChapter ? `
             <div class="auto-navigate">
-              Going to Chapter <span class="countdown">${nextChapter + 1}</span> in <span class="countdown" id="countdown">3</span> seconds...
+              Going to Chapter <span class="countdown">${nextChapter + 1}</span> in <span class="countdown" id="countdown">3</span> seconds
+              
+              <div class="progress-ring">
+                <svg class="progress-ring" viewBox="0 0 48 48">
+                  <circle class="progress-ring-bg" cx="24" cy="24" r="22"></circle>
+                  <circle class="progress-ring-circle" cx="24" cy="24" r="22"></circle>
+                </svg>
+              </div>
             </div>
-          ` : ''}
+          ` : `
+            <div class="auto-navigate">
+              You have finished reading this book. Thank you for reading!
+            </div>
+          `}
         </div>
         
         <script>
