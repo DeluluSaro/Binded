@@ -82,7 +82,7 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background, borderTopColor: colors.tint }]}>
       {/* Bookmark Status Display - Made more prominent */}
       <View style={[styles.bookmarkStatus, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.bookmarkInfo}>
@@ -94,10 +94,10 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
                 {bookmarkData && bookmarkData.wordText ? ` "${bookmarkData.wordText}"` : ''}
               </ThemedText>
               <TouchableOpacity
-                style={styles.removeBookmarkButton}
+                style={[styles.removeBookmarkButton, { backgroundColor: colors.error }]}
                 onPress={onRemoveBookmark}
               >
-                <ThemedText style={styles.removeBookmarkText}>✕</ThemedText>
+                <ThemedText style={[styles.removeBookmarkText, { color: colors.text }]}>✕</ThemedText>
               </TouchableOpacity>
             </>
           ) : (
@@ -112,20 +112,20 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
       </View>
 
       {/* Bookmark Navigation Controls */}
-      <View style={styles.bookmarkControls}>
+      <View style={[styles.bookmarkControls, { backgroundColor: colors.surfaceSecondary }]}>
         <TouchableOpacity
-          style={[styles.bookmarkNavButton, !hasBookmark && styles.disabledButton]}
+          style={[styles.bookmarkNavButton, { backgroundColor: colors.tint }, !hasBookmark && styles.disabledButton]}
           onPress={onMoveBookmarkPrevious}
           disabled={!hasBookmark}
         >
-          <ThemedText style={[styles.bookmarkNavText, !hasBookmark && styles.disabledText]}>
+          <ThemedText style={[styles.bookmarkNavText, { color: colors.text }, !hasBookmark && styles.disabledText]}>
             ⬅️ Prev Word
           </ThemedText>
         </TouchableOpacity>
         
         <View style={styles.bookmarkPositionContainer}>
           <TouchableOpacity
-            style={styles.bookmarkPositionButton}
+            style={[styles.bookmarkPositionButton, { backgroundColor: colors.tint, borderColor: colors.border }]}
             onPress={() => {
               if (webViewRef.current) {
                 webViewRef.current.postMessage(JSON.stringify({
@@ -134,7 +134,7 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
               }
             }}
           >
-            <ThemedText style={styles.bookmarkPositionText}>
+            <ThemedText style={[styles.bookmarkPositionText, { color: colors.text }]}>
               {hasBookmark 
                 ? `📍 ${bookmarkPosition + 1}/${bookmarkData?.totalWords || 0}` 
                 : '📍 No Bookmark'
@@ -144,11 +144,11 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
         </View>
         
         <TouchableOpacity
-          style={[styles.bookmarkNavButton, !hasBookmark && styles.disabledButton]}
+          style={[styles.bookmarkNavButton, { backgroundColor: colors.tint }, !hasBookmark && styles.disabledButton]}
           onPress={onMoveBookmarkNext}
           disabled={!hasBookmark}
         >
-          <ThemedText style={[styles.bookmarkNavText, !hasBookmark && styles.disabledText]}>
+          <ThemedText style={[styles.bookmarkNavText, { color: colors.text }, !hasBookmark && styles.disabledText]}>
             Next Word ➡️
           </ThemedText>
         </TouchableOpacity>
@@ -210,26 +210,26 @@ export const EpubReaderNavigation: React.FC<EpubReaderNavigationProps> = ({
       </View>
 
       {/* Quick Bookmark Actions */}
-      <View style={styles.quickActions}>
+      <View style={[styles.quickActions, { backgroundColor: colors.surfaceSecondary }]}>
         <TouchableOpacity
-          style={styles.quickActionButton}
+          style={[styles.quickActionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={handleViewAllBookmarks}
         >
-          <ThemedText style={styles.quickActionText}>📚 View All</ThemedText>
+          <ThemedText style={[styles.quickActionText, { color: colors.tint }]}>📚 View All</ThemedText>
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={styles.quickActionButton}
+          style={[styles.quickActionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={handleJumpToLastBookmark}
         >
-          <ThemedText style={styles.quickActionText}>🔄 Last Bookmark</ThemedText>
+          <ThemedText style={[styles.quickActionText, { color: colors.tint }]}>🔄 Last Bookmark</ThemedText>
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={styles.quickActionButton}
+          style={[styles.quickActionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={handleClearAllBookmarks}
         >
-          <ThemedText style={styles.quickActionText}>🗑️ Clear All</ThemedText>
+          <ThemedText style={[styles.quickActionText, { color: colors.tint }]}>🗑️ Clear All</ThemedText>
         </TouchableOpacity>
       </View>
     </View>
@@ -244,19 +244,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderTopWidth: 2,
-    borderTopColor: '#FFD700',
   },
   // Bookmark Status Styles
   bookmarkStatus: {
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 8,
     padding: 12,
     borderWidth: 2,
-    borderColor: '#FFD700',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -279,7 +275,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   removeBookmarkButton: {
-    backgroundColor: 'rgba(255, 0, 0, 0.1)',
     borderRadius: 15,
     width: 30,
     height: 30,
@@ -290,7 +285,6 @@ const styles = StyleSheet.create({
   removeBookmarkText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#ff4444',
   },
   noBookmarkIcon: {
     fontSize: 18,
@@ -310,15 +304,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
     borderRadius: 20,
     marginHorizontal: 16,
     marginVertical: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.3)',
   },
   bookmarkNavButton: {
-    backgroundColor: '#4CAF50',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
@@ -333,14 +324,12 @@ const styles = StyleSheet.create({
   bookmarkNavText: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: 'white',
   },
   disabledButton: {
-    backgroundColor: '#cccccc',
     opacity: 0.5,
   },
   disabledText: {
-    color: '#666666',
+    opacity: 0.5,
   },
   bookmarkPositionContainer: {
     flex: 1,
@@ -348,17 +337,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
   bookmarkPositionButton: {
-    backgroundColor: '#FFD700',
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 15,
     borderWidth: 2,
-    borderColor: '#FFA500',
   },
   bookmarkPositionText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#2c3e50',
   },
   
   // Navigation Styles
@@ -382,15 +368,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   navButtonDisabled: {
-    backgroundColor: '#bdc3c7',
+    opacity: 0.5,
   },
   navButtonText: {
-    color: '#fff',
     fontWeight: 'bold',
     fontSize: 14,
   },
   navButtonTextDisabled: {
-    color: '#95a5a6',
+    opacity: 0.5,
   },
   pageIndicator: {
     alignItems: 'center',
@@ -417,20 +402,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: 'rgba(100, 149, 237, 0.1)',
     borderRadius: 15,
     marginHorizontal: 16,
     marginVertical: 8,
     borderWidth: 1,
-    borderColor: 'rgba(100, 149, 237, 0.3)',
   },
   quickActionButton: {
-    backgroundColor: 'rgba(100, 149, 237, 0.1)',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(100, 149, 237, 0.3)',
     flex: 1,
     marginHorizontal: 4,
     alignItems: 'center',
@@ -438,7 +419,6 @@ const styles = StyleSheet.create({
   quickActionText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#6495ED',
     textAlign: 'center',
   },
 });

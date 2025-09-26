@@ -124,6 +124,10 @@ const EpubReaderMain: React.FC<EpubReaderMainProps> = ({ epubUrl, onClose }) => 
         onClose={onClose}
       /> */}
 
+
+
+
+
       <EpubReaderControls
         currentChapter={currentChapter}
         totalChapters={bookData.chapters.length}

@@ -28,8 +28,8 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
   onResetToBeginning,
   onClose
 }) => {
-  const colors = useThemeColors();
   const { toggleTheme, isDark } = useTheme();
+  const colors = useThemeColors();
 
   const handleFontSizeIncrease = () => {
     const newSize = Math.min(24, fontSize + 2);
@@ -44,9 +44,9 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
   };
 
   return (
-    <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+    <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
       <TouchableOpacity 
-        style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+        style={[styles.headerButton, { backgroundColor: colors.tint, borderColor: colors.border }]}
         onPress={onClose}
       >
         <Text style={[styles.headerButtonText, { color: colors.text }]}>←</Text>
@@ -54,25 +54,25 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
       
       <View style={styles.headerRight}>
         <TouchableOpacity 
-          style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+          style={[styles.headerButton, { backgroundColor: colors.tint, borderColor: colors.border }]}
           onPress={handleFontSizeDecrease}
         >
           <Text style={[styles.headerButtonText, { color: colors.text }]}>A-</Text>
         </TouchableOpacity>
         
-        <View style={[styles.fontSizeIndicator, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+        <View style={[styles.fontSizeIndicator, { backgroundColor: colors.tint, borderColor: colors.border }]}>
           <Text style={[styles.fontSizeText, { color: colors.text }]}>{fontSize}px</Text>
         </View>
         
         <TouchableOpacity 
-          style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+          style={[styles.headerButton, { backgroundColor: colors.tint, borderColor: colors.border }]}
           onPress={handleFontSizeIncrease}
         >
           <Text style={[styles.headerButtonText, { color: colors.text }]}>A+</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+          style={[styles.headerButton, { backgroundColor: colors.tint, borderColor: colors.border }]}
           onPress={toggleTheme}
         >
           <Text style={[styles.headerButtonText, { color: colors.text }]}>
@@ -120,9 +120,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    borderWidth: 1,
     minWidth: 50,
     alignItems: 'center',
+    borderWidth: 1,
   },
   fontSizeText: {
     fontSize: 14,
