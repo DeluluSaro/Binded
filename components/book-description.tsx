@@ -22,58 +22,44 @@ interface BookDescriptionProps {
   book: {
     id: string;
     name: string;
-    file_path: string;
+    author: string;
+    genre: string;
+    file_path?: string;
+    short_description: string;
+    cover_image_path?: string;
+    total_pages: number;
+    rating: number;
+    reviews: any[];
     created_at: string;
     updated_at: string;
   };
   onReadNow: (book: any) => void;
 }
 
-// Mock book details data
-const getBookDetails = (bookName: string) => {
-  const mockBooks = {
-    'The Silent Observer': {
-      title: 'The Silent Observer',
-      author: 'Amelia Stone',
-      genre: 'Mystery & Thriller',
-      cover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDhrPd0PR2LZ34oDq2xTARTEU8Yly2U3JkfJ-ITwnkpcrfOMQS5KvbBMAicb1rC4O4fZO1dtLVAGHELrI9QmsD8zaaXw0uySunmR0Q2tWgHil4PaIIl2uw0Gcfk4ceBnQoJK8V9D5DaI1UOtkdAfqzf67v9-4ruKTldIogvJsYsV29a02wwSUbsROdREAndRqbf7GHVdCULqQ0mLNOK9CH9U-zO0rHWbSAduQlf4WoEauHjp7HRY2_7KGY7vZcqmwb5lb_EKLqNTK2c',
-      backgroundCover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDhrPd0PR2LZ34oDq2xTARTEU8Yly2U3JkfJ-ITwnkpcrfOMQS5KvbBMAicb1rC4O4fZO1dtLVAGHELrI9QmsD8zaaXw0uySunmR0Q2tWgHil4PaIIl2uw0Gcfk4ceBnQoJK8V9D5DaI1UOtkdAfqzf67v9-4ruKTldIogvJsYsV29a02wwSUbsROdREAndRqbf7GHVdCULqQ0mLNOK9CH9U-zO0rHWbSAduQlf4WoEauHjp7HRY2_7KGY7vZcqmwb5lb_EKLqNTK2c',
-      synopsis: 'In the quaint town of Willow Creek, a series of mysterious events unfolds... As she delves deeper, she uncovers a web of secrets and hidden agendas, where nothing is as it seems. With each clue, Isabella gets closer to the truth, but also puts herself in the path of danger.',
-      rating: 4.6,
-      reviewCount: 1234,
-      ratingDistribution: {
-        5: 75,
-        4: 15,
-        3: 5,
-        2: 3,
-        1: 2,
-      },
-    },
-    'default': {
-      title: bookName || 'Unknown Book',
-      author: 'Unknown Author',
-      genre: 'Fiction',
-      cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop',
-      backgroundCover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop',
-      synopsis: 'A captivating story that will keep you engaged from start to finish. This book offers an immersive reading experience with compelling characters and an intriguing plot.',
-      rating: 4.2,
-      reviewCount: 856,
-      ratingDistribution: {
-        5: 60,
-        4: 25,
-        3: 10,
-        2: 3,
-        1: 2,
-      },
+// Get book details using actual book data
+const getBookDetails = (book: any) => {
+  return {
+    title: book.name || 'Unknown Book',
+    author: book.author || 'Unknown Author',
+    genre: book.genre || 'Fiction',
+    cover: book.cover_image_path || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop',
+    backgroundCover: book.cover_image_path || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop',
+    synopsis: book.short_description || 'A captivating story that will keep you engaged from start to finish. This book offers an immersive reading experience with compelling characters and an intriguing plot.',
+    rating: book.rating || 4.2,
+    reviewCount: book.reviews?.length || 856,
+    ratingDistribution: {
+      5: 60,
+      4: 25,
+      3: 10,
+      2: 3,
+      1: 2,
     },
   };
-
-  return mockBooks[bookName as keyof typeof mockBooks] || mockBooks.default;
 };
 
 export default function BookDescription({ visible, onClose, book, onReadNow }: BookDescriptionProps) {
   const colors = useThemeColors();
-  const bookDetails = getBookDetails(book.name);
+  const bookDetails = getBookDetails(book);
   
   // Parallax animation values
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -81,9 +67,9 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
   console.log('📖 BookDescription render:', { 
     visible, 
     bookName: book.name,
+    coverImage: book.cover_image_path,
     usingRegularText: true,
-    fontNames: ['Outfit_700Bold', 'Outfit_400Regular', 'Silkscreen-Regular'],
-    testFont: 'Testing font application...'
+    fontNames: ['Outfit_700Bold', 'Outfit_400Regular', 'Silkscreen-Regular']
   });
 
   const renderStars = (rating: number) => {

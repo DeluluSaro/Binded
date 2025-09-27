@@ -1,7 +1,6 @@
 import BookDescription from '@/components/book-description';
+
 import Loading from '@/components/loading';
-import PremiumButton from '@/components/premium-button';
-import PremiumGlassContainer from '@/components/premium-glass-container';
 import SideNavbar from '@/components/side-navbar';
 import SimpleEpubReader from '@/components/simple-epub-reader';
 import AsteroidDodge from '@/components/snake-game';
@@ -18,26 +17,22 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
+
+
+// Add this to any screen
+
 import {
-    Alert,
-    Animated,
-    FlatList,
-    Linking,
-    Platform,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  Alert,
+  Animated,
+  FlatList,
+  Linking,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
-// --- Mock Data (Unchanged) ---
-const mockBooks = [
-  { id: '1', title: 'Normal People', author: 'Sally Rooney', cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop', progress: 0.6 },
-  { id: '2', title: 'Small Pleasures', author: 'Clare Chambers', cover: 'https://images.unsplash.com/photo-1592453729249-0524673549a1?w=300&h=400&fit=crop', progress: 0.3 },
-  { id: '3', title: 'Where the Crawdads Sing', author: 'Delia Owens', cover: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=400&fit=crop', progress: 0.8 },
-  { id: '4', title: 'The Midnight Library', author: 'Matt Haig', cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300&h=400&fit=crop', progress: 0.4 },
-  { id: '5', title: 'Landline', author: 'Rainbow Rowell', cover: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300&h=400&fit=crop', progress: 0.2 },
-  { id: '6', title: 'Project Hail Mary', author: 'Andy Weir', cover: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=300&h=400&fit=crop', progress: 0.7 },
-];
+// --- Mock Data for Categories and Authors (keeping these as they're UI elements) ---
 const categories = [ { id: '1', name: 'Non-Fiction', icon: 'book' }, { id: '2', name: 'Biographies', icon: 'person' }, { id: '3', name: 'Sci-Fi', icon: 'rocket' }, { id: '4', name: 'Romance', icon: 'heart' }, { id: '5', name: 'Mystery', icon: 'search' }, { id: '6', name: 'Fantasy', icon: 'sparkles' }, ];
 const popularAuthors = [ { id: '1', name: 'Sally Rooney', booksCount: 3, image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face', }, { id: '2', name: 'Delia Owens', booksCount: 2, image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face', }, { id: '3', name: 'Matt Haig', booksCount: 4, image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face', }, { id: '4', name: 'Andy Weir', booksCount: 2, image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face', }, ];
 
@@ -56,6 +51,7 @@ export default function HomeScreen() {
   const [selectedEpubUri, setSelectedEpubUri] = useState<string>('');
   const [openingBook, setOpeningBook] = useState(false);
   const [showAsteroidDodge, setShowAsteroidDodge] = useState(false);
+  
   const [showBookDescription, setShowBookDescription] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const colors = useThemeColors();
@@ -87,6 +83,7 @@ export default function HomeScreen() {
       asteroidLongPressRef.current = null;
     }
   };
+
   
   // Parallax animation values
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -137,7 +134,6 @@ export default function HomeScreen() {
     );
   }
 
-  const lastReadBook = mockBooks[0]; // For the hero component
 
   // Parallax animation effects
   const headerTranslateY = scrollY.interpolate({
@@ -152,17 +148,6 @@ export default function HomeScreen() {
     extrapolate: 'clamp',
   });
 
-  const heroTranslateY = scrollY.interpolate({
-    inputRange: [0, 200],
-    outputRange: [0, -100],
-    extrapolate: 'clamp',
-  });
-
-  const heroOpacity = scrollY.interpolate({
-    inputRange: [0, 150],
-    outputRange: [1, 0.8],
-    extrapolate: 'clamp',
-  });
 
   const sectionTranslateY = scrollY.interpolate({
     inputRange: [0, 300],
@@ -182,22 +167,39 @@ export default function HomeScreen() {
     console.log('📖 Book description should be visible now');
   };
 
+
   const handleReadNow = async (book: Book) => {
     try {
+      console.log('📖 Starting to read book:', {
+        name: book.name,
+        author: book.author,
+        file_path: book.file_path,
+        hasFile: !!book.file_path
+      });
+      
       setShowBookDescription(false);
       setOpeningBook(true);
+      
       
       // Show loading for 2 seconds to display the loading screen
       await new Promise(resolve => setTimeout(resolve, 2000));
       
+      if (!book.file_path) {
+        Alert.alert('No File Available', 'This book does not have a file to read yet.');
+        return;
+      }
+      
       const bookUrl = getBookUrl(book.file_path);
+      console.log('📖 Generated book URL:', bookUrl);
       
       // Check if it's an EPUB file
       if (book.file_path.toLowerCase().endsWith('.epub')) {
+        console.log('📖 Opening EPUB file in reader');
         // Directly open EPUB in reader - no prompts, no downloads
         setSelectedEpubUri(bookUrl);
         setShowEpubReader(true);
       } else {
+        console.log('📖 Opening non-EPUB file externally');
         // For other file types (PDF, etc.), open with external app
         const supported = await Linking.canOpenURL(bookUrl);
         
@@ -208,7 +210,7 @@ export default function HomeScreen() {
         }
       }
     } catch (error) {
-      console.error('Error opening book:', error);
+      console.error('💥 Error opening book:', error);
       Alert.alert('Error', 'Failed to open book. Please try again.');
     } finally {
       setOpeningBook(false);
@@ -216,14 +218,21 @@ export default function HomeScreen() {
   };
 
   const renderBookCard = ({ item }: { item: Book }) => {
-    const isEpub = item.file_path.toLowerCase().endsWith('.epub');
-    const isPdf = item.file_path.toLowerCase().endsWith('.pdf');
+    const isEpub = item.file_path?.toLowerCase().endsWith('.epub');
+    const isPdf = item.file_path?.toLowerCase().endsWith('.pdf');
     
     return (
       <TouchableOpacity 
         style={[styles.bookCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
         onPress={() => handleBookPress(item)}
       >
+        {item.cover_image_path ? (
+          <Image 
+            source={{ uri: item.cover_image_path }} 
+            style={styles.bookCover}
+            contentFit="cover"
+          />
+        ) : (
         <View style={styles.bookCoverPlaceholder}>
           <Ionicons 
             name={isEpub ? "book" : isPdf ? "document-text" : "book"} 
@@ -231,9 +240,10 @@ export default function HomeScreen() {
             color={colors.iconAccent} 
           />
         </View>
+        )}
         <ThemedText style={[styles.bookTitle, { fontFamily: Fonts.outfitRegular }]} numberOfLines={2}>{item.name}</ThemedText>
         <ThemedText variant="secondary" style={[styles.bookAuthor, { fontFamily: Fonts.outfitRegular }]} numberOfLines={1}>
-          {isEpub ? 'Tap to read' : 'Tap to open'}
+          {item.author}
         </ThemedText>
       </TouchableOpacity>
     );
@@ -259,6 +269,9 @@ export default function HomeScreen() {
       colors={colors.gradient as [string, string, string]}
       style={styles.container}
     >
+
+
+
       {/* Floating Background Elements */}
       <Animated.View style={[
         styles.floatingElement1,
@@ -360,42 +373,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
         </View>
 
-        {/* --- Animated Spotlight Hero Section --- */}
-        <Animated.View style={[
-          styles.section,
-          {
-            transform: [
-              { translateY: heroTranslateY }
-            ],
-            opacity: heroOpacity
-          }
-        ]}>
-            <View style={styles.sectionHeader}>
-              <ThemedText style={[styles.sectionTitle, { fontFamily: 'Outfit-Regular' }]}>Continue Reading</ThemedText>
-            </View>
-            <PremiumGlassContainer variant="card" style={styles.spotlightCard}>
-                <TouchableOpacity style={styles.spotlightContent}>
-                    <Image source={{ uri: lastReadBook.cover }} style={styles.spotlightCover} />
-                    <View style={styles.spotlightInfo}>
-                        <ThemedText style={[styles.spotlightTitle, { fontFamily: 'Outfit-Regular', fontWeight: 'normal' }]} numberOfLines={2}>{lastReadBook.title}</ThemedText>
-                        <ThemedText variant="secondary" style={[styles.spotlightAuthor, { fontFamily: 'Silkscreen-Regular' }]} numberOfLines={1}>{lastReadBook.author}</ThemedText>
-                        <View>
-                            <View style={[styles.progressBarContainer, { backgroundColor: colors.surfaceSecondary }]}>
-                                <View style={[styles.progressBarFill, { width: `${lastReadBook.progress * 100}%`, backgroundColor: colors.tint }]} />
-                            </View>
-                            <ThemedText variant="secondary" style={[styles.progressText, { fontFamily: 'Silkscreen-Regular' }]}>{Math.round(lastReadBook.progress * 100)}%</ThemedText>
-                        </View>
-                        <PremiumButton
-                            title="Continue"
-                            onPress={() => {}}
-                            size="small"
-                            icon="play"
-                            style={styles.continueButton}
-                        />
-                    </View>
-                </TouchableOpacity>
-            </PremiumGlassContainer>
-        </Animated.View>
 
         {/* --- Animated Categories Section --- */}
         <Animated.View style={[
@@ -646,58 +623,6 @@ const styles = StyleSheet.create({
     paddingRight: 40,
   },
 
-  // --- Spotlight Hero Card ---
-  spotlightCard: {
-    marginHorizontal: 24,
-  },
-  spotlightContent: {
-    flexDirection: 'row',
-    alignItems: 'center', // Vertically align image and info
-    padding: 20,
-    gap: 16,
-  },
-  spotlightCover: { 
-    width: 100, 
-    height: 150, 
-    borderRadius: 16, 
-  },
-  spotlightInfo: { 
-    flex: 1, 
-    height: 150, 
-    justifyContent: 'space-between', // Distribute elements vertically
-  },
-  spotlightTitle: { 
-    fontSize: 22, 
-    fontWeight: 'normal', 
-    textAlign: 'left',
-    fontFamily: 'Outfit-Regular',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-  },
-  spotlightAuthor: { 
-    fontSize: 16, 
-    textAlign: 'left',
-    fontFamily: 'Silkscreen-Regular',
-  },
-  progressBarContainer: { 
-    height: 8, 
-    borderRadius: 4, 
-    overflow: 'hidden',
-  },
-  progressBarFill: { 
-    height: '100%' 
-  },
-  progressText: { 
-    fontSize: 12, 
-    fontWeight: '600', 
-    textAlign: 'right',
-    marginTop: 4,
-    fontFamily: 'Silkscreen-Regular',
-  },
-  continueButton: {
-    alignSelf: 'flex-start', // Keep button left-aligned
-    marginTop: 8,
-  },
   
   // --- Category Chip ---
   categoryChip: {

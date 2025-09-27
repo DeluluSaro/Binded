@@ -24,7 +24,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export interface Book {
   id: string;
   name: string;
-  file_path: string;
+  author: string;
+  genre: string;
+  file_path?: string;
+  short_description: string;
+  cover_image_path?: string;
+  total_pages: number;
+  rating: number;
+  reviews: any[];
   created_at: string;
   updated_at: string;
 }
@@ -35,60 +42,30 @@ export const fetchBooks = async (): Promise<Book[]> => {
     console.log('📡 Supabase URL:', supabaseUrl);
     console.log('🔑 Key present:', !!supabaseAnonKey);
     
-    const { data, error } = await supabase.storage
-      .from('Books')
-      .list('', {
-        limit: 100,
-        sortBy: { column: 'created_at', order: 'desc' }
-      });
+    const { data, error } = await supabase
+      .from('books')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (error) {
-      console.error('❌ Supabase Storage Error:', error);
+      console.error('❌ Supabase Database Error:', error);
       console.error('Error details:', JSON.stringify(error, null, 2));
       return [];
     }
 
-    console.log('✅ Books fetched successfully!');
-    console.log('📚 Number of books found:', data?.length || 0);
-    console.log('📖 Book files:', data?.map(file => file.name) || []);
-
     if (!data || data.length === 0) {
-      console.log('⚠️ No books found in the Books bucket');
+      console.log('📚 No books found in database');
       return [];
     }
 
-    // Filter out empty folders, placeholder files, and non-book files
-    const validBooks = data.filter((file) => {
-      // Exclude files that are likely empty folders or placeholders
-      const isFolder = file.metadata?.size === 0 || file.metadata?.size === undefined;
-      const isPlaceholder = file.name.toLowerCase().includes('placeholder') || 
-                           file.name.toLowerCase().includes('empty') ||
-                           file.name.toLowerCase().includes('folder') ||
-                           file.name === '' ||
-                           file.name.startsWith('.');
-      
-      // Only include actual book files (EPUB, PDF, etc.)
-      const isBookFile = file.name.toLowerCase().endsWith('.epub') || 
-                        file.name.toLowerCase().endsWith('.pdf') ||
-                        file.name.toLowerCase().endsWith('.mobi') ||
-                        file.name.toLowerCase().endsWith('.azw') ||
-                        file.name.toLowerCase().endsWith('.azw3');
-      
-      // Only include files that have content, are not placeholders, and are book files
-      return !isFolder && !isPlaceholder && file.name.trim() !== '' && isBookFile;
-    });
+    console.log('✅ Books fetched successfully!');
+    console.log('📚 Number of books found:', data.length);
+    console.log('📖 Books:', data.map(book => ({ name: book.name, author: book.author })));
 
-    const books = validBooks.map((file) => ({
-      id: file.id,
-      name: file.name,
-      file_path: file.name,
-      created_at: file.created_at,
-      updated_at: file.updated_at
-    }));
+    console.log('📚 Books loaded in component:', data.length, 'books');
+    return data;
 
-    console.log('📋 Processed books:', books);
-    console.log('🔍 Filtered out empty folders and placeholders');
-    return books;
   } catch (error) {
     console.error('💥 Exception in fetchBooks:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
@@ -97,6 +74,12 @@ export const fetchBooks = async (): Promise<Book[]> => {
 };
 
 export const getBookUrl = (filePath: string): string => {
+  // If filePath is a full URL, return it directly
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+    return filePath;
+  }
+  
+  // Otherwise, get the public URL from storage
   const { data } = supabase.storage
     .from('Books')
     .getPublicUrl(filePath);
