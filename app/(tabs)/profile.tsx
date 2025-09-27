@@ -179,12 +179,12 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 24,
     fontWeight: '700',
-    fontFamily: Fonts.heading,
+    fontFamily: Fonts.outfitRegular,
     marginBottom: 4,
   },
   profileEmail: {
     fontSize: 16,
-    fontFamily: Fonts.rounded,
+    fontFamily: Fonts.outfitRegular,
   },
   // --- Sections & Details ---
   section: {
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: '700',
-    fontFamily: Fonts.heading,
+    fontFamily: Fonts.outfitRegular,
     marginBottom: 20,
     paddingHorizontal: 8,
   },
@@ -209,12 +209,12 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 14,
-    fontFamily: Fonts.rounded,
+    fontFamily: Fonts.outfitRegular,
     marginBottom: 2,
   },
   detailValue: {
     fontSize: 16,
-    fontFamily: Fonts.rounded,
+    fontFamily: Fonts.outfitRegular,
     fontWeight: '600',
   },
   // --- Stats Section ---
@@ -232,12 +232,12 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 26,
     fontWeight: '700',
-    fontFamily: Fonts.heading,
+    fontFamily: Fonts.outfitRegular,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 13,
-    fontFamily: Fonts.rounded,
+    fontFamily: Fonts.outfitRegular,
     textAlign: 'center',
   },
   // --- Action Buttons ---
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     flex: 1,
     fontSize: 16,
-    fontFamily: Fonts.rounded,
+    fontFamily: Fonts.outfitRegular,
     marginLeft: 16,
   },
   signOutButton: {
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   signOutButtonText: {
     flex: 1,
     fontSize: 16,
-    fontFamily: Fonts.rounded,
+    fontFamily: Fonts.outfitRegular,
     marginLeft: 16,
     fontWeight: '600',
   },
@@ -283,13 +283,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: '700',
-    fontFamily: Fonts.heading,
+    fontFamily: Fonts.outfitRegular,
     marginTop: 12,
     marginBottom: 8,
   },
   modalMessage: {
     fontSize: 16,
-    fontFamily: Fonts.rounded,
+    fontFamily: Fonts.outfitRegular,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
   modalCancelText: {
     fontSize: 16,
-    fontFamily: Fonts.rounded,
+    fontFamily: Fonts.outfitRegular,
     fontWeight: '600',
   },
   modalConfirmButton: {
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   },
   modalConfirmText: {
     fontSize: 16,
-    fontFamily: Fonts.rounded,
+    fontFamily: Fonts.outfitRegular,
     fontWeight: '700',
   },
 });

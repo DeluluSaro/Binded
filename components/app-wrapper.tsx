@@ -1,4 +1,6 @@
+import { useAuth } from '@clerk/clerk-expo';
 import { useFonts } from 'expo-font';
+import { usePathname } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import IntroScreen from './intro-screen';
@@ -6,7 +8,9 @@ import QuotePopup from './quote-popup';
 
 export default function AppWrapper({ children }: { children: React.ReactNode }) {
   const [showIntro, setShowIntro] = useState(true);
-  const [showQuotePopup, setShowQuotePopup] = useState(true);
+  const [showQuotePopup, setShowQuotePopup] = useState(false);
+  const { isSignedIn, isLoaded } = useAuth();
+  const pathname = usePathname();
   const [fontsLoaded] = useFonts({
     'Pacifico-Regular': require('@/assets/fonts/Pacifico-Regular.ttf'),
     'Silkscreen-Regular': require('@/assets/fonts/Silkscreen-Regular.ttf'),
@@ -37,6 +41,35 @@ export default function AppWrapper({ children }: { children: React.ReactNode }) 
   const handleIntroComplete = () => {
     setShowIntro(false);
   };
+
+  // Show quote popup only when user is authenticated and on the main app screen
+  useEffect(() => {
+    // Check if user is authenticated and on the main app screen (not on auth pages)
+    const isOnMainApp = pathname === '/' || pathname === '/(tabs)' || pathname === '/(tabs)/';
+    const isOnAuthPage = pathname?.includes('/sign-in') || pathname?.includes('/sign-up');
+    
+    console.log('🔍 Quote Popup Debug:', {
+      isLoaded,
+      isSignedIn,
+      pathname,
+      isOnMainApp,
+      isOnAuthPage,
+      shouldShow: isLoaded && isSignedIn && isOnMainApp && !isOnAuthPage
+    });
+    
+    if (isLoaded && isSignedIn && isOnMainApp && !isOnAuthPage) {
+      // Small delay to ensure the main screen is fully loaded
+      const timer = setTimeout(() => {
+        console.log('📖 Showing quote popup');
+        setShowQuotePopup(true);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    } else {
+      console.log('🚫 Hiding quote popup');
+      setShowQuotePopup(false);
+    }
+  }, [isLoaded, isSignedIn, pathname]);
 
   if (!fontsLoaded) {
     return (

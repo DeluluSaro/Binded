@@ -57,7 +57,28 @@ export const fetchBooks = async (): Promise<Book[]> => {
       return [];
     }
 
-    const books = data.map((file) => ({
+    // Filter out empty folders, placeholder files, and non-book files
+    const validBooks = data.filter((file) => {
+      // Exclude files that are likely empty folders or placeholders
+      const isFolder = file.metadata?.size === 0 || file.metadata?.size === undefined;
+      const isPlaceholder = file.name.toLowerCase().includes('placeholder') || 
+                           file.name.toLowerCase().includes('empty') ||
+                           file.name.toLowerCase().includes('folder') ||
+                           file.name === '' ||
+                           file.name.startsWith('.');
+      
+      // Only include actual book files (EPUB, PDF, etc.)
+      const isBookFile = file.name.toLowerCase().endsWith('.epub') || 
+                        file.name.toLowerCase().endsWith('.pdf') ||
+                        file.name.toLowerCase().endsWith('.mobi') ||
+                        file.name.toLowerCase().endsWith('.azw') ||
+                        file.name.toLowerCase().endsWith('.azw3');
+      
+      // Only include files that have content, are not placeholders, and are book files
+      return !isFolder && !isPlaceholder && file.name.trim() !== '' && isBookFile;
+    });
+
+    const books = validBooks.map((file) => ({
       id: file.id,
       name: file.name,
       file_path: file.name,
@@ -66,6 +87,7 @@ export const fetchBooks = async (): Promise<Book[]> => {
     }));
 
     console.log('📋 Processed books:', books);
+    console.log('🔍 Filtered out empty folders and placeholders');
     return books;
   } catch (error) {
     console.error('💥 Exception in fetchBooks:', error);

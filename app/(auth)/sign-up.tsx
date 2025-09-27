@@ -102,7 +102,7 @@ export default function SignUpPage() {
         resizeMode={ResizeMode.COVER}
         shouldPlay={true}
         isLooping={true}
-        isMuted={false}
+        isMuted={true}
       />
       
       {/* Professional Gradient Overlay */}
