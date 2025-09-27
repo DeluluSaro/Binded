@@ -155,25 +155,6 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
               ]}
             >
               
-              <TouchableOpacity 
-                style={[
-                  styles.dropdownItem,
-                  { backgroundColor: 'rgba(0, 0, 0, 0.03)' }
-                ]}
-                onPress={() => {
-                  onViewAllBookmarks?.();
-                  setIsBookmarkDropdownOpen(false);
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons 
-                  name="bookmark-outline" 
-                  size={18} 
-                  color="#3a2e24" 
-                  style={{ marginRight: 12 }}
-                />
-                <Text style={[styles.dropdownText, { color: '#3a2e24' }]}>View Bookmarks</Text>
-              </TouchableOpacity>
               
               <TouchableOpacity 
                 style={[
@@ -193,6 +174,29 @@ export const EpubReaderControls: React.FC<EpubReaderControlsProps> = ({
                   style={{ marginRight: 12 }}
                 />
                 <Text style={[styles.dropdownText, { color: '#3a2e24' }]}>Go to Last Bookmark</Text>
+              </TouchableOpacity>
+
+
+
+              
+              <TouchableOpacity 
+                style={[
+                  styles.dropdownItem,
+                  { backgroundColor: 'rgba(0, 0, 0, 0.03)' }
+                ]}
+                onPress={() => {
+                  onViewAllBookmarks?.();
+                  setIsBookmarkDropdownOpen(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons 
+                  name="bookmark-outline" 
+                  size={18} 
+                  color="#3a2e24" 
+                  style={{ marginRight: 12 }}
+                />
+                <Text style={[styles.dropdownText, { color: '#3a2e24' }]}>View Bookmarks</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
