@@ -1,3 +1,4 @@
+import BookDescription from '@/components/book-description';
 import Loading from '@/components/loading';
 import PremiumButton from '@/components/premium-button';
 import PremiumGlassContainer from '@/components/premium-glass-container';
@@ -18,14 +19,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
-  Animated,
-  FlatList,
-  Linking,
-  Platform,
-  StyleSheet,
-  TouchableOpacity,
-  View
+    Alert,
+    Animated,
+    FlatList,
+    Linking,
+    Platform,
+    StyleSheet,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 // --- Mock Data (Unchanged) ---
@@ -55,6 +56,8 @@ export default function HomeScreen() {
   const [selectedEpubUri, setSelectedEpubUri] = useState<string>('');
   const [openingBook, setOpeningBook] = useState(false);
   const [showAsteroidDodge, setShowAsteroidDodge] = useState(false);
+  const [showBookDescription, setShowBookDescription] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const colors = useThemeColors();
   const { handleLongPressStart, handleLongPressEnd } = useLongPressTheme();
   
@@ -172,8 +175,16 @@ export default function HomeScreen() {
     { useNativeDriver: true }
   );
 
-  const handleBookPress = async (book: Book) => {
+  const handleBookPress = (book: Book) => {
+    console.log('📖 Book pressed:', book.name);
+    setSelectedBook(book);
+    setShowBookDescription(true);
+    console.log('📖 Book description should be visible now');
+  };
+
+  const handleReadNow = async (book: Book) => {
     try {
+      setShowBookDescription(false);
       setOpeningBook(true);
       
       // Show loading for 2 seconds to display the loading screen
@@ -482,6 +493,19 @@ export default function HomeScreen() {
         visible={showAsteroidDodge} 
         onClose={() => setShowAsteroidDodge(false)}
       />
+      
+      {/* Book Description Modal */}
+      {selectedBook && (
+        <BookDescription
+          visible={showBookDescription}
+          onClose={() => {
+            setShowBookDescription(false);
+            setSelectedBook(null);
+          }}
+          book={selectedBook}
+          onReadNow={handleReadNow}
+        />
+      )}
     </LinearGradient>
   );
 }
