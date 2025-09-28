@@ -160,22 +160,22 @@ class SimpleEpubParser {
     content = content.replace(
       />([^<]*)</g, 
       (match, textContent) => {
-        // Only wrap words in the text content between tags
+        // Only wrap words in the text content between tags (including all words regardless of size)
         const wrappedText = textContent.replace(
-          /\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, 
+          /\b([a-zA-Z][a-zA-Z0-9']*)\b/g, 
           '<span class="word">$1</span>'
         );
         return `>${wrappedText}<`;
       }
     );
     
-    // Handle text at the beginning and end of content
+    // Handle text at the beginning and end of content (including all words regardless of size)
     content = content.replace(/^([^<]+)/, (match) => {
-      return match.replace(/\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, '<span class="word">$1</span>');
+      return match.replace(/\b([a-zA-Z][a-zA-Z0-9']*)\b/g, '<span class="word">$1</span>');
     });
     
     content = content.replace(/([^>]+)$/, (match) => {
-      return match.replace(/\b([a-zA-Z][a-zA-Z0-9']{2,})\b/g, '<span class="word">$1</span>');
+      return match.replace(/\b([a-zA-Z][a-zA-Z0-9']*)\b/g, '<span class="word">$1</span>');
     });
     
     // Restore preserved content
@@ -233,10 +233,10 @@ class SimpleEpubParser {
               margin: 0;
               min-height: 100vh;
               position: relative;
-              user-select: none;
-              -webkit-user-select: none;
-              -webkit-touch-callout: none;
               overflow-x: hidden;
+              user-select: text;
+              -webkit-user-select: text;
+              -webkit-touch-callout: default;
             }
             
             /* Main content container */
@@ -258,6 +258,16 @@ class SimpleEpubParser {
               text-justify: inter-word;
               position: relative;
               z-index: 1;
+              user-select: text;
+              -webkit-user-select: text;
+              -webkit-touch-callout: default;
+            }
+            
+            /* Make all text content selectable */
+            p, div, span, h1, h2, h3, h4, h5, h6, blockquote, li, a, em, strong, i, b, u {
+              user-select: text;
+              -webkit-user-select: text;
+              -webkit-touch-callout: default;
             }
             
             /* Word styling - default state */
@@ -267,6 +277,9 @@ class SimpleEpubParser {
               border-radius: 3px;
               transition: all 0.2s ease;
               position: relative;
+              user-select: text;
+              -webkit-user-select: text;
+              -webkit-touch-callout: default;
             }
             
             /* Only interactive when in bookmark selection mode */
@@ -274,7 +287,183 @@ class SimpleEpubParser {
               cursor: pointer;
             }
             
-            /* Bookmark highlight */
+            /* Robot selection mode styling */
+            .robot-selection-mode {
+              /* Text is already selectable by default */
+            }
+            
+            /* Remove ALL custom styling in robot mode - only use native selection */
+            .robot-selection-mode .word:hover,
+            .robot-selection-mode .word:active,
+            .robot-selection-mode .word:focus,
+            .robot-selection-mode .word {
+              background: transparent !important;
+              background-color: transparent !important;
+              color: inherit !important;
+              border: none !important;
+              box-shadow: none !important;
+              transform: none !important;
+              padding: inherit !important;
+              margin: inherit !important;
+              font-weight: inherit !important;
+            }
+            
+            /* Robot action button - positioned to avoid selection handles */
+            #robotActionButton {
+              position: fixed !important;
+              top: 50% !important;
+              right: 20px !important;
+              transform: translateY(-50%) !important;
+              z-index: 10000 !important;
+              pointer-events: auto !important;
+              user-select: none !important;
+              -webkit-user-select: none !important;
+              -webkit-touch-callout: none !important;
+            }
+            
+            /* Ensure button doesn't interfere with text selection */
+            #robotActionButton:active {
+              transform: translateY(-50%) scale(0.95) !important;
+            }
+            
+            /* Word selection highlighting - only in bookmark mode */
+            .bookmark-selection-mode .word-selected {
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+              color: #FFFFFF !important;
+              font-weight: 600;
+              box-shadow: 0 2px 12px rgba(102, 126, 234, 0.4);
+              border: 2px solid #667eea;
+              padding: 4px 8px !important;
+              margin: 0 2px;
+              border-radius: var(--border-radius-small);
+              transform: scale(1.02);
+              z-index: 10;
+              position: relative;
+              display: inline-block;
+            }
+            
+            /* Remove word selection highlighting in robot mode */
+            .robot-selection-mode .word-selected {
+              background: transparent !important;
+              color: inherit !important;
+              font-weight: normal;
+              box-shadow: none !important;
+              border: none !important;
+              padding: inherit !important;
+              margin: inherit;
+              border-radius: inherit;
+              transform: none;
+              z-index: auto;
+              position: static;
+              display: inline;
+            }
+            
+            /* Connected selection styling - only in bookmark mode */
+            .bookmark-selection-mode .word-selected:not(:first-child) {
+              margin-left: -2px;
+            }
+            
+            .bookmark-selection-mode .word-selected:not(:last-child) {
+              margin-right: -2px;
+            }
+            
+            /* First word in selection - only in bookmark mode */
+            .bookmark-selection-mode .word-selected:first-child {
+              border-top-left-radius: var(--border-radius-small);
+              border-bottom-left-radius: var(--border-radius-small);
+            }
+            
+            /* Last word in selection - only in bookmark mode */
+            .bookmark-selection-mode .word-selected:last-child {
+              border-top-right-radius: var(--border-radius-small);
+              border-bottom-right-radius: var(--border-radius-small);
+            }
+            
+            /* Middle words in selection - only in bookmark mode */
+            .bookmark-selection-mode .word-selected:not(:first-child):not(:last-child) {
+              border-radius: 0;
+            }
+            
+            /* Selection connection styling - only in bookmark mode */
+            .bookmark-selection-mode .selection-start {
+              border-top-left-radius: var(--border-radius-small) !important;
+              border-bottom-left-radius: var(--border-radius-small) !important;
+              border-top-right-radius: 0 !important;
+              border-bottom-right-radius: 0 !important;
+            }
+            
+            .bookmark-selection-mode .selection-middle {
+              border-radius: 0 !important;
+              margin-left: -2px !important;
+              margin-right: -2px !important;
+            }
+            
+            .bookmark-selection-mode .selection-end {
+              border-top-right-radius: var(--border-radius-small) !important;
+              border-bottom-right-radius: var(--border-radius-small) !important;
+              border-top-left-radius: 0 !important;
+              border-bottom-left-radius: 0 !important;
+            }
+            
+            /* Single word selection - only in bookmark mode */
+            .bookmark-selection-mode .word-selected.selection-start.selection-end {
+              border-radius: var(--border-radius-small) !important;
+            }
+            
+            /* Remove all connected selection styling in robot mode */
+            .robot-selection-mode .word-selected:not(:first-child),
+            .robot-selection-mode .word-selected:not(:last-child),
+            .robot-selection-mode .word-selected:first-child,
+            .robot-selection-mode .word-selected:last-child,
+            .robot-selection-mode .word-selected:not(:first-child):not(:last-child),
+            .robot-selection-mode .selection-start,
+            .robot-selection-mode .selection-middle,
+            .robot-selection-mode .selection-end,
+            .robot-selection-mode .word-selected.selection-start.selection-end {
+              margin: inherit !important;
+              border-radius: inherit !important;
+              border: none !important;
+            }
+            
+            /* Word selecting highlight - only in bookmark mode */
+            .bookmark-selection-mode .word-selecting {
+              background-color: rgba(102, 126, 234, 0.3);
+              border-radius: 4px;
+              transition: all 0.1s ease;
+            }
+            
+            /* Remove word selecting highlight in robot mode */
+            .robot-selection-mode .word-selecting {
+              background-color: transparent !important;
+              border-radius: inherit !important;
+              transition: none !important;
+            }
+            
+            /* Force remove ALL custom highlighting in robot mode */
+            .robot-selection-mode .word,
+            .robot-selection-mode .word *,
+            .robot-selection-mode span.word,
+            .robot-selection-mode span.word *,
+            .robot-selection-mode .word:before,
+            .robot-selection-mode .word:after {
+              background: transparent !important;
+              background-color: transparent !important;
+              background-image: none !important;
+              border: none !important;
+              border-color: transparent !important;
+              box-shadow: none !important;
+              outline: none !important;
+              text-shadow: none !important;
+            }
+            
+            /* Disable any transitions or animations in robot mode */
+            .robot-selection-mode .word,
+            .robot-selection-mode .word * {
+              transition: none !important;
+              animation: none !important;
+            }
+            
+            /* Bookmark highlight - permanent orange for bookmarked words */
             .bookmark-active {
               background: linear-gradient(135deg, #E74C3C 0%, #FF6B5B 100%) !important;
               color: #FFFFFF !important;
@@ -289,7 +478,22 @@ class SimpleEpubParser {
               position: relative;
             }
             
-            /* Floating bookmark indicator */
+            /* Ensure no orange highlighting in robot mode */
+            .robot-selection-mode .bookmark-active {
+              background: transparent !important;
+              color: inherit !important;
+              font-weight: normal;
+              box-shadow: none !important;
+              border: none !important;
+              padding: inherit !important;
+              margin: inherit;
+              border-radius: inherit;
+              transform: none;
+              z-index: auto;
+              position: static;
+            }
+            
+            /* Floating bookmark indicator - permanent for bookmarked words */
             .bookmark-indicator {
               position: absolute;
               top: -18px;
@@ -301,6 +505,15 @@ class SimpleEpubParser {
               border-right: 8px solid transparent;
               border-bottom: 12px solid #E74C3C;
               z-index: 20;
+              animation: bookmarkPulse 2s infinite;
+            }
+            
+            /* Hide bookmark indicator in robot mode */
+            .robot-selection-mode .bookmark-indicator {
+              display: none !important;
+            }
+            
+            .bookmark-indicator {
               animation: bookmarkPulse 2s infinite;
             }
             
@@ -388,6 +601,36 @@ class SimpleEpubParser {
               box-shadow: 0 4px 16px rgba(231, 76, 60, 0.5);
             }
             
+            /* Robot button styling */
+            .robot-button {
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              border: 2px solid #667eea;
+              color: white;
+              font-size: 20px;
+              font-weight: 600;
+              transition: all 0.3s ease;
+            }
+            
+            .robot-button:hover {
+              background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+              border-color: #764ba2;
+              transform: translateY(-1px);
+              box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+            
+            .robot-button.active {
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              border-color: #667eea;
+              color: white;
+              box-shadow: 0 4px 16px rgba(102, 126, 234, 0.5);
+              animation: robotPulse 2s infinite;
+            }
+            
+            @keyframes robotPulse {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.05); }
+            }
+            
             /* Cancel button */
             .cancel-button {
               width: 44px;
@@ -452,6 +695,132 @@ class SimpleEpubParser {
               display: block;
             }
             
+            /* Robot notification */
+            .robot-notification {
+              position: fixed;
+              top: 100px;
+              left: 50%;
+              transform: translateX(-50%);
+              background: rgba(102, 126, 234, 0.95);
+              color: white;
+              padding: 20px 40px;
+              border-radius: 28px;
+              font-size: 16px;
+              font-weight: 500;
+              font-family: 'Plus Jakarta Sans', sans-serif;
+              z-index: 1000;
+              display: none;
+              box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+              backdrop-filter: blur(20px);
+              animation: slideDown 0.3s ease;
+              pointer-events: none;
+              min-width: 300px;
+              text-align: center;
+              max-width: 90%;
+            }
+            
+            .robot-selection-mode .robot-notification {
+              display: block;
+            }
+            
+            /* Meaning popup */
+            .meaning-popup {
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              background: rgba(255, 255, 255, 0.98);
+              border-radius: 16px;
+              padding: 24px;
+              max-width: 400px;
+              width: 90%;
+              box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+              backdrop-filter: blur(20px);
+              z-index: 2000;
+              display: none;
+              border: 1px solid rgba(102, 126, 234, 0.2);
+            }
+            
+            .meaning-popup.visible {
+              display: block;
+              animation: popupSlideIn 0.3s ease;
+            }
+            
+            @keyframes popupSlideIn {
+              from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+              }
+              to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+              }
+            }
+            
+            .meaning-popup-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 16px;
+              padding-bottom: 12px;
+              border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            }
+            
+            .meaning-word {
+              font-size: 20px;
+              font-weight: 700;
+              color: #667eea;
+            }
+            
+            .meaning-close {
+              background: none;
+              border: none;
+              font-size: 24px;
+              cursor: pointer;
+              color: #999;
+              padding: 4px;
+              border-radius: 50%;
+              transition: all 0.2s ease;
+            }
+            
+            .meaning-close:hover {
+              background: rgba(0, 0, 0, 0.1);
+              color: #333;
+            }
+            
+            .meaning-content {
+              font-size: 16px;
+              line-height: 1.6;
+              color: #333;
+            }
+            
+            .meaning-loading {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              color: #667eea;
+              font-style: italic;
+            }
+            
+            .meaning-spinner {
+              width: 20px;
+              height: 20px;
+              border: 2px solid #667eea;
+              border-top: 2px solid transparent;
+              border-radius: 50%;
+              animation: spin 1s linear infinite;
+            }
+            
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+            
+            .meaning-error {
+              color: #E74C3C;
+              font-style: italic;
+            }
+            
             @keyframes slideDown {
               from {
                 opacity: 0;
@@ -471,6 +840,9 @@ class SimpleEpubParser {
               font-weight: 700;
               line-height: 1.3;
               letter-spacing: -0.02em;
+              user-select: text;
+              -webkit-user-select: text;
+              -webkit-touch-callout: default;
             }
             
             h1 { 
@@ -493,6 +865,9 @@ class SimpleEpubParser {
               line-height: 1.75;
               font-weight: 400;
               color: var(--text-primary);
+              user-select: text;
+              -webkit-user-select: text;
+              -webkit-touch-callout: default;
             }
             
             p:first-of-type {
@@ -585,6 +960,15 @@ class SimpleEpubParser {
                 height: 40px;
                 font-size: 16px;
               }
+              
+              /* Mobile-specific robot button positioning */
+              #robotActionButton {
+                top: 40% !important;
+                right: 15px !important;
+                padding: 10px 16px !important;
+                font-size: 13px !important;
+                min-width: 120px !important;
+              }
             }
             
             @media (max-width: 480px) {
@@ -623,11 +1007,31 @@ class SimpleEpubParser {
                   <path d="M19 3H5c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
                 </svg>
               </button>
+              <button class="nav-btn robot-button" id="robotButton" onclick="toggleRobotMode()">
+                🤖
+              </button>
             </div>
           </div>
           
           <div class="bookmark-notification" id="bookmarkNotification">
             Touch any word to create bookmark
+          </div>
+          
+          <div class="robot-notification" id="robotNotification">
+            Long press text to select, then get meaning automatically
+          </div>
+          
+          <div class="meaning-popup" id="meaningPopup">
+            <div class="meaning-popup-header">
+              <div class="meaning-word" id="meaningWord">Word</div>
+              <button class="meaning-close" id="meaningClose">×</button>
+            </div>
+            <div class="meaning-content" id="meaningContent">
+              <div class="meaning-loading">
+                <div class="meaning-spinner"></div>
+                Getting meaning...
+              </div>
+            </div>
           </div>
           
           <div class="content-container">
@@ -639,6 +1043,11 @@ class SimpleEpubParser {
             let currentChapterIndex = ${chapterIndex};
             let words = [];
             let bookmarkSelectionMode = false;
+            let robotMode = false;
+            let robotSelectionMode = false;
+            let isSelectingWords = false;
+            let selectedWords = [];
+            let selectionStartIndex = -1;
             
             // Initialize word tracking system
             function initializeWordTracking() {
@@ -647,20 +1056,24 @@ class SimpleEpubParser {
               
               // Add touch listeners to each word (only active in selection mode)
               words.forEach((word, index) => {
+                // Single click for bookmark mode
                 word.addEventListener('click', (e) => {
-                  e.preventDefault();
-                  
-                  // Only allow bookmark creation in selection mode
+                  // Only prevent default and handle clicks in bookmark mode
                   if (bookmarkSelectionMode) {
+                    e.preventDefault();
                     createBookmark(index);
                   }
+                  // In robot mode, let native behavior handle everything
                 });
+                
+                // No custom touch events needed - using native text selection
               });
               
               // Restore bookmark if exists
               if (currentBookmarkWordIndex >= 0 && currentBookmarkWordIndex < words.length) {
                 setBookmark(currentBookmarkWordIndex, false);
               }
+
             }
             
             // Toggle bookmark selection mode
@@ -703,6 +1116,213 @@ class SimpleEpubParser {
               notification.style.display = 'none';
               
               console.log('📖 Bookmark selection mode cancelled');
+            }
+            
+            // Toggle robot mode
+            function toggleRobotMode() {
+              robotMode = !robotMode;
+              robotSelectionMode = robotMode;
+              const body = document.body;
+              const button = document.getElementById('robotButton');
+              const notification = document.getElementById('robotNotification');
+              
+              if (robotMode) {
+                // Enter robot selection mode
+                body.classList.add('robot-selection-mode');
+                button.classList.add('active');
+                notification.style.display = 'block';
+                console.log('🤖 Robot selection mode enabled - use native text selection');
+                
+                // Send message to React Native
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'robotModeEnabled',
+                  data: {
+                    enabled: true,
+                    timestamp: new Date().toISOString()
+                  }
+                }));
+              } else {
+                // Exit robot selection mode
+                body.classList.remove('robot-selection-mode');
+                button.classList.remove('active');
+                notification.style.display = 'none';
+                
+                console.log('🤖 Robot selection mode disabled');
+                
+                // Send message to React Native
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'robotModeDisabled',
+                  data: {
+                    enabled: false,
+                    timestamp: new Date().toISOString()
+                  }
+                }));
+              }
+            }
+            
+            // Handle native text selection
+            function handleTextSelection() {
+              const selection = window.getSelection();
+              const selectedText = selection.toString().trim();
+              
+              if (selectedText && robotSelectionMode) {
+                console.log('🤖 Native text selected:', selectedText);
+                
+                // Don't show popup automatically - let user click button
+                // Just show the action button
+              }
+            }
+            
+            // Simple function to get selected text meaning
+            function getSelectedTextMeaning() {
+              const selection = window.getSelection();
+              const selectedText = selection.toString().trim();
+              
+              if (selectedText && robotSelectionMode) {
+                // Exit robot selection mode
+                robotSelectionMode = false;
+                const body = document.body;
+                const button = document.getElementById('robotButton');
+                const notification = document.getElementById('robotNotification');
+                
+                body.classList.remove('robot-selection-mode');
+                button.classList.remove('active');
+                notification.style.display = 'none';
+                
+                // Show meaning popup
+                showMeaningPopup(selectedText);
+                
+                console.log('🤖 Getting meaning for selected text:', selectedText);
+              }
+            }
+            
+            // Add a button to trigger meaning lookup for selected text
+            function addRobotActionButton() {
+              // Create a floating action button for robot mode
+              const actionButton = document.createElement('button');
+              actionButton.id = 'robotActionButton';
+              actionButton.innerHTML = '🤖 Get Meaning';
+              actionButton.style.cssText = \`
+                position: fixed;
+                top: 50%;
+                right: 20px;
+                transform: translateY(-50%);
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                border-radius: 25px;
+                padding: 12px 20px;
+                font-size: 14px;
+                font-weight: 600;
+                box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+                z-index: 10000;
+                display: none;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                opacity: 0;
+                min-width: 140px;
+                text-align: center;
+                font-family: 'Plus Jakarta Sans', sans-serif;
+                pointer-events: auto;
+              \`;
+              
+              actionButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                getSelectedTextMeaning();
+              });
+              
+              // Add touch event to prevent conflicts
+              actionButton.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              });
+              
+              actionButton.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                getSelectedTextMeaning();
+              });
+              
+              document.body.appendChild(actionButton);
+              
+              return actionButton;
+            }
+            
+            
+            // Get word meaning using Gemini API
+            function getWordMeaning(wordIndex) {
+              if (wordIndex < 0 || wordIndex >= words.length) return;
+              
+              const targetWord = words[wordIndex];
+              const wordText = targetWord.textContent.trim();
+              
+              // Exit robot selection mode
+              robotSelectionMode = false;
+              const body = document.body;
+              const button = document.getElementById('robotButton');
+              const notification = document.getElementById('robotNotification');
+              
+              body.classList.remove('robot-selection-mode');
+              button.classList.remove('active');
+              notification.style.display = 'none';
+              
+              // Show meaning popup
+              showMeaningPopup(wordText);
+              
+              console.log('🤖 Getting meaning for:', wordText);
+            }
+            
+            // Show meaning popup
+            function showMeaningPopup(word) {
+              const popup = document.getElementById('meaningPopup');
+              const wordElement = document.getElementById('meaningWord');
+              const contentElement = document.getElementById('meaningContent');
+              
+              // Set word and show loading
+              wordElement.textContent = word;
+              contentElement.innerHTML = \`
+                <div class="meaning-loading">
+                  <div class="meaning-spinner"></div>
+                  Getting meaning...
+                </div>
+              \`;
+              
+              popup.classList.add('visible');
+              
+              // Request meaning from React Native
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'getWordMeaning',
+                data: {
+                  word: word,
+                  timestamp: new Date().toISOString()
+                }
+              }));
+            }
+            
+            // Hide meaning popup
+            function hideMeaningPopup() {
+              const popup = document.getElementById('meaningPopup');
+              popup.classList.remove('visible');
+            }
+            
+            // Set meaning content in popup
+            function setMeaningContent(meaning, isError = false) {
+              const contentElement = document.getElementById('meaningContent');
+              
+              if (isError) {
+                contentElement.innerHTML = \`
+                  <div class="meaning-error">
+                    ❌ Failed to get meaning. Please try again.
+                  </div>
+                \`;
+              } else {
+                contentElement.innerHTML = \`
+                  <div class="meaning-content">
+                    \${meaning}
+                  </div>
+                \`;
+              }
             }
             
             // Create bookmark at specific word
@@ -862,12 +1482,75 @@ class SimpleEpubParser {
                     cancelBookmarkMode();
                   }
                   break;
+                case 'enableRobotMode':
+                  if (!robotMode) {
+                    toggleRobotMode();
+                  }
+                  break;
+                case 'disableRobotMode':
+                  if (robotMode) {
+                    toggleRobotMode();
+                  }
+                  break;
+                case 'wordMeaningResponse':
+                  if (data.meaning) {
+                    setMeaningContent(data.meaning, false);
+                  } else if (data.error) {
+                    setMeaningContent(data.error, true);
+                  }
+                  break;
               }
             });
             
             // Initialize when DOM is ready
             document.addEventListener('DOMContentLoaded', () => {
               initializeWordTracking();
+              
+              // Add meaning popup event listeners
+              const meaningClose = document.getElementById('meaningClose');
+              const meaningPopup = document.getElementById('meaningPopup');
+              
+              if (meaningClose) {
+                meaningClose.addEventListener('click', hideMeaningPopup);
+              }
+              
+              // Close popup when clicking outside
+              if (meaningPopup) {
+                meaningPopup.addEventListener('click', (e) => {
+                  if (e.target === meaningPopup) {
+                    hideMeaningPopup();
+                  }
+                });
+              }
+              
+              // Add robot action button
+              addRobotActionButton();
+              
+              // Listen for native text selection changes
+              document.addEventListener('selectionchange', () => {
+                if (robotSelectionMode) {
+                  const selection = window.getSelection();
+                  const selectedText = selection.toString().trim();
+                  const actionButton = document.getElementById('robotActionButton');
+                  
+                  if (selectedText && actionButton) {
+                    actionButton.style.display = 'block';
+                    actionButton.style.opacity = '1';
+                    actionButton.style.pointerEvents = 'auto';
+                    // Add a small delay to ensure selection is complete
+                    setTimeout(() => {
+                      if (actionButton) {
+                        actionButton.style.display = 'block';
+                        actionButton.style.opacity = '1';
+                      }
+                    }, 100);
+                  } else if (actionButton) {
+                    actionButton.style.display = 'none';
+                    actionButton.style.opacity = '0';
+                    actionButton.style.pointerEvents = 'none';
+                  }
+                }
+              });
             });
             
             // Also initialize after a delay to ensure content is loaded

@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, PanResponder } from 'react-native';
+import { GEMINI_API_KEY } from '../config/gemini';
 import { BookmarkManager } from '../utils/BookmarkManager';
 import SimpleEpubParser from '../utils/SimpleEpubParser';
 
-export const useEpubReader = (epubUrl: string) => {
+export const useEpubReader = (epubUrl: string, webViewRef?: React.RefObject<any>) => {
   // Force light theme (beige) for EPUB reader
   const isDark = false;
   
@@ -863,6 +864,9 @@ export const useEpubReader = (epubUrl: string) => {
         case 'wordLongPress':
           console.log('Word long pressed:', data.word);
           break;
+        case 'getWordMeaning':
+          handleGetWordMeaning(data.data);
+          break;
         default:
           console.log('Unknown message type:', data.type);
       }
@@ -890,6 +894,68 @@ export const useEpubReader = (epubUrl: string) => {
       }
     } catch (error) {
       console.error('Error handling bookmark set:', error);
+    }
+  };
+
+  // 🔑 GEMINI API KEY IS IMPORTED FROM CONFIG FILE
+
+  const handleGetWordMeaning = async (data: any) => {
+    try {
+      const word = data.word;
+      console.log('🤖 Getting meaning for word:', word);
+      
+      if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+        console.error('❌ Gemini API key not configured');
+        // Send error back to WebView
+        webViewRef.current?.postMessage(JSON.stringify({
+          type: 'wordMeaningResponse',
+          error: 'Gemini API key not configured. Please add your API key in hooks/useEpubReader.ts'
+        }));
+        return;
+      }
+
+      // Call Gemini API
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `What does "${word}" mean? Provide a clear, concise definition in 1-2 sentences.`
+            }]
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.candidates && result.candidates[0] && result.candidates[0].content) {
+        const meaning = result.candidates[0].content.parts[0].text;
+        console.log('✅ Got meaning from Gemini:', meaning);
+        
+        // Send meaning back to WebView
+        webViewRef.current?.postMessage(JSON.stringify({
+          type: 'wordMeaningResponse',
+          meaning: meaning
+        }));
+      } else {
+        throw new Error('Invalid response format from Gemini API');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error getting word meaning:', error);
+      
+      // Send error back to WebView
+      webViewRef.current?.postMessage(JSON.stringify({
+        type: 'wordMeaningResponse',
+        error: 'Failed to get meaning. Please check your internet connection and try again.'
+      }));
     }
   };
 

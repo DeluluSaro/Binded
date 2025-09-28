@@ -88,7 +88,7 @@ const EpubReaderMain: React.FC<EpubReaderMainProps> = ({ epubUrl, onClose }) => 
     goToChapter,
     progressBarPanResponder,
     cleanup
-  } = useEpubReader(epubUrl);
+  } = useEpubReader(epubUrl, webViewRef);
 
   // Bookmark functions
   const handleViewAllBookmarks = async () => {
