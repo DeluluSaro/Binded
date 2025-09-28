@@ -10,7 +10,7 @@ class SimpleEpubParser {
   get isLoaded() {
     return this.epubData !== null;
   }
-  // Getter for chapterCache to check if it's loaded
+  
 
 
 
@@ -799,7 +799,7 @@ class SimpleEpubParser {
               display: block;
             }
             
-            /* Mobile-optimized meaning popup */
+            /* Mobile-optimized meaning popup with smart positioning */
             .meaning-popup {
               position: fixed;
               top: 50%;
@@ -821,6 +821,8 @@ class SimpleEpubParser {
               border: 1px solid rgba(102, 126, 234, 0.2);
               overflow-y: auto;
               overflow-x: hidden;
+              transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+              pointer-events: auto;
             }
             
             .meaning-popup.visible {
@@ -828,6 +830,22 @@ class SimpleEpubParser {
               visibility: visible;
               opacity: 1;
               animation: popupSlideIn 0.3s ease;
+            }
+            
+            /* Smart positioning states */
+            .meaning-popup.positioned-above {
+              transform: translate(0, 0);
+              transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
+            .meaning-popup.positioned-below {
+              transform: translate(0, 0);
+              transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
+            /* Disable pointer events during text selection */
+            .meaning-popup.selection-mode {
+              pointer-events: none;
             }
             
             @keyframes popupSlideIn {
@@ -1754,7 +1772,7 @@ class SimpleEpubParser {
               console.log('✅ Meaning popup hidden');
             }
             
-            // Set meaning content in popup
+            // Set meaning content in popup with smart positioning above selection
             function setMeaningContent(meaning, isError = false) {
               console.log('🎯 setMeaningContent called with:', { meaning, isError });
               console.log('🎯 Meaning type:', typeof meaning);
@@ -1801,15 +1819,75 @@ class SimpleEpubParser {
                 footerElement.style.display = 'block';
               }
               
-              // FORCE popup visibility with multiple methods
-              console.log('🔄 Forcing popup visibility...');
+              // SMART POSITIONING: Position popup above selected text
+              console.log('🔄 Positioning popup above selection...');
               
-              // Method 1: Direct style properties
+              // Get current selection to position popup above it
+              const selection = window.getSelection();
+              let popupTop = '50%';
+              let popupLeft = '50%';
+              let popupTransform = 'translate(-50%, -50%)';
+              
+              if (selection && selection.rangeCount > 0) {
+                try {
+                  const range = selection.getRangeAt(0);
+                  const rect = range.getBoundingClientRect();
+                  
+                  if (rect && rect.top > 0 && rect.left > 0) {
+                    // Calculate popup dimensions
+                    const popupWidth = Math.min(400, window.innerWidth - 40);
+                    const popupHeight = 200; // Estimated height
+                    const gap = 15; // Gap above selection
+                    
+                    // Position popup above selection
+                    const targetTop = rect.top - popupHeight - gap;
+                    const targetLeft = rect.left + (rect.width / 2) - (popupWidth / 2);
+                    
+                    // Viewport boundary checks
+                    const viewportTop = 20;
+                    const viewportBottom = window.innerHeight - 20;
+                    const viewportLeft = 20;
+                    const viewportRight = window.innerWidth - 20;
+                    
+                    // Adjust if popup would go off-screen
+                    let finalTop = Math.max(viewportTop, targetTop);
+                    let finalLeft = Math.max(viewportLeft, Math.min(viewportRight - popupWidth, targetLeft));
+                    
+                    // If not enough space above, position below instead
+                    if (targetTop < viewportTop) {
+                      finalTop = rect.bottom + gap;
+                    }
+                    
+                    popupTop = finalTop + 'px';
+                    popupLeft = finalLeft + 'px';
+                    popupTransform = 'translate(0, 0)';
+                    
+                    console.log('📍 Smart positioning applied:', {
+                      selectionTop: rect.top,
+                      selectionBottom: rect.bottom,
+                      popupTop: finalTop,
+                      popupLeft: finalLeft,
+                      viewportHeight: window.innerHeight,
+                      viewportWidth: window.innerWidth
+                    });
+                  }
+                } catch (e) {
+                  console.log('⚠️ Selection positioning failed, using center fallback:', e);
+                }
+              }
+              
+              // FORCE popup visibility with smart positioning
+              console.log('🔄 Forcing popup visibility with smart positioning...');
+              
+              // Method 1: Direct style properties with smart positioning
               popup.style.display = 'block';
               popup.style.visibility = 'visible';
               popup.style.opacity = '1';
               popup.style.zIndex = '99999';
               popup.style.position = 'fixed';
+              popup.style.top = popupTop;
+              popup.style.left = popupLeft;
+              popup.style.transform = popupTransform;
               
               // Method 2: CSS class
               popup.classList.add('visible');
@@ -1817,24 +1895,34 @@ class SimpleEpubParser {
               // Method 3: Remove any hiding classes
               popup.classList.remove('hidden');
               
-              // Method 4: Positioning
-              popup.style.top = '50%';
-              popup.style.left = '50%';
-              popup.style.transform = 'translate(-50%, -50%)';
+              // Method 4: Responsive sizing
               popup.style.maxWidth = 'calc(100vw - 40px)';
               popup.style.maxHeight = 'calc(100vh - 100px)';
               popup.style.width = '90%';
               popup.style.minWidth = '280px';
               
+              // Method 5: Disable pointer events during text selection to prevent interference
+              popup.style.pointerEvents = 'none';
+              
               console.log('✅ Content updated:', contentElement.innerHTML.substring(0, 100));
-              console.log('✅ Popup visibility set:', {
+              console.log('✅ Popup positioned above selection:', {
                 display: popup.style.display,
                 visibility: popup.style.visibility,
                 opacity: popup.style.opacity,
-                zIndex: popup.style.zIndex
+                zIndex: popup.style.zIndex,
+                top: popup.style.top,
+                left: popup.style.left,
+                transform: popup.style.transform,
+                pointerEvents: popup.style.pointerEvents
               });
               
-              // Method 5: Force with timeout
+              // Method 6: Re-enable pointer events after a delay
+              setTimeout(() => {
+                popup.style.pointerEvents = 'auto';
+                console.log('🔄 Pointer events re-enabled');
+              }, 500);
+              
+              // Method 7: Force with timeout
               setTimeout(() => {
                 popup.style.display = 'block';
                 popup.style.visibility = 'visible';
@@ -1843,7 +1931,7 @@ class SimpleEpubParser {
                 console.log('🔄 Popup visibility reinforced after timeout');
               }, 100);
               
-              // Method 6: CSS injection fallback
+              // Method 8: CSS injection fallback
               setTimeout(() => {
                 const existingStyle = document.getElementById('popup-force-style');
                 if (existingStyle) existingStyle.remove();
