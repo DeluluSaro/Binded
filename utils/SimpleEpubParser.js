@@ -737,17 +737,17 @@ class SimpleEpubParser {
               display: flex;
             }
             
-            /* Notification system */
+            /* Mobile-optimized notification system */
             .bookmark-notification {
               position: fixed;
-              top: 100px;
+              top: 50%;
               left: 50%;
-              transform: translateX(-50%);
+              transform: translate(-50%, -50%);
               background: rgba(42, 42, 42, 0.95);
               color: white;
-              padding: 16px 28px;
-              border-radius: 28px;
-              font-size: 14px;
+              padding: 12px 20px;
+              border-radius: 20px;
+              font-size: 13px;
               font-weight: 500;
               font-family: 'Plus Jakarta Sans', sans-serif;
               z-index: 1000;
@@ -756,23 +756,29 @@ class SimpleEpubParser {
               backdrop-filter: blur(20px);
               animation: slideDown 0.3s ease;
               pointer-events: none;
+              max-width: calc(100vw - 40px);
+              width: auto;
+              text-align: center;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
             }
             
             .bookmark-selection-mode .bookmark-notification {
               display: block;
             }
             
-            /* Robot notification */
+            /* Mobile-optimized robot notification */
             .robot-notification {
               position: fixed;
-              top: 100px;
+              top: 50%;
               left: 50%;
-              transform: translateX(-50%);
+              transform: translate(-50%, -50%);
               background: rgba(102, 126, 234, 0.95);
               color: white;
-              padding: 20px 40px;
-              border-radius: 28px;
-              font-size: 16px;
+              padding: 14px 24px;
+              border-radius: 20px;
+              font-size: 14px;
               font-weight: 500;
               font-family: 'Plus Jakarta Sans', sans-serif;
               z-index: 1000;
@@ -781,16 +787,19 @@ class SimpleEpubParser {
               backdrop-filter: blur(20px);
               animation: slideDown 0.3s ease;
               pointer-events: none;
-              min-width: 300px;
+              max-width: calc(100vw - 40px);
+              width: auto;
               text-align: center;
-              max-width: 90%;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
             }
             
             .robot-selection-mode .robot-notification {
               display: block;
             }
             
-            /* Meaning popup */
+            /* Mobile-optimized meaning popup */
             .meaning-popup {
               position: fixed;
               top: 50%;
@@ -798,14 +807,18 @@ class SimpleEpubParser {
               transform: translate(-50%, -50%);
               background: rgba(255, 255, 255, 0.98);
               border-radius: 16px;
-              padding: 24px;
-              max-width: 400px;
+              padding: 20px;
+              max-width: calc(100vw - 40px);
+              max-height: calc(100vh - 100px);
               width: 90%;
+              min-width: 280px;
               box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
               backdrop-filter: blur(20px);
               z-index: 2000;
               display: none;
               border: 1px solid rgba(102, 126, 234, 0.2);
+              overflow-y: auto;
+              overflow-x: hidden;
             }
             
             .meaning-popup.visible {
@@ -1031,6 +1044,45 @@ class SimpleEpubParser {
                 min-height: 44px;
               }
               
+              /* Mobile notifications */
+              .bookmark-notification,
+              .robot-notification {
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                max-width: calc(100vw - 20px) !important;
+                padding: 10px 16px !important;
+                font-size: 12px !important;
+                border-radius: 16px !important;
+                width: auto !important;
+              }
+              
+              /* Mobile meaning popup */
+              .meaning-popup {
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                max-width: calc(100vw - 20px) !important;
+                max-height: calc(100vh - 80px) !important;
+                width: calc(100vw - 20px) !important;
+                min-width: 260px !important;
+                padding: 16px !important;
+                border-radius: 12px !important;
+              }
+              
+              .meaning-popup-header {
+                margin-bottom: 12px !important;
+                padding-bottom: 8px !important;
+              }
+              
+              .meaning-word {
+                font-size: 18px !important;
+              }
+              
+              .meaning-content {
+                font-size: 14px !important;
+              }
+              
               /* Mobile robot button - bottom center */
               #robotActionButton {
                 bottom: 20px !important;
@@ -1080,6 +1132,50 @@ class SimpleEpubParser {
                 text-indent: 1.5em;
               }
               
+              /* Small mobile notifications */
+              .bookmark-notification,
+              .robot-notification {
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                max-width: calc(100vw - 16px) !important;
+                padding: 8px 12px !important;
+                font-size: 11px !important;
+                border-radius: 14px !important;
+                width: auto !important;
+              }
+              
+              /* Small mobile meaning popup */
+              .meaning-popup {
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                max-width: calc(100vw - 16px) !important;
+                max-height: calc(100vh - 60px) !important;
+                width: calc(100vw - 16px) !important;
+                min-width: 240px !important;
+                padding: 12px !important;
+                border-radius: 10px !important;
+              }
+              
+              .meaning-popup-header {
+                margin-bottom: 8px !important;
+                padding-bottom: 6px !important;
+              }
+              
+              .meaning-word {
+                font-size: 16px !important;
+              }
+              
+              .meaning-content {
+                font-size: 13px !important;
+              }
+              
+              .meaning-close {
+                font-size: 20px !important;
+                padding: 2px !important;
+              }
+              
               /* Small mobile robot button */
               #robotActionButton {
                 bottom: 15px !important;
@@ -1119,11 +1215,11 @@ class SimpleEpubParser {
           </div>
           
           <div class="bookmark-notification" id="bookmarkNotification">
-            Touch any word to create bookmark
+            Touch any word to bookmark
           </div>
           
           <div class="robot-notification" id="robotNotification">
-            Long press text to select, then get meaning automatically
+            Long press text to select
           </div>
           
           <div class="meaning-popup" id="meaningPopup">
@@ -1476,7 +1572,7 @@ class SimpleEpubParser {
               console.log('🤖 Getting meaning for:', wordText);
             }
             
-            // Show meaning popup
+            // Show meaning popup with mobile positioning
             function showMeaningPopup(word) {
               const popup = document.getElementById('meaningPopup');
               const wordElement = document.getElementById('meaningWord');
@@ -1490,6 +1586,15 @@ class SimpleEpubParser {
                   Getting meaning...
                 </div>
               \`;
+              
+              // Ensure popup is perfectly centered and within screen bounds
+              popup.style.top = '50%';
+              popup.style.left = '50%';
+              popup.style.transform = 'translate(-50%, -50%)';
+              popup.style.maxWidth = 'calc(100vw - 40px)';
+              popup.style.maxHeight = 'calc(100vh - 100px)';
+              popup.style.width = '90%';
+              popup.style.minWidth = '280px';
               
               popup.classList.add('visible');
               
