@@ -292,20 +292,17 @@ class SimpleEpubParser {
               /* Text is already selectable by default */
             }
             
-            /* Remove ALL custom styling in robot mode - only use native selection */
-            .robot-selection-mode .word:hover,
-            .robot-selection-mode .word:active,
-            .robot-selection-mode .word:focus,
+            /* Allow native text selection in robot mode */
             .robot-selection-mode .word {
-              background: transparent !important;
-              background-color: transparent !important;
-              color: inherit !important;
-              border: none !important;
-              box-shadow: none !important;
-              transform: none !important;
-              padding: inherit !important;
-              margin: inherit !important;
-              font-weight: inherit !important;
+              /* Let native selection work naturally */
+              user-select: text;
+              -webkit-user-select: text;
+              -webkit-touch-callout: default;
+            }
+            
+            /* Remove only custom hover effects in robot mode */
+            .robot-selection-mode .word:hover {
+              background-color: transparent;
             }
             
             /* Robot action button - positioned to avoid selection handles */
@@ -439,28 +436,14 @@ class SimpleEpubParser {
               transition: none !important;
             }
             
-            /* Force remove ALL custom highlighting in robot mode */
-            .robot-selection-mode .word,
-            .robot-selection-mode .word *,
-            .robot-selection-mode span.word,
-            .robot-selection-mode span.word *,
-            .robot-selection-mode .word:before,
-            .robot-selection-mode .word:after {
+            /* Remove only custom highlighting in robot mode - allow native selection */
+            .robot-selection-mode .word-selected,
+            .robot-selection-mode .word-selecting {
               background: transparent !important;
               background-color: transparent !important;
-              background-image: none !important;
               border: none !important;
-              border-color: transparent !important;
               box-shadow: none !important;
-              outline: none !important;
-              text-shadow: none !important;
-            }
-            
-            /* Disable any transitions or animations in robot mode */
-            .robot-selection-mode .word,
-            .robot-selection-mode .word * {
-              transition: none !important;
-              animation: none !important;
+              transform: none !important;
             }
             
             /* Bookmark highlight - permanent orange for bookmarked words */
@@ -478,19 +461,9 @@ class SimpleEpubParser {
               position: relative;
             }
             
-            /* Ensure no orange highlighting in robot mode */
+            /* Keep bookmark highlighting visible in robot mode */
             .robot-selection-mode .bookmark-active {
-              background: transparent !important;
-              color: inherit !important;
-              font-weight: normal;
-              box-shadow: none !important;
-              border: none !important;
-              padding: inherit !important;
-              margin: inherit;
-              border-radius: inherit;
-              transform: none;
-              z-index: auto;
-              position: static;
+              /* Keep the orange bookmark styling even in robot mode */
             }
             
             /* Floating bookmark indicator - permanent for bookmarked words */
@@ -508,9 +481,9 @@ class SimpleEpubParser {
               animation: bookmarkPulse 2s infinite;
             }
             
-            /* Hide bookmark indicator in robot mode */
+            /* Keep bookmark indicators visible in robot mode */
             .robot-selection-mode .bookmark-indicator {
-              display: none !important;
+              display: block;
             }
             
             .bookmark-indicator {
@@ -1056,14 +1029,14 @@ class SimpleEpubParser {
               
               // Add touch listeners to each word (only active in selection mode)
               words.forEach((word, index) => {
-                // Single click for bookmark mode
+                // Single click for bookmark mode only
                 word.addEventListener('click', (e) => {
-                  // Only prevent default and handle clicks in bookmark mode
                   if (bookmarkSelectionMode) {
                     e.preventDefault();
+                    e.stopPropagation();
                     createBookmark(index);
                   }
-                  // In robot mode, let native behavior handle everything
+                  // In robot mode, do nothing - let native text selection work
                 });
                 
                 // No custom touch events needed - using native text selection
