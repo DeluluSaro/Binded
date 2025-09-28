@@ -10,6 +10,9 @@ class SimpleEpubParser {
   get isLoaded() {
     return this.epubData !== null;
   }
+  // Getter for chapterCache to check if it's loaded
+
+
 
   // Download and parse EPUB directly from URL
   async loadEpubFromUrl(epubUrl) {
