@@ -241,21 +241,18 @@ class SimpleEpubParser {
               touch-action: manipulation;
             }
             
-            /* Main content container */
+            /* Mobile-first content container */
             .content-container {
-              max-width: 680px;
-              margin: 0 auto;
+              width: 100%;
+              margin: 0;
               background: var(--secondary-bg);
               min-height: 100vh;
-              box-shadow: 
-                0 0 0 1px rgba(0,0,0,0.03),
-                0 8px 32px var(--shadow-light);
               position: relative;
             }
             
-            /* Content area */
+            /* Mobile-first content area */
             #content {
-              padding: 120px 40px 80px 40px;
+              padding: 100px 20px 100px 20px;
               text-align: justify;
               text-justify: inter-word;
               position: relative;
@@ -589,16 +586,14 @@ class SimpleEpubParser {
               50% { opacity: 0.7; transform: translateX(-50%) scale(1.1); }
             }
             
-            /* Top navigation bar */
+            /* Mobile-first top navigation bar */
             .top-nav {
               position: fixed;
               top: 0;
-              left: 50%;
-              transform: translateX(-50%);
+              left: 0;
               width: 100%;
-              max-width: 680px;
-              height: 80px;
-              background: rgba(183, 170, 153, 0.85); /* Adjusted for new BG */
+              height: 70px;
+              background: rgba(183, 170, 153, 0.95);
               backdrop-filter: blur(20px);
               -webkit-backdrop-filter: blur(20px);
               border-bottom: 1px solid rgba(0,0,0,0.1);
@@ -606,7 +601,7 @@ class SimpleEpubParser {
               display: flex;
               align-items: center;
               justify-content: space-between;
-              padding: 0 24px;
+              padding: 0 16px;
             }
             
             .nav-section {
@@ -615,27 +610,29 @@ class SimpleEpubParser {
               gap: 12px;
             }
             
-            /* Navigation buttons */
+            /* Mobile-first navigation buttons */
             .nav-btn {
               width: 44px;
               height: 44px;
               border-radius: 50%;
-              background: rgba(255, 255, 255, 0.1);
-              border: 1px solid rgba(255, 255, 255, 0.2);
+              background: rgba(255, 255, 255, 0.15);
+              border: 1px solid rgba(255, 255, 255, 0.3);
               color: #FFFFFF;
               font-size: 18px;
               display: flex;
               align-items: center;
               justify-content: center;
               transition: all 0.2s ease;
-              box-shadow: 0 2px 8px var(--shadow-light);
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
               cursor: pointer;
+              touch-action: manipulation;
+              -webkit-tap-highlight-color: transparent;
             }
             
-            .nav-btn:hover {
-              background: rgba(255, 255, 255, 0.2);
-              transform: translateY(-1px);
-              box-shadow: 0 4px 12px var(--shadow-medium);
+            .nav-btn:active {
+              background: rgba(255, 255, 255, 0.25);
+              transform: scale(0.95);
+              box-shadow: 0 1px 4px rgba(0,0,0,0.2);
             }
             
             .nav-btn.active {
@@ -814,8 +811,10 @@ class SimpleEpubParser {
               min-width: 280px;
               box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
               backdrop-filter: blur(20px);
-              z-index: 2000;
+              z-index: 99999;
               display: none;
+              visibility: hidden;
+              opacity: 0;
               border: 1px solid rgba(102, 126, 234, 0.2);
               overflow-y: auto;
               overflow-x: hidden;
@@ -823,6 +822,8 @@ class SimpleEpubParser {
             
             .meaning-popup.visible {
               display: block;
+              visibility: visible;
+              opacity: 1;
               animation: popupSlideIn 0.3s ease;
             }
             
@@ -858,20 +859,32 @@ class SimpleEpubParser {
               font-size: 24px;
               cursor: pointer;
               color: #999;
-              padding: 4px;
+              padding: 8px;
               border-radius: 50%;
               transition: all 0.2s ease;
+              width: 40px;
+              height: 40px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: bold;
             }
             
             .meaning-close:hover {
               background: rgba(0, 0, 0, 0.1);
               color: #333;
+              transform: scale(1.1);
+            }
+            
+            .meaning-close:active {
+              transform: scale(0.95);
             }
             
             .meaning-content {
               font-size: 16px;
               line-height: 1.6;
-              color: #333;
+              color: #E74C3C;
+              font-weight: 500;
             }
             
             .meaning-loading {
@@ -912,11 +925,11 @@ class SimpleEpubParser {
               }
             }
             
-            /* Enhanced typography */
+            /* Mobile-first typography */
             h1, h2, h3, h4, h5, h6 {
               font-family: 'Plus Jakarta Sans', sans-serif;
               color: var(--text-primary);
-              margin: 32px 0 20px 0;
+              margin: 24px 0 16px 0;
               font-weight: 700;
               line-height: 1.3;
               letter-spacing: -0.02em;
@@ -926,23 +939,23 @@ class SimpleEpubParser {
             }
             
             h1 { 
-              font-size: 2.2em; 
+              font-size: 1.8em; 
               font-weight: 800;
-              margin: 40px 0 24px 0;
+              margin: 32px 0 20px 0;
             }
             h2 { 
-              font-size: 1.8em; 
+              font-size: 1.5em; 
               font-weight: 700;
             }
             h3 { 
-              font-size: 1.4em; 
+              font-size: 1.3em; 
               font-weight: 600;
             }
             
             p {
-              margin: 20px 0;
-              text-indent: 2em;
-              line-height: 1.75;
+              margin: 16px 0;
+              text-indent: 1.5em;
+              line-height: 1.6;
               font-weight: 400;
               color: var(--text-primary);
               user-select: text;
@@ -1019,92 +1032,91 @@ class SimpleEpubParser {
               scroll-behavior: smooth;
             }
             
-            /* Mobile-first responsiveness */
-            @media (max-width: 768px) {
-              .content-container {
-                margin: 0;
-                box-shadow: none;
-                border-radius: 0;
-              }
-              
-              #content {
-                padding: 100px 20px 100px 20px; /* Extra bottom padding for mobile button */
-              }
-              
-              .top-nav {
-                padding: 0 16px;
-                height: 70px;
-              }
-              
-              .nav-btn {
-                width: 44px;
-                height: 44px;
-                font-size: 18px;
-                min-width: 44px;
-                min-height: 44px;
-              }
-              
-              /* Mobile notifications */
-              .bookmark-notification,
-              .robot-notification {
-                top: 50% !important;
-                left: 50% !important;
-                transform: translate(-50%, -50%) !important;
-                max-width: calc(100vw - 20px) !important;
-                padding: 10px 16px !important;
-                font-size: 12px !important;
-                border-radius: 16px !important;
-                width: auto !important;
-              }
-              
-              /* Mobile meaning popup */
-              .meaning-popup {
-                top: 50% !important;
-                left: 50% !important;
-                transform: translate(-50%, -50%) !important;
-                max-width: calc(100vw - 20px) !important;
-                max-height: calc(100vh - 80px) !important;
-                width: calc(100vw - 20px) !important;
-                min-width: 260px !important;
-                padding: 16px !important;
-                border-radius: 12px !important;
-              }
-              
-              .meaning-popup-header {
-                margin-bottom: 12px !important;
-                padding-bottom: 8px !important;
-              }
-              
-              .meaning-word {
-                font-size: 18px !important;
-              }
-              
-              .meaning-content {
-                font-size: 14px !important;
-              }
-              
-              /* Mobile robot button - bottom center */
-              #robotActionButton {
-                bottom: 20px !important;
-                left: 50% !important;
-                right: auto !important;
-                top: auto !important;
-                transform: translateX(-50%) !important;
-                width: 180px !important;
-                height: 48px !important;
-                font-size: 15px !important;
-                padding: 0 20px !important;
-                border-radius: 24px !important;
-              }
-              
-              /* Mobile positioned button */
-              #robotActionButton.positioned {
-                bottom: 80px !important;
-                left: 50% !important;
-                transform: translateX(-50%) !important;
-              }
+            /* Mobile-only design - no desktop/tablet considerations */
+            .content-container {
+              margin: 0;
+              box-shadow: none;
+              border-radius: 0;
             }
             
+            #content {
+              padding: 100px 20px 100px 20px; /* Extra bottom padding for mobile button */
+            }
+            
+            .top-nav {
+              padding: 0 16px;
+              height: 70px;
+            }
+            
+            .nav-btn {
+              width: 44px;
+              height: 44px;
+              font-size: 18px;
+              min-width: 44px;
+              min-height: 44px;
+            }
+            
+            /* Mobile notifications */
+            .bookmark-notification,
+            .robot-notification {
+              top: 50% !important;
+              left: 50% !important;
+              transform: translate(-50%, -50%) !important;
+              max-width: calc(100vw - 20px) !important;
+              padding: 10px 16px !important;
+              font-size: 12px !important;
+              border-radius: 16px !important;
+              width: auto !important;
+            }
+            
+            /* Mobile meaning popup */
+            .meaning-popup {
+              top: 50% !important;
+              left: 50% !important;
+              transform: translate(-50%, -50%) !important;
+              max-width: calc(100vw - 20px) !important;
+              max-height: calc(100vh - 80px) !important;
+              width: calc(100vw - 20px) !important;
+              min-width: 260px !important;
+              padding: 16px !important;
+              border-radius: 12px !important;
+            }
+            
+            .meaning-popup-header {
+              margin-bottom: 12px !important;
+              padding-bottom: 8px !important;
+            }
+            
+            .meaning-word {
+              font-size: 18px !important;
+            }
+            
+            .meaning-content {
+              font-size: 14px !important;
+            }
+            
+            /* Mobile robot button - bottom center */
+            #robotActionButton {
+              bottom: 20px !important;
+              left: 50% !important;
+              right: auto !important;
+              top: auto !important;
+              transform: translateX(-50%) !important;
+              width: 180px !important;
+              height: 48px !important;
+              font-size: 15px !important;
+              padding: 0 20px !important;
+              border-radius: 24px !important;
+            }
+            
+            /* Mobile positioned button */
+            #robotActionButton.positioned {
+              bottom: 80px !important;
+              left: 50% !important;
+              transform: translateX(-50%) !important;
+            }
+            
+            /* Small mobile optimizations */
             @media (max-width: 480px) {
               #content {
                 padding: 90px 16px 100px 16px; /* Extra bottom padding for mobile button */
@@ -1219,19 +1231,26 @@ class SimpleEpubParser {
           </div>
           
           <div class="robot-notification" id="robotNotification">
-            Long press text to select
+            Long press text to select • Tap 🤖 button to turn off
           </div>
           
           <div class="meaning-popup" id="meaningPopup">
             <div class="meaning-popup-header">
               <div class="meaning-word" id="meaningWord">Word</div>
-              <button class="meaning-close" id="meaningClose">×</button>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="meaning-close" id="meaningClose">×</button>
+              </div>
             </div>
             <div class="meaning-content" id="meaningContent">
               <div class="meaning-loading">
                 <div class="meaning-spinner"></div>
                 Getting meaning...
               </div>
+            </div>
+            <div class="meaning-footer" id="meaningFooter" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.1); text-align: center;">
+              <button id="turnOffRobot" style="background: #E74C3C; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                🤖 Turn Off Robot
+              </button>
             </div>
           </div>
           
@@ -1351,6 +1370,9 @@ class SimpleEpubParser {
                 notification.style.display = 'block';
                 console.log('🤖 Robot selection mode enabled - use native text selection');
                 
+                // Show popup immediately with loading state
+                showRobotPopup();
+                
                 // Send message to React Native
                 window.ReactNativeWebView.postMessage(JSON.stringify({
                   type: 'robotModeEnabled',
@@ -1364,6 +1386,9 @@ class SimpleEpubParser {
                 body.classList.remove('robot-selection-mode');
                 button.classList.remove('active');
                 notification.style.display = 'none';
+                
+                // Hide popup
+                hideRobotPopup();
                 
                 console.log('🤖 Robot selection mode disabled');
                 
@@ -1424,8 +1449,8 @@ class SimpleEpubParser {
                 // Clear the selection to prevent interference
                 selection.removeAllRanges();
                 
-                // Show meaning popup
-                showMeaningPopup(selectedText);
+                // Update existing popup with selected text and loading
+                updateRobotPopupWithSelection(selectedText);
                 
                 // Don't exit robot mode here - let user decide when to exit
                 console.log('🤖 Meaning requested, staying in robot mode');
@@ -1482,6 +1507,8 @@ class SimpleEpubParser {
                 will-change: transform, opacity;
                 backdrop-filter: blur(10px);
                 -webkit-backdrop-filter: blur(10px);
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
               \`;
               
               // Mobile-optimized click handling
@@ -1492,16 +1519,22 @@ class SimpleEpubParser {
                 getSelectedTextMeaning();
               });
               
-              // Mobile touch events with proper feedback
+              // Mobile-first touch events with proper feedback
               let touchStartTime = 0;
+              let touchMoved = false;
               
               actionButton.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 touchStartTime = Date.now();
+                touchMoved = false;
                 actionButton.style.transform = 'translateX(-50%) scale(0.95)';
                 actionButton.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.6)';
                 console.log('🤖 Mobile touch start');
+              });
+              
+              actionButton.addEventListener('touchmove', (e) => {
+                touchMoved = true;
               });
               
               actionButton.addEventListener('touchend', (e) => {
@@ -1513,12 +1546,12 @@ class SimpleEpubParser {
                 actionButton.style.transform = 'translateX(-50%) scale(1)';
                 actionButton.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.4)';
                 
-                // Only trigger if it was a quick tap (not a long press)
-                if (touchDuration < 500) {
+                // Only trigger if it was a quick tap without movement
+                if (touchDuration < 300 && !touchMoved) {
                   console.log('🤖 Mobile touch end - quick tap');
                   getSelectedTextMeaning();
                 } else {
-                  console.log('🤖 Mobile touch end - long press, ignoring');
+                  console.log('🤖 Mobile touch end - long press or moved, ignoring');
                 }
               });
               
@@ -1528,20 +1561,7 @@ class SimpleEpubParser {
                 e.stopPropagation();
               });
               
-              // Mobile hover effects (for devices that support hover)
-              actionButton.addEventListener('mouseenter', () => {
-                if (actionButton.style.display !== 'none') {
-                  actionButton.style.transform = 'translateX(-50%) scale(1.02)';
-                  actionButton.style.boxShadow = '0 12px 32px rgba(102, 126, 234, 0.6)';
-                }
-              });
-              
-              actionButton.addEventListener('mouseleave', () => {
-                if (actionButton.style.display !== 'none') {
-                  actionButton.style.transform = 'translateX(-50%) scale(1)';
-                  actionButton.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.4)';
-                }
-              });
+              // Mobile-first: No hover effects needed
               
               document.body.appendChild(actionButton);
               console.log('🤖 Mobile robot action button created and added to DOM');
@@ -1572,11 +1592,103 @@ class SimpleEpubParser {
               console.log('🤖 Getting meaning for:', wordText);
             }
             
-            // Show meaning popup with mobile positioning
-            function showMeaningPopup(word) {
+            // Show robot popup immediately when robot mode is enabled
+            function showRobotPopup() {
+              console.log('🤖 Showing robot popup');
               const popup = document.getElementById('meaningPopup');
               const wordElement = document.getElementById('meaningWord');
               const contentElement = document.getElementById('meaningContent');
+              
+              if (!popup || !wordElement || !contentElement) {
+                console.error('❌ Popup elements not found!');
+                return;
+              }
+              
+              // Set word and show loading
+              wordElement.textContent = '🤖 AI Assistant';
+              contentElement.innerHTML = \`
+                <div class="meaning-loading">
+                  <div class="meaning-spinner"></div>
+                  Select text to get meaning...
+                </div>
+              \`;
+              
+              // Ensure popup is perfectly centered and within screen bounds
+              popup.style.top = '50%';
+              popup.style.left = '50%';
+              popup.style.transform = 'translate(-50%, -50%)';
+              popup.style.maxWidth = 'calc(100vw - 40px)';
+              popup.style.maxHeight = 'calc(100vh - 100px)';
+              popup.style.width = '90%';
+              popup.style.minWidth = '280px';
+              
+              popup.classList.add('visible');
+              popup.style.display = 'block';
+              popup.style.zIndex = '2000';
+              
+              console.log('✅ Robot popup shown');
+            }
+            
+            // Hide robot popup
+            function hideRobotPopup() {
+              const popup = document.getElementById('meaningPopup');
+              if (popup) {
+                popup.classList.remove('visible');
+                popup.style.display = 'none';
+                console.log('✅ Robot popup hidden');
+              }
+            }
+            
+            // Update robot popup with selected text and loading state
+            function updateRobotPopupWithSelection(selectedText) {
+              console.log('🤖 Updating robot popup with selection:', selectedText);
+              const popup = document.getElementById('meaningPopup');
+              const wordElement = document.getElementById('meaningWord');
+              const contentElement = document.getElementById('meaningContent');
+              
+              if (!popup || !wordElement || !contentElement) {
+                console.error('❌ Popup elements not found!');
+                return;
+              }
+              
+              // Update word and show loading
+              wordElement.textContent = selectedText;
+              contentElement.innerHTML = \`
+                <div class="meaning-loading">
+                  <div class="meaning-spinner"></div>
+                  Getting meaning...
+                </div>
+              \`;
+              
+              // Ensure popup stays visible
+              popup.style.display = 'block';
+              popup.style.zIndex = '2000';
+              popup.classList.add('visible');
+              
+              // Request meaning from React Native
+              const message = {
+                type: 'getWordMeaning',
+                data: {
+                  word: selectedText,
+                  timestamp: new Date().toISOString()
+                }
+              };
+              
+              console.log('📤 Sending message to React Native:', message);
+              window.ReactNativeWebView.postMessage(JSON.stringify(message));
+            }
+            
+            // Show meaning popup with mobile positioning
+            function showMeaningPopup(word) {
+              console.log('🎯 showMeaningPopup called with word:', word);
+              const popup = document.getElementById('meaningPopup');
+              const wordElement = document.getElementById('meaningWord');
+              const contentElement = document.getElementById('meaningContent');
+              
+              if (!popup || !wordElement || !contentElement) {
+                console.error('❌ Popup elements not found!', { popup, wordElement, contentElement });
+                return;
+              }
               
               // Set word and show loading
               wordElement.textContent = word;
@@ -1597,21 +1709,35 @@ class SimpleEpubParser {
               popup.style.minWidth = '280px';
               
               popup.classList.add('visible');
+              console.log('✅ Popup made visible');
+              
+              // Force display to ensure it's visible
+              popup.style.display = 'block';
+              popup.style.zIndex = '2000';
+              console.log('📱 Popup styles applied:', {
+                display: popup.style.display,
+                zIndex: popup.style.zIndex,
+                visible: popup.classList.contains('visible')
+              });
               
               // Request meaning from React Native
-              window.ReactNativeWebView.postMessage(JSON.stringify({
+              const message = {
                 type: 'getWordMeaning',
                 data: {
                   word: word,
                   timestamp: new Date().toISOString()
                 }
-              }));
+              };
+              
+              console.log('📤 Sending message to React Native:', message);
+              window.ReactNativeWebView.postMessage(JSON.stringify(message));
             }
             
             // Hide meaning popup
             function hideMeaningPopup() {
               const popup = document.getElementById('meaningPopup');
               popup.classList.remove('visible');
+              popup.style.display = 'none';
               
               // Ensure button is hidden when popup closes
               const actionButton = document.getElementById('robotActionButton');
@@ -1621,25 +1747,182 @@ class SimpleEpubParser {
                 actionButton.style.pointerEvents = 'none';
                 actionButton.style.top = '50%'; // Reset position
               }
+              
+              console.log('✅ Meaning popup hidden');
             }
             
             // Set meaning content in popup
             function setMeaningContent(meaning, isError = false) {
-              const contentElement = document.getElementById('meaningContent');
+              console.log('🎯 setMeaningContent called with:', { meaning, isError });
+              console.log('🎯 Meaning type:', typeof meaning);
+              console.log('🎯 Meaning length:', meaning ? meaning.length : 'null');
               
+              const contentElement = document.getElementById('meaningContent');
+              const footerElement = document.getElementById('meaningFooter');
+              const popup = document.getElementById('meaningPopup');
+              
+              // Validate elements exist
+              if (!contentElement) {
+                console.error('❌ meaningContent element not found!');
+                return;
+              }
+              if (!popup) {
+                console.error('❌ meaningPopup element not found!');
+                return;
+              }
+              
+              // Clear any existing content
+              contentElement.innerHTML = '';
+              
+              // Set content based on error status
               if (isError) {
+                console.log('❌ Setting error content:', meaning);
                 contentElement.innerHTML = \`
-                  <div class="meaning-error">
-                    ❌ Failed to get meaning. Please try again.
+                  <div class="meaning-error" style="color: #E74C3C; font-style: italic;">
+                    ❌ \${meaning || 'Failed to get meaning. Please try again.'}
                   </div>
                 \`;
               } else {
+                console.log('✅ Setting success content:', meaning);
+                // Make sure we have actual content
+                const displayMeaning = meaning || 'No meaning available';
                 contentElement.innerHTML = \`
-                  <div class="meaning-content">
-                    \${meaning}
+                  <div class="meaning-content" style="font-size: 16px; line-height: 1.6; color: #2A2A2A; font-weight: 500;">
+                    \${displayMeaning}
                   </div>
                 \`;
               }
+              
+              // Show footer
+              if (footerElement) {
+                footerElement.style.display = 'block';
+              }
+              
+              // FORCE popup visibility with multiple methods
+              console.log('🔄 Forcing popup visibility...');
+              
+              // Method 1: Direct style properties
+              popup.style.display = 'block';
+              popup.style.visibility = 'visible';
+              popup.style.opacity = '1';
+              popup.style.zIndex = '99999';
+              popup.style.position = 'fixed';
+              
+              // Method 2: CSS class
+              popup.classList.add('visible');
+              
+              // Method 3: Remove any hiding classes
+              popup.classList.remove('hidden');
+              
+              // Method 4: Positioning
+              popup.style.top = '50%';
+              popup.style.left = '50%';
+              popup.style.transform = 'translate(-50%, -50%)';
+              popup.style.maxWidth = 'calc(100vw - 40px)';
+              popup.style.maxHeight = 'calc(100vh - 100px)';
+              popup.style.width = '90%';
+              popup.style.minWidth = '280px';
+              
+              console.log('✅ Content updated:', contentElement.innerHTML.substring(0, 100));
+              console.log('✅ Popup visibility set:', {
+                display: popup.style.display,
+                visibility: popup.style.visibility,
+                opacity: popup.style.opacity,
+                zIndex: popup.style.zIndex
+              });
+              
+              // Method 5: Force with timeout
+              setTimeout(() => {
+                popup.style.display = 'block';
+                popup.style.visibility = 'visible';
+                popup.style.opacity = '1';
+                popup.classList.add('visible');
+                console.log('🔄 Popup visibility reinforced after timeout');
+              }, 100);
+              
+              // Method 6: CSS injection fallback
+              setTimeout(() => {
+                const existingStyle = document.getElementById('popup-force-style');
+                if (existingStyle) existingStyle.remove();
+                
+                const style = document.createElement('style');
+                style.id = 'popup-force-style';
+                style.textContent = \`
+                  #meaningPopup.visible {
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                    z-index: 99999 !important;
+                    position: fixed !important;
+                  }
+                \`;
+                document.head.appendChild(style);
+                console.log('🔄 CSS injection applied');
+              }, 200);
+            }
+            
+            // Add this debug function to your code:
+            function debugPopupState() {
+              const popup = document.getElementById('meaningPopup');
+              const content = document.getElementById('meaningContent');
+              const word = document.getElementById('meaningWord');
+              
+              console.log('🔍 POPUP DEBUG STATE:', {
+                popup: {
+                  exists: !!popup,
+                  display: popup?.style.display,
+                  visibility: popup?.style.visibility,
+                  opacity: popup?.style.opacity,
+                  zIndex: popup?.style.zIndex,
+                  classList: popup?.classList.toString(),
+                  offsetWidth: popup?.offsetWidth,
+                  offsetHeight: popup?.offsetHeight
+                },
+                content: {
+                  exists: !!content,
+                  innerHTML: content?.innerHTML?.substring(0, 200),
+                  textContent: content?.textContent?.substring(0, 100)
+                },
+                word: {
+                  exists: !!word,
+                  textContent: word?.textContent
+                }
+              });
+              
+              // Force visibility test
+              if (popup) {
+                popup.style.border = '5px solid red'; // Visual test
+                popup.style.backgroundColor = 'yellow'; // Visual test
+                setTimeout(() => {
+                  popup.style.border = '';
+                  popup.style.backgroundColor = '';
+                }, 2000);
+              }
+            }
+            
+            // Add this test function to verify your message flow:
+            function testMeaningDisplay() {
+              console.log('🧪 Testing meaning display...');
+              
+              // Simulate the exact message your React Native sends
+              const testMessage = {
+                type: 'wordMeaningResponse',
+                meaning: 'This is a test meaning to verify the display works correctly.',
+                word: 'test'
+              };
+              
+              console.log('🧪 Simulating message:', testMessage);
+              
+              // Directly call setMeaningContent
+              setMeaningContent(testMessage.meaning, false);
+              
+              // Debug state
+              debugPopupState();
+              
+              // Also test the event system
+              setTimeout(() => {
+                window.postMessage(JSON.stringify(testMessage), '*');
+              }, 1000);
             }
             
             // Advanced text selection algorithm for robot button
@@ -1716,7 +1999,7 @@ class SimpleEpubParser {
                 }, 100 * selectionAttempts);
               }
               
-              // Mobile-optimized button positioning
+              // Mobile-first button positioning
               function showActionButton(button, selectedText) {
                 if (!button) return;
                 
@@ -1733,8 +2016,8 @@ class SimpleEpubParser {
                     const viewportHeight = window.innerHeight;
                     const selectionBottom = rect.bottom;
                     
-                    // If selection is in bottom 30% of screen, move button up
-                    if (selectionBottom > viewportHeight * 0.7) {
+                    // If selection is in bottom 40% of screen, move button up
+                    if (selectionBottom > viewportHeight * 0.6) {
                       button.style.bottom = '80px';
                       button.classList.add('positioned');
                       console.log('🤖 Mobile button positioned above selection');
@@ -1812,7 +2095,7 @@ class SimpleEpubParser {
                 }, 100);
               });
               
-              // Mobile-optimized touch events
+              // Mobile-first touch events
               let touchStartTime = 0;
               let touchStartPos = { x: 0, y: 0 };
               let isLongPress = false;
@@ -1831,13 +2114,13 @@ class SimpleEpubParser {
                 
                 console.log('📱 Mobile touch start');
                 
-                // Long press detection for mobile
+                // Faster long press detection for mobile
                 setTimeout(() => {
-                  if (Date.now() - touchStartTime >= 500 && !touchMoved) {
+                  if (Date.now() - touchStartTime >= 300 && !touchMoved) {
                     isLongPress = true;
                     console.log('📱 Mobile long press detected');
                   }
-                }, 500);
+                }, 300);
               });
               
               document.addEventListener('touchmove', (e) => {
@@ -1878,22 +2161,22 @@ class SimpleEpubParser {
                   touchMoved: touchMoved
                 });
                 
-                // Mobile-optimized selection detection
+                // Mobile-first selection detection
                 if (isLongPress && !touchMoved) {
                   // Long press without movement - trigger selection
                   setTimeout(() => {
                     detectAndHandleSelection();
-                  }, 300);
-                } else if (touchMoved && distance > 20) {
+                  }, 200);
+                } else if (touchMoved && distance > 15) {
                   // Drag selection - immediate detection
                   setTimeout(() => {
                     detectAndHandleSelection();
-                  }, 100);
-                } else if (touchDuration < 300 && distance < 10) {
+                  }, 50);
+                } else if (touchDuration < 200 && distance < 8) {
                   // Quick tap - might be selection
                   setTimeout(() => {
                     detectAndHandleSelection();
-                  }, 150);
+                  }, 100);
                 }
               });
               
@@ -2030,10 +2313,14 @@ class SimpleEpubParser {
             
             // Handle messages from React Native
             window.addEventListener('message', (event) => {
+              console.log('📨 Raw message received:', event.data);
+              
               let data;
               try {
                 data = JSON.parse(event.data);
+                console.log('📨 Parsed message:', data);
               } catch (e) {
+                console.error('❌ Failed to parse message:', e);
                 return;
               }
               
@@ -2092,13 +2379,42 @@ class SimpleEpubParser {
                   }
                   break;
                 case 'wordMeaningResponse':
+                  console.log('📨 Processing wordMeaningResponse:', data);
+                  
+                  // CRITICAL: Check what we actually received
                   if (data.meaning) {
+                    console.log('✅ Meaning found:', data.meaning);
+                    console.log('✅ Meaning type:', typeof data.meaning);
+                    console.log('✅ Meaning length:', data.meaning.length);
+                    
+                    // Call the display function
                     setMeaningContent(data.meaning, false);
+                    
+                    // FORCE popup visibility (add this as backup)
+                    const popup = document.getElementById('meaningPopup');
+                    if (popup) {
+                      popup.style.display = 'block';
+                      popup.style.visibility = 'visible';
+                      popup.style.opacity = '1';
+                      popup.classList.add('visible');
+                    }
+                    
                   } else if (data.error) {
+                    console.log('❌ Error received:', data.error);
                     setMeaningContent(data.error, true);
+                  } else {
+                    console.log('❌ No meaning or error in response');
+                    console.log('❌ Full data object:', JSON.stringify(data, null, 2));
+                    setMeaningContent('No meaning available', true);
                   }
                   break;
               }
+            });
+            
+            // ALSO ADD: Alternative listener for React Native WebView
+            document.addEventListener('message', (event) => {
+              console.log('📨 Document message received:', event.data);
+              window.dispatchEvent(new MessageEvent('message', { data: event.data }));
             });
             
             // Initialize when DOM is ready
@@ -2108,9 +2424,18 @@ class SimpleEpubParser {
               // Add meaning popup event listeners
               const meaningClose = document.getElementById('meaningClose');
               const meaningPopup = document.getElementById('meaningPopup');
+              const turnOffRobot = document.getElementById('turnOffRobot');
               
               if (meaningClose) {
                 meaningClose.addEventListener('click', hideMeaningPopup);
+              }
+              
+              if (turnOffRobot) {
+                turnOffRobot.addEventListener('click', () => {
+                  console.log('🤖 Turn off robot button clicked');
+                  hideRobotPopup();
+                  toggleRobotMode(); // This will turn off robot mode
+                });
               }
               
               // Close popup when clicking outside
@@ -2529,20 +2854,18 @@ class SimpleEpubParser {
             fill: transparent;
           }
           
-          /* Mobile responsiveness */
-          @media (max-width: 480px) {
-            .blank-container {
-              margin: 20px;
-              padding: 40px 24px;
-            }
-            
-            .blank-title {
-              font-size: 24px;
-            }
-            
-            .blank-message {
-              font-size: 15px;
-            }
+          /* Mobile-first design */
+          .blank-container {
+            margin: 20px;
+            padding: 40px 24px;
+          }
+          
+          .blank-title {
+            font-size: 24px;
+          }
+          
+          .blank-message {
+            font-size: 15px;
           }
         </style>
       </head>

@@ -7,12 +7,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import ThemeToggle from './theme-toggle';
 
@@ -45,8 +45,18 @@ const bottomMenuItems = [
 ];
 
 export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
-  const { user } = useUser();
-  const { signOut } = useAuth(); // From Clerk
+  // Safely get Clerk auth - might not be available if Clerk is not configured
+  let user = null;
+  let signOut = () => {};
+  
+  try {
+    const userData = useUser();
+    const auth = useAuth();
+    user = userData?.user ?? null;
+    signOut = auth?.signOut ?? (() => {});
+  } catch (error) {
+    console.log('🔓 Clerk not available in SideNavbar, running in demo mode');
+  }
   const router = useRouter();
   const [activeRoute, setActiveRoute] = useState('/home');
   const [selectedCategory, setSelectedCategory] = useState('1');

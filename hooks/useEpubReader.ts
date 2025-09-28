@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, PanResponder } from 'react-native';
-import { GEMINI_API_KEY, isGeminiConfigured } from '../config/gemini';
+import { isGeminiConfigured } from '../config/gemini';
+import geminiService from '../services/geminiService';
 import { BookmarkManager } from '../utils/BookmarkManager';
 import SimpleEpubParser from '../utils/SimpleEpubParser';
 
@@ -914,38 +915,37 @@ export const useEpubReader = (epubUrl: string, webViewRef?: React.RefObject<any>
         return;
       }
 
-      // Call Gemini API
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `What does "${word}" mean? Provide a clear, concise definition in 1-2 sentences.`
-            }]
-          }]
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
+      // Test connection first (only on first request)
+      if (!geminiService.connectionTested) {
+        console.log('🔍 Testing Gemini API connection...');
+        const isConnected = await geminiService.testConnection();
+        geminiService.connectionTested = true;
+        
+        if (!isConnected) {
+          console.error('❌ Gemini API connection test failed');
+          webViewRef.current?.postMessage(JSON.stringify({
+            type: 'wordMeaningResponse',
+            error: 'Gemini API connection failed. Please check your API key and internet connection.'
+          }));
+          return;
+        }
       }
 
-      const result = await response.json();
+      // Use Gemini service to get word meaning
+      const result = await geminiService.getWordMeaning(word);
       
-      if (result.candidates && result.candidates[0] && result.candidates[0].content) {
-        const meaning = result.candidates[0].content.parts[0].text;
-        console.log('✅ Got meaning from Gemini:', meaning);
-        
-        // Send meaning back to WebView
+      if (result.error) {
+        console.error('❌ Gemini service error:', result.error);
         webViewRef.current?.postMessage(JSON.stringify({
           type: 'wordMeaningResponse',
-          meaning: meaning
+          error: result.error
         }));
       } else {
-        throw new Error('Invalid response format from Gemini API');
+        console.log('✅ Got meaning from Gemini service:', result.meaning);
+        webViewRef.current?.postMessage(JSON.stringify({
+          type: 'wordMeaningResponse',
+          meaning: result.meaning
+        }));
       }
       
     } catch (error) {

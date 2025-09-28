@@ -22,14 +22,14 @@ import React, { useEffect, useRef, useState } from 'react';
 // Add this to any screen
 
 import {
-  Alert,
-  Animated,
-  FlatList,
-  Linking,
-  Platform,
-  StyleSheet,
-  TouchableOpacity,
-  View
+    Alert,
+    Animated,
+    FlatList,
+    Linking,
+    Platform,
+    StyleSheet,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 // --- Mock Data for Categories and Authors (keeping these as they're UI elements) ---
