@@ -195,7 +195,7 @@ class SimpleEpubParser {
       <!DOCTYPE html>
       <html>
         <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -237,6 +237,8 @@ class SimpleEpubParser {
               user-select: text;
               -webkit-user-select: text;
               -webkit-touch-callout: default;
+              -webkit-overflow-scrolling: touch;
+              touch-action: manipulation;
             }
             
             /* Main content container */
@@ -292,6 +294,31 @@ class SimpleEpubParser {
               /* Text is already selectable by default */
             }
             
+            /* Global override to prevent ANY orange highlighting in robot mode */
+            .robot-selection-mode * {
+              background: transparent !important;
+              background-color: transparent !important;
+              border: none !important;
+              box-shadow: none !important;
+              transform: none !important;
+            }
+            
+            /* Exception: Keep bookmark styling visible */
+            .robot-selection-mode .bookmark-active,
+            .robot-selection-mode .bookmark-indicator {
+              background: linear-gradient(135deg, #E74C3C 0%, #FF6B5B 100%) !important;
+              color: #FFFFFF !important;
+              font-weight: 600 !important;
+              box-shadow: 0 2px 12px rgba(231, 76, 60, 0.4) !important;
+              border: 2px solid #E74C3C !important;
+              padding: 4px 8px !important;
+              margin: 0 2px !important;
+              border-radius: var(--border-radius-small) !important;
+              transform: scale(1.02) !important;
+              z-index: 10 !important;
+              position: relative !important;
+            }
+            
             /* Allow native text selection in robot mode */
             .robot-selection-mode .word {
               /* Let native selection work naturally */
@@ -305,22 +332,47 @@ class SimpleEpubParser {
               background-color: transparent;
             }
             
-            /* Robot action button - positioned to avoid selection handles */
+            /* Mobile-first robot action button */
             #robotActionButton {
               position: fixed !important;
-              top: 50% !important;
-              right: 20px !important;
-              transform: translateY(-50%) !important;
+              bottom: 20px !important;
+              left: 50% !important;
+              transform: translateX(-50%) !important;
               z-index: 10000 !important;
               pointer-events: auto !important;
               user-select: none !important;
               -webkit-user-select: none !important;
               -webkit-touch-callout: none !important;
+              transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+              will-change: transform, opacity !important;
+              width: 200px !important;
+              height: 50px !important;
+              border-radius: 25px !important;
+              font-size: 16px !important;
+              font-weight: 600 !important;
+              box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4) !important;
+              backdrop-filter: blur(10px) !important;
+              -webkit-backdrop-filter: blur(10px) !important;
             }
             
-            /* Ensure button doesn't interfere with text selection */
+            /* Mobile positioning when near selection */
+            #robotActionButton.positioned {
+              bottom: 80px !important;
+              left: 50% !important;
+              transform: translateX(-50%) !important;
+              transition: all 0.2s ease !important;
+            }
+            
+            /* Mobile touch feedback */
             #robotActionButton:active {
-              transform: translateY(-50%) scale(0.95) !important;
+              transform: translateX(-50%) scale(0.95) !important;
+              box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6) !important;
+            }
+            
+            /* Mobile-specific button states */
+            #robotActionButton:hover {
+              transform: translateX(-50%) scale(1.02) !important;
+              box-shadow: 0 12px 32px rgba(102, 126, 234, 0.6) !important;
             }
             
             /* Word selection highlighting - only in bookmark mode */
@@ -436,14 +488,25 @@ class SimpleEpubParser {
               transition: none !important;
             }
             
-            /* Remove only custom highlighting in robot mode - allow native selection */
+            /* Remove ALL custom highlighting in robot mode - allow native selection only */
             .robot-selection-mode .word-selected,
-            .robot-selection-mode .word-selecting {
+            .robot-selection-mode .word-selecting,
+            .robot-selection-mode .word:hover,
+            .robot-selection-mode .word:active,
+            .robot-selection-mode .word:focus {
               background: transparent !important;
               background-color: transparent !important;
               border: none !important;
               box-shadow: none !important;
               transform: none !important;
+              color: inherit !important;
+              font-weight: normal !important;
+              padding: inherit !important;
+              margin: inherit !important;
+              border-radius: inherit !important;
+              z-index: auto !important;
+              position: static !important;
+              display: inline !important;
             }
             
             /* Bookmark highlight - permanent orange for bookmarked words */
@@ -464,6 +527,37 @@ class SimpleEpubParser {
             /* Keep bookmark highlighting visible in robot mode */
             .robot-selection-mode .bookmark-active {
               /* Keep the orange bookmark styling even in robot mode */
+            }
+            
+            /* Completely disable any orange highlighting in robot mode */
+            .robot-selection-mode .word {
+              background: transparent !important;
+              background-color: transparent !important;
+              border: none !important;
+              box-shadow: none !important;
+              transform: none !important;
+              color: inherit !important;
+              font-weight: normal !important;
+              padding: 1px 2px !important;
+              margin: inherit !important;
+              border-radius: 3px !important;
+              z-index: auto !important;
+              position: relative !important;
+              display: inline !important;
+            }
+            
+            /* Disable any hover effects in robot mode */
+            .robot-selection-mode .word:hover,
+            .robot-selection-mode .word:active,
+            .robot-selection-mode .word:focus,
+            .robot-selection-mode .word:visited {
+              background: transparent !important;
+              background-color: transparent !important;
+              border: none !important;
+              box-shadow: none !important;
+              transform: none !important;
+              color: inherit !important;
+              font-weight: normal !important;
             }
             
             /* Floating bookmark indicator - permanent for bookmarked words */
@@ -912,7 +1006,7 @@ class SimpleEpubParser {
               scroll-behavior: smooth;
             }
             
-            /* Mobile responsiveness */
+            /* Mobile-first responsiveness */
             @media (max-width: 768px) {
               .content-container {
                 margin: 0;
@@ -921,45 +1015,83 @@ class SimpleEpubParser {
               }
               
               #content {
-                padding: 100px 24px 60px 24px;
+                padding: 100px 20px 100px 20px; /* Extra bottom padding for mobile button */
               }
               
               .top-nav {
-                padding: 0 20px;
+                padding: 0 16px;
+                height: 70px;
               }
               
               .nav-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 16px;
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+                min-width: 44px;
+                min-height: 44px;
               }
               
-              /* Mobile-specific robot button positioning */
+              /* Mobile robot button - bottom center */
               #robotActionButton {
-                top: 40% !important;
-                right: 15px !important;
-                padding: 10px 16px !important;
-                font-size: 13px !important;
-                min-width: 120px !important;
+                bottom: 20px !important;
+                left: 50% !important;
+                right: auto !important;
+                top: auto !important;
+                transform: translateX(-50%) !important;
+                width: 180px !important;
+                height: 48px !important;
+                font-size: 15px !important;
+                padding: 0 20px !important;
+                border-radius: 24px !important;
+              }
+              
+              /* Mobile positioned button */
+              #robotActionButton.positioned {
+                bottom: 80px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
               }
             }
             
             @media (max-width: 480px) {
               #content {
-                padding: 90px 20px 50px 20px;
+                padding: 90px 16px 100px 16px; /* Extra bottom padding for mobile button */
               }
               
               .top-nav {
-                padding: 0 16px;
+                padding: 0 12px;
                 gap: 8px;
+                height: 65px;
               }
               
               .nav-section {
                 gap: 8px;
               }
               
+              .nav-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+                min-width: 40px;
+                min-height: 40px;
+              }
+              
               p {
                 text-indent: 1.5em;
+              }
+              
+              /* Small mobile robot button */
+              #robotActionButton {
+                bottom: 15px !important;
+                width: 160px !important;
+                height: 44px !important;
+                font-size: 14px !important;
+                padding: 0 16px !important;
+                border-radius: 22px !important;
+              }
+              
+              #robotActionButton.positioned {
+                bottom: 70px !important;
               }
             }
           </style>
@@ -1037,6 +1169,23 @@ class SimpleEpubParser {
                     createBookmark(index);
                   }
                   // In robot mode, do nothing - let native text selection work
+                });
+                
+                // Prevent any custom highlighting in robot mode
+                word.addEventListener('mousedown', (e) => {
+                  if (robotSelectionMode) {
+                    // Don't prevent default - let native selection work
+                    // But ensure no custom classes are applied
+                    e.stopPropagation();
+                  }
+                });
+                
+                word.addEventListener('touchstart', (e) => {
+                  if (robotSelectionMode) {
+                    // Don't prevent default - let native selection work
+                    // But ensure no custom classes are applied
+                    e.stopPropagation();
+                  }
                 });
                 
                 // No custom touch events needed - using native text selection
@@ -1146,79 +1295,160 @@ class SimpleEpubParser {
               }
             }
             
-            // Simple function to get selected text meaning
+            // Enhanced function to get selected text meaning with validation
             function getSelectedTextMeaning() {
               const selection = window.getSelection();
               const selectedText = selection.toString().trim();
               
+              console.log('🤖 Getting meaning for selected text:', {
+                text: selectedText,
+                length: selectedText.length,
+                robotMode: robotSelectionMode,
+                selectionRange: selection.rangeCount
+              });
+              
               if (selectedText && robotSelectionMode) {
-                // Exit robot selection mode
-                robotSelectionMode = false;
-                const body = document.body;
-                const button = document.getElementById('robotButton');
-                const notification = document.getElementById('robotNotification');
+                // Validate selection before proceeding
+                if (!isValidSelection(selectedText)) {
+                  console.log('❌ Invalid selection, cannot get meaning');
+                  return;
+                }
                 
-                body.classList.remove('robot-selection-mode');
-                button.classList.remove('active');
-                notification.style.display = 'none';
+                console.log('✅ Valid selection confirmed, getting meaning...');
+                
+                // Hide the action button immediately
+                const actionButton = document.getElementById('robotActionButton');
+                if (actionButton) {
+                  actionButton.style.display = 'none';
+                  actionButton.style.opacity = '0';
+                  actionButton.style.pointerEvents = 'none';
+                  actionButton.classList.remove('positioned');
+                }
+                
+                // Clear the selection to prevent interference
+                selection.removeAllRanges();
                 
                 // Show meaning popup
                 showMeaningPopup(selectedText);
                 
-                console.log('🤖 Getting meaning for selected text:', selectedText);
+                // Don't exit robot mode here - let user decide when to exit
+                console.log('🤖 Meaning requested, staying in robot mode');
+              } else {
+                console.log('❌ No valid selection or not in robot mode');
               }
             }
             
-            // Add a button to trigger meaning lookup for selected text
+            // Helper function to validate selection (reused from improveTextSelection)
+            function isValidSelection(text) {
+              if (!text || text.length < 1) return false;
+              
+              // Check for meaningful content
+              const wordCount = text.split(/\\s+/).filter(word => word.length > 0).length;
+              const hasLetters = /[a-zA-Z]/.test(text);
+              const hasNumbers = /[0-9]/.test(text);
+              
+              // Must have at least one word with letters or numbers
+              return wordCount > 0 && (hasLetters || hasNumbers);
+            }
+            
+            // Mobile-first robot action button creation
             function addRobotActionButton() {
-              // Create a floating action button for robot mode
+              // Create a mobile-optimized floating action button
               const actionButton = document.createElement('button');
               actionButton.id = 'robotActionButton';
               actionButton.innerHTML = '🤖 Get Meaning';
               actionButton.style.cssText = \`
                 position: fixed;
-                top: 50%;
-                right: 20px;
-                transform: translateY(-50%);
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
                 border: none;
                 border-radius: 25px;
-                padding: 12px 20px;
-                font-size: 14px;
+                padding: 0 20px;
+                font-size: 16px;
                 font-weight: 600;
                 box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
                 z-index: 10000;
                 display: none;
                 cursor: pointer;
-                transition: all 0.3s ease;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 opacity: 0;
-                min-width: 140px;
+                width: 200px;
+                height: 50px;
                 text-align: center;
                 font-family: 'Plus Jakarta Sans', sans-serif;
-                pointer-events: auto;
+                pointer-events: none;
+                user-select: none;
+                -webkit-user-select: none;
+                -webkit-touch-callout: none;
+                will-change: transform, opacity;
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
               \`;
               
+              // Mobile-optimized click handling
               actionButton.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                console.log('🤖 Mobile action button clicked');
                 getSelectedTextMeaning();
               });
               
-              // Add touch event to prevent conflicts
+              // Mobile touch events with proper feedback
+              let touchStartTime = 0;
+              
               actionButton.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                touchStartTime = Date.now();
+                actionButton.style.transform = 'translateX(-50%) scale(0.95)';
+                actionButton.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.6)';
+                console.log('🤖 Mobile touch start');
               });
               
               actionButton.addEventListener('touchend', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                getSelectedTextMeaning();
+                const touchDuration = Date.now() - touchStartTime;
+                
+                // Reset visual state
+                actionButton.style.transform = 'translateX(-50%) scale(1)';
+                actionButton.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.4)';
+                
+                // Only trigger if it was a quick tap (not a long press)
+                if (touchDuration < 500) {
+                  console.log('🤖 Mobile touch end - quick tap');
+                  getSelectedTextMeaning();
+                } else {
+                  console.log('🤖 Mobile touch end - long press, ignoring');
+                }
+              });
+              
+              // Prevent context menu on long press
+              actionButton.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              });
+              
+              // Mobile hover effects (for devices that support hover)
+              actionButton.addEventListener('mouseenter', () => {
+                if (actionButton.style.display !== 'none') {
+                  actionButton.style.transform = 'translateX(-50%) scale(1.02)';
+                  actionButton.style.boxShadow = '0 12px 32px rgba(102, 126, 234, 0.6)';
+                }
+              });
+              
+              actionButton.addEventListener('mouseleave', () => {
+                if (actionButton.style.display !== 'none') {
+                  actionButton.style.transform = 'translateX(-50%) scale(1)';
+                  actionButton.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.4)';
+                }
               });
               
               document.body.appendChild(actionButton);
-              
+              console.log('🤖 Mobile robot action button created and added to DOM');
               return actionButton;
             }
             
@@ -1277,6 +1507,15 @@ class SimpleEpubParser {
             function hideMeaningPopup() {
               const popup = document.getElementById('meaningPopup');
               popup.classList.remove('visible');
+              
+              // Ensure button is hidden when popup closes
+              const actionButton = document.getElementById('robotActionButton');
+              if (actionButton) {
+                actionButton.style.display = 'none';
+                actionButton.style.opacity = '0';
+                actionButton.style.pointerEvents = 'none';
+                actionButton.style.top = '50%'; // Reset position
+              }
             }
             
             // Set meaning content in popup
@@ -1296,6 +1535,288 @@ class SimpleEpubParser {
                   </div>
                 \`;
               }
+            }
+            
+            // Advanced text selection algorithm for robot button
+            function improveTextSelection() {
+              let selectionTimeout = null;
+              let lastSelectionText = '';
+              let selectionAttempts = 0;
+              const maxSelectionAttempts = 3;
+              
+              // Enhanced selection detection with multiple methods
+              function detectAndHandleSelection() {
+                if (!robotSelectionMode) return;
+                
+                const selection = window.getSelection();
+                const selectedText = selection.toString().trim();
+                const actionButton = document.getElementById('robotActionButton');
+                
+                console.log('🔍 Selection detection:', {
+                  selectedText: selectedText,
+                  textLength: selectedText.length,
+                  selectionRange: selection.rangeCount,
+                  attempts: selectionAttempts
+                });
+                
+                if (selectedText && selectedText.length > 0) {
+                  // Validate selection quality
+                  if (isValidSelection(selectedText)) {
+                    console.log('✅ Valid selection detected:', selectedText);
+                    showActionButton(actionButton, selectedText);
+                    selectionAttempts = 0;
+                    lastSelectionText = selectedText;
+                  } else {
+                    console.log('⚠️ Invalid selection, retrying...');
+                    retrySelection();
+                  }
+                } else {
+                  hideActionButton(actionButton);
+                  selectionAttempts = 0;
+                }
+              }
+              
+              // Validate selection quality
+              function isValidSelection(text) {
+                if (!text || text.length < 1) return false;
+                
+                // Check for meaningful content
+                const wordCount = text.split(/\\s+/).filter(word => word.length > 0).length;
+                const hasLetters = /[a-zA-Z]/.test(text);
+                const hasNumbers = /[0-9]/.test(text);
+                
+                // Must have at least one word with letters or numbers
+                return wordCount > 0 && (hasLetters || hasNumbers);
+              }
+              
+              // Retry selection with different methods
+              function retrySelection() {
+                if (selectionAttempts >= maxSelectionAttempts) {
+                  console.log('❌ Max selection attempts reached');
+                  return;
+                }
+                
+                selectionAttempts++;
+                console.log('🔄 Retrying selection, attempt:', selectionAttempts);
+                
+                // Method 1: Force focus and selection
+                setTimeout(() => {
+                  const selection = window.getSelection();
+                  if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    if (!range.collapsed) {
+                      detectAndHandleSelection();
+                    }
+                  }
+                }, 100 * selectionAttempts);
+              }
+              
+              // Mobile-optimized button positioning
+              function showActionButton(button, selectedText) {
+                if (!button) return;
+                
+                button.style.display = 'block';
+                button.style.opacity = '1';
+                button.style.pointerEvents = 'auto';
+                
+                // Mobile-first positioning: always bottom center, but move up if selection is near bottom
+                try {
+                  const selection = window.getSelection();
+                  if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const rect = range.getBoundingClientRect();
+                    const viewportHeight = window.innerHeight;
+                    const selectionBottom = rect.bottom;
+                    
+                    // If selection is in bottom 30% of screen, move button up
+                    if (selectionBottom > viewportHeight * 0.7) {
+                      button.style.bottom = '80px';
+                      button.classList.add('positioned');
+                      console.log('🤖 Mobile button positioned above selection');
+                    } else {
+                      button.style.bottom = '20px';
+                      button.classList.remove('positioned');
+                      console.log('🤖 Mobile button at default bottom position');
+                    }
+                    
+                    // Always center horizontally
+                    button.style.left = '50%';
+                    button.style.right = 'auto';
+                    button.style.top = 'auto';
+                    button.style.transform = 'translateX(-50%)';
+                    
+                    console.log('🤖 Mobile button positioned:', {
+                      bottom: button.style.bottom,
+                      selectionBottom: selectionBottom,
+                      viewportHeight: viewportHeight
+                    });
+                  }
+                } catch (e) {
+                  // Fallback to default mobile positioning
+                  button.style.bottom = '20px';
+                  button.style.left = '50%';
+                  button.style.right = 'auto';
+                  button.style.top = 'auto';
+                  button.style.transform = 'translateX(-50%)';
+                  button.classList.remove('positioned');
+                  
+                  console.log('🤖 Mobile button using fallback positioning');
+                }
+              }
+              
+              // Hide action button with mobile reset
+              function hideActionButton(button) {
+                if (!button) return;
+                
+                button.style.display = 'none';
+                button.style.opacity = '0';
+                button.style.pointerEvents = 'none';
+                button.classList.remove('positioned');
+                
+                // Reset to mobile default positioning
+                button.style.bottom = '20px';
+                button.style.left = '50%';
+                button.style.right = 'auto';
+                button.style.top = 'auto';
+                button.style.transform = 'translateX(-50%)';
+                
+                console.log('🤖 Mobile action button hidden and reset');
+              }
+              
+              // Enhanced selection change listener
+              document.addEventListener('selectionchange', () => {
+                if (!robotSelectionMode) return;
+                
+                // Clear previous timeout
+                if (selectionTimeout) {
+                  clearTimeout(selectionTimeout);
+                }
+                
+                // Debounce selection detection
+                selectionTimeout = setTimeout(() => {
+                  detectAndHandleSelection();
+                }, 150);
+              });
+              
+              // Enhanced mouse events for better selection
+              document.addEventListener('mouseup', (e) => {
+                if (!robotSelectionMode) return;
+                
+                setTimeout(() => {
+                  detectAndHandleSelection();
+                }, 100);
+              });
+              
+              // Mobile-optimized touch events
+              let touchStartTime = 0;
+              let touchStartPos = { x: 0, y: 0 };
+              let isLongPress = false;
+              let touchMoved = false;
+              
+              document.addEventListener('touchstart', (e) => {
+                if (!robotSelectionMode) return;
+                
+                touchStartTime = Date.now();
+                touchStartPos = { 
+                  x: e.touches[0].clientX, 
+                  y: e.touches[0].clientY 
+                };
+                isLongPress = false;
+                touchMoved = false;
+                
+                console.log('📱 Mobile touch start');
+                
+                // Long press detection for mobile
+                setTimeout(() => {
+                  if (Date.now() - touchStartTime >= 500 && !touchMoved) {
+                    isLongPress = true;
+                    console.log('📱 Mobile long press detected');
+                  }
+                }, 500);
+              });
+              
+              document.addEventListener('touchmove', (e) => {
+                if (!robotSelectionMode) return;
+                
+                const touchCurrentPos = { 
+                  x: e.touches[0].clientX, 
+                  y: e.touches[0].clientY 
+                };
+                const distance = Math.sqrt(
+                  Math.pow(touchCurrentPos.x - touchStartPos.x, 2) + 
+                  Math.pow(touchCurrentPos.y - touchStartPos.y, 2)
+                );
+                
+                if (distance > 10) {
+                  touchMoved = true;
+                  console.log('📱 Mobile touch moved, distance:', distance);
+                }
+              });
+              
+              document.addEventListener('touchend', (e) => {
+                if (!robotSelectionMode) return;
+                
+                const touchDuration = Date.now() - touchStartTime;
+                const touchEndPos = { 
+                  x: e.changedTouches[0].clientX, 
+                  y: e.changedTouches[0].clientY 
+                };
+                const distance = Math.sqrt(
+                  Math.pow(touchEndPos.x - touchStartPos.x, 2) + 
+                  Math.pow(touchEndPos.y - touchStartPos.y, 2)
+                );
+                
+                console.log('📱 Mobile touch end:', {
+                  duration: touchDuration,
+                  distance: distance,
+                  isLongPress: isLongPress,
+                  touchMoved: touchMoved
+                });
+                
+                // Mobile-optimized selection detection
+                if (isLongPress && !touchMoved) {
+                  // Long press without movement - trigger selection
+                  setTimeout(() => {
+                    detectAndHandleSelection();
+                  }, 300);
+                } else if (touchMoved && distance > 20) {
+                  // Drag selection - immediate detection
+                  setTimeout(() => {
+                    detectAndHandleSelection();
+                  }, 100);
+                } else if (touchDuration < 300 && distance < 10) {
+                  // Quick tap - might be selection
+                  setTimeout(() => {
+                    detectAndHandleSelection();
+                  }, 150);
+                }
+              });
+              
+              // Prevent interference with text selection
+              document.addEventListener('selectstart', (e) => {
+                if (robotSelectionMode) {
+                  // Allow text selection in robot mode
+                  e.stopPropagation();
+                }
+              });
+              
+              // Handle focus events
+              document.addEventListener('focusin', (e) => {
+                if (robotSelectionMode && e.target.tagName !== 'BUTTON') {
+                  setTimeout(() => {
+                    detectAndHandleSelection();
+                  }, 100);
+                }
+              });
+              
+              // Handle click events for better selection
+              document.addEventListener('click', (e) => {
+                if (robotSelectionMode && e.target.tagName !== 'BUTTON') {
+                  setTimeout(() => {
+                    detectAndHandleSelection();
+                  }, 150);
+                }
+              });
             }
             
             // Create bookmark at specific word
@@ -1499,29 +2020,46 @@ class SimpleEpubParser {
               // Add robot action button
               addRobotActionButton();
               
-              // Listen for native text selection changes
+              // Improve text selection handling
+              improveTextSelection();
+              
+              // Listen for native text selection changes with improved detection
               document.addEventListener('selectionchange', () => {
                 if (robotSelectionMode) {
-                  const selection = window.getSelection();
-                  const selectedText = selection.toString().trim();
-                  const actionButton = document.getElementById('robotActionButton');
-                  
-                  if (selectedText && actionButton) {
-                    actionButton.style.display = 'block';
-                    actionButton.style.opacity = '1';
-                    actionButton.style.pointerEvents = 'auto';
-                    // Add a small delay to ensure selection is complete
-                    setTimeout(() => {
-                      if (actionButton) {
+                  // Use setTimeout to ensure selection is stable
+                  setTimeout(() => {
+                    const selection = window.getSelection();
+                    const selectedText = selection.toString().trim();
+                    const actionButton = document.getElementById('robotActionButton');
+                    
+                    if (selectedText && selectedText.length > 1 && actionButton) {
+                      // Only show if we have meaningful text selected
+                      const range = selection.getRangeAt ? selection.getRangeAt(0) : null;
+                      if (range && !range.collapsed) {
                         actionButton.style.display = 'block';
                         actionButton.style.opacity = '1';
+                        actionButton.style.pointerEvents = 'auto';
+                        
+                        // Position button near selection if possible
+                        try {
+                          const rect = range.getBoundingClientRect();
+                          if (rect.top > 0 && rect.left > 0) {
+                            const buttonTop = Math.min(rect.bottom + 10, window.innerHeight - 100);
+                            actionButton.style.top = buttonTop + 'px';
+                          }
+                        } catch (e) {
+                          // Fallback to center positioning
+                          actionButton.style.top = '50%';
+                        }
                       }
-                    }, 100);
-                  } else if (actionButton) {
-                    actionButton.style.display = 'none';
-                    actionButton.style.opacity = '0';
-                    actionButton.style.pointerEvents = 'none';
-                  }
+                    } else if (actionButton) {
+                      actionButton.style.display = 'none';
+                      actionButton.style.opacity = '0';
+                      actionButton.style.pointerEvents = 'none';
+                      // Reset position
+                      actionButton.style.top = '50%';
+                    }
+                  }, 100); // Small delay to ensure selection is complete
                 }
               });
             });
@@ -1979,3 +2517,4 @@ class SimpleEpubParser {
 }
 
 export default SimpleEpubParser;
+

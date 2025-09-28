@@ -10,7 +10,18 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Set up Gemini API (for word meaning feature)
+
+   ```bash
+   npm run setup-gemini
+   ```
+   
+   Or manually create a `.env` file with your Gemini API key:
+   ```env
+   EXPO_PUBLIC_GEMINI_API_KEY=your_api_key_here
+   ```
+
+3. Start the app
 
    ```bash
    npx expo start

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, PanResponder } from 'react-native';
-import { GEMINI_API_KEY } from '../config/gemini';
+import { GEMINI_API_KEY, isGeminiConfigured } from '../config/gemini';
 import { BookmarkManager } from '../utils/BookmarkManager';
 import SimpleEpubParser from '../utils/SimpleEpubParser';
 
@@ -904,12 +904,12 @@ export const useEpubReader = (epubUrl: string, webViewRef?: React.RefObject<any>
       const word = data.word;
       console.log('🤖 Getting meaning for word:', word);
       
-      if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+      if (!isGeminiConfigured()) {
         console.error('❌ Gemini API key not configured');
         // Send error back to WebView
         webViewRef.current?.postMessage(JSON.stringify({
           type: 'wordMeaningResponse',
-          error: 'Gemini API key not configured. Please add your API key in hooks/useEpubReader.ts'
+          error: 'Gemini API key not configured. Please create a .env file with EXPO_PUBLIC_GEMINI_API_KEY=your_api_key_here'
         }));
         return;
       }
