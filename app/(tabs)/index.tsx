@@ -1,5 +1,5 @@
+import AuthGuard from '@/components/auth-guard';
 import BookDescription from '@/components/book-description';
-
 import Loading from '@/components/loading';
 import SideNavbar from '@/components/side-navbar';
 import SimpleEpubReader from '@/components/simple-epub-reader';
@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 
 
@@ -109,7 +109,7 @@ export default function HomeScreen() {
     loadBooks();
   }, []);
 
-  if (isLoaded && !isSignedIn) return <Redirect href="/sign-in" />;
+  // Use AuthGuard for authentication checks
   if (!isLoaded || !fontsLoaded) return (
     <ThemedView style={styles.loadingContainer}>
       <ThemedText style={{ color: colors.text }}>Loading...</ThemedText>
@@ -265,10 +265,11 @@ export default function HomeScreen() {
   );
 
   return (
-    <LinearGradient
-      colors={colors.gradient as [string, string, string]}
-      style={styles.container}
-    >
+    <AuthGuard fallbackRoute="/sign-up" requireEmail={true}>
+      <LinearGradient
+        colors={colors.gradient as [string, string, string]}
+        style={styles.container}
+      >
 
 
 
@@ -483,7 +484,8 @@ export default function HomeScreen() {
           onReadNow={handleReadNow}
         />
       )}
-    </LinearGradient>
+      </LinearGradient>
+    </AuthGuard>
   );
 }
 
