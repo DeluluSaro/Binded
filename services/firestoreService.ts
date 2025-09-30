@@ -31,11 +31,18 @@ export interface User {
 
 export interface Book {
   id: string;
-  title: string;
+  name: string;
   author: string;
-  description?: string;
-  coverImage?: string;
-  userId: string;
+  genre?: string;
+  file_path?: string;
+  short_description?: string;
+  cover_image_path?: string;
+  total_pages?: number;
+  rating?: number;
+  reviews?: any[];
+  currentlyReading?: number;
+  completed?: number;
+  userId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -182,6 +189,17 @@ class FirestoreService {
     return doc ? { id: doc.id, ...doc.data() } as Book : null;
   }
 
+  async getAllBooks(): Promise<Book[]> {
+    const snapshot = await this.getCollection('books', [
+      orderBy('createdAt', 'desc')
+    ]);
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Book[];
+  }
+
   async getUserBooks(userId: string): Promise<Book[]> {
     const snapshot = await this.getCollection('books', [
       where('userId', '==', userId),
@@ -200,6 +218,36 @@ class FirestoreService {
 
   async deleteBook(bookId: string): Promise<void> {
     return this.deleteDocument('books', bookId);
+  }
+
+  // Helper function to get book URL from Firebase Storage
+  getBookUrl(filePath: string): string {
+    // If filePath is a full URL, return it directly
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+      return filePath;
+    }
+    
+    // For Firebase Storage, you would typically construct the URL like this:
+    // return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(filePath)}?alt=media`;
+    // But since you mentioned you have the links already uploaded, we'll return the filePath as-is
+    // You may need to adjust this based on your Firebase Storage setup
+    return filePath;
+  }
+
+  // Update reading progress for a book
+  async updateReadingProgress(bookId: string, currentlyReading: number, completed: number): Promise<void> {
+    try {
+      console.log('📖 Updating reading progress for book:', bookId, 'currentlyReading:', currentlyReading, 'completed:', completed);
+      await this.updateDocument('books', bookId, {
+        currentlyReading,
+        completed,
+        updatedAt: serverTimestamp()
+      });
+      console.log('✅ Reading progress updated successfully');
+    } catch (error) {
+      console.error('❌ Error updating reading progress:', error);
+      throw error;
+    }
   }
 
   // Bookmark operations

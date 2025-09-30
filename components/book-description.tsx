@@ -30,6 +30,8 @@ interface BookDescriptionProps {
     total_pages: number;
     rating: number;
     reviews: any[];
+    currentlyReading?: number;
+    completed?: number;
     created_at: string;
     updated_at: string;
   };
@@ -282,6 +284,90 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
             </View>
           </View>
 
+          {/* User Engagement Section */}
+          <View style={[styles.readingProgressSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>User Engagement</Text>
+            
+            {/* Overall Engagement */}
+            <View style={styles.overallProgressContainer}>
+              <View style={styles.progressHeader}>
+                <Text style={[styles.progressLabel, { color: colors.text, fontFamily: 'Outfit_400Regular' }]}>Total Readers</Text>
+                <Text style={[styles.progressPercentage, { color: colors.tint, fontFamily: 'Outfit_700Bold' }]}>
+                  {(book.currentlyReading || 0) + (book.completed || 0)}
+                </Text>
+              </View>
+              <View style={[styles.progressBarContainer, { backgroundColor: colors.surfaceSecondary }]}>
+                <View 
+                  style={[
+                    styles.progressBarFill, 
+                    { 
+                      width: `${Math.min(((book.completed || 0) / Math.max((book.currentlyReading || 0) + (book.completed || 0), 1)) * 100, 100)}%`,
+                      backgroundColor: colors.success
+                    }
+                  ]} 
+                />
+              </View>
+              <Text style={[styles.progressStats, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>
+                {Math.round(((book.completed || 0) / Math.max((book.currentlyReading || 0) + (book.completed || 0), 1)) * 100)}% completion rate
+              </Text>
+            </View>
+
+            {/* User Status Cards */}
+            <View style={styles.statusCardsContainer}>
+              {/* Currently Reading Card */}
+              <View style={[styles.statusCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+                <View style={styles.statusCardHeader}>
+                  <Ionicons name="people" size={20} color={colors.tint} />
+                  <Text style={[styles.statusCardTitle, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>Current Reading</Text>
+                </View>
+                <Text style={[styles.statusCardValue, { color: colors.tint, fontFamily: 'Outfit_700Bold' }]}>
+                  {book.currentlyReading || 0} users
+                </Text>
+                <Text style={[styles.statusCardSubtext, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>
+                  Actively reading
+                </Text>
+              </View>
+
+              {/* Completed Card */}
+              <View style={[styles.statusCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+                <View style={styles.statusCardHeader}>
+                  <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+                  <Text style={[styles.statusCardTitle, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>Completes</Text>
+                </View>
+                <Text style={[styles.statusCardValue, { color: colors.success, fontFamily: 'Outfit_700Bold' }]}>
+                  {book.completed || 0} users
+                </Text>
+                <Text style={[styles.statusCardSubtext, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>
+                  Finished reading
+                </Text>
+              </View>
+            </View>
+
+            {/* User Stats */}
+            <View style={styles.readingStatsContainer}>
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>
+                  {book.currentlyReading || 0}
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>Active Readers</Text>
+              </View>
+              <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>
+                  {(book.currentlyReading || 0) + (book.completed || 0)}
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>Total Readers</Text>
+              </View>
+              <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>
+                  {book.completed || 0}
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>Completed</Text>
+              </View>
+            </View>
+          </View>
+
           {/* Action Buttons */}
           <View style={styles.actionButtonsSection}>
             <TouchableOpacity 
@@ -495,5 +581,88 @@ const styles = StyleSheet.create({
   },
   addToLibraryText: {
     fontSize: 16,
+  },
+
+  // --- Reading Progress Styles ---
+  readingProgressSection: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  overallProgressContainer: {
+    marginBottom: 20,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressLabel: {
+    fontSize: 14,
+  },
+  progressPercentage: {
+    fontSize: 18,
+  },
+  progressBarContainer: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressStats: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  statusCardsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  statusCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  statusCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  statusCardTitle: {
+    fontSize: 14,
+  },
+  statusCardValue: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  statusCardSubtext: {
+    fontSize: 12,
+  },
+  readingStatsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 18,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
   },
 });

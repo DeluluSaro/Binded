@@ -9,7 +9,8 @@ import { ThemedView } from '@/components/themed-view';
 import { Fonts } from '@/constants/theme';
 import { useThemeColors } from '@/hooks/use-theme-color';
 import { useLongPressTheme } from '@/hooks/use-triple-tap-theme';
-import { Book, fetchBooks, getBookUrl } from '@/lib/supabase';
+import type { Book } from '@/services/firestoreService';
+import { firestoreService } from '@/services/firestoreService';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
@@ -89,17 +90,17 @@ export default function HomeScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerOpacity = useRef(new Animated.Value(1)).current;
 
-  // Fetch books from Supabase
+  // Fetch books from Firebase
   useEffect(() => {
     const loadBooks = async () => {
       try {
-        console.log('🔄 Starting to load books in component...');
+        console.log('🔄 Starting to load books from Firebase...');
         setLoading(true);
-        const fetchedBooks = await fetchBooks();
-        console.log('📚 Books loaded in component:', fetchedBooks.length, 'books');
+        const fetchedBooks = await firestoreService.getAllBooks();
+        console.log('📚 Books loaded from Firebase:', fetchedBooks.length, 'books');
         setBooks(fetchedBooks);
       } catch (error) {
-        console.error('💥 Error loading books in component:', error);
+        console.error('💥 Error loading books from Firebase:', error);
         Alert.alert('Error', `Failed to load books: ${error instanceof Error ? error.message : 'Unknown error'}`);
       } finally {
         setLoading(false);
@@ -189,7 +190,7 @@ export default function HomeScreen() {
         return;
       }
       
-      const bookUrl = getBookUrl(book.file_path);
+      const bookUrl = firestoreService.getBookUrl(book.file_path);
       console.log('📖 Generated book URL:', bookUrl);
       
       // Check if it's an EPUB file
@@ -221,6 +222,12 @@ export default function HomeScreen() {
     const isEpub = item.file_path?.toLowerCase().endsWith('.epub');
     const isPdf = item.file_path?.toLowerCase().endsWith('.pdf');
     
+    // Calculate user engagement metrics
+    const currentlyReading = item.currentlyReading || 0;
+    const completed = item.completed || 0;
+    const totalReaders = currentlyReading + completed;
+    const completionRate = totalReaders > 0 ? (completed / totalReaders) * 100 : 0;
+    
     return (
       <TouchableOpacity 
         style={[styles.bookCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
@@ -241,10 +248,20 @@ export default function HomeScreen() {
           />
         </View>
         )}
+        
+        
         <ThemedText style={[styles.bookTitle, { fontFamily: Fonts.outfitRegular }]} numberOfLines={2}>{item.name}</ThemedText>
         <ThemedText variant="secondary" style={[styles.bookAuthor, { fontFamily: Fonts.outfitRegular }]} numberOfLines={1}>
           {item.author}
         </ThemedText>
+        
+        {/* User Engagement Badge */}
+        {currentlyReading > 0 && (
+          <View style={[styles.statusBadge, { backgroundColor: colors.tint }]}>
+            <Ionicons name="people" size={12} color="white" />
+            <ThemedText style={styles.statusText}>{currentlyReading} reading</ThemedText>
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -423,9 +440,9 @@ export default function HomeScreen() {
             <View style={styles.emptyContainer}>
               <Ionicons name="book-outline" size={48} color={colors.iconAccent} />
               <ThemedText style={[styles.emptyText, { color: colors.text }]}>No books available</ThemedText>
-              <ThemedText variant="secondary" style={styles.emptySubtext}>Check Supabase bucket permissions</ThemedText>
+              <ThemedText variant="secondary" style={styles.emptySubtext}>Check Firebase Firestore permissions</ThemedText>
               <ThemedText variant="secondary" style={[styles.emptySubtext, { fontSize: 12, marginTop: 8 }]}>
-                Make sure the Books bucket has public access enabled
+                Make sure the books collection is accessible
               </ThemedText>
             </View>
           ) : (
@@ -722,5 +739,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginTop: 8,
+  },
+
+  // --- Reading Progress Styles ---
+  progressContainer: {
+    marginBottom: 8,
+  },
+  progressBar: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 4,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 6,
+    gap: 4,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'white',
   },
 });
