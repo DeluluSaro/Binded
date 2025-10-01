@@ -11,6 +11,7 @@ import type { Book } from '@/services/firestoreService';
 import { firestoreService } from '@/services/firestoreService';
 import { useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -18,14 +19,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
+  Dimensions,
   FlatList,
   Linking,
-  Text,
+  Platform,
   TouchableOpacity,
   View
 } from 'react-native';
 
-export default function CategoryScreen() {
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+export default function EnhancedCategoryScreen() {
   const { isLoaded } = useAuth();
   const router = useRouter();
   const { name } = useLocalSearchParams<{ name: string }>();
@@ -39,44 +43,98 @@ export default function CategoryScreen() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const colors = useThemeColors();
   
-  console.log('🔤 Category page loaded, fonts should be available');
-
-  // Parallax animation values
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerOpacity = useRef(new Animated.Value(1)).current;
+  const cardAnimations = useRef<Animated.Value[]>([]).current;
+  const shimmerAnimation = useRef(new Animated.Value(0)).current;
+  const floatingAnimation = useRef(new Animated.Value(0)).current;
+  const pulseAnimation = useRef(new Animated.Value(1)).current;
 
-  // Fetch books from Firebase
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnimation, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmerAnimation, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatingAnimation, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatingAnimation, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnimation, {
+          toValue: 1.05,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnimation, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
   useEffect(() => {
     const loadBooks = async () => {
       try {
-        console.log('🔄 Starting to load books from Firebase...');
         setLoading(true);
         const fetchedBooks = await firestoreService.getAllBooks();
-        console.log('📚 Books loaded from Firebase:', fetchedBooks.length, 'books');
         
-        // Filter books based on category
         let filtered;
         if (name && name !== 'all') {
           filtered = fetchedBooks.filter(book => 
             book.genre && book.genre.toLowerCase() === name.toLowerCase()
           );
-          console.log(`📚 Filtered books for category "${name}":`, filtered.length, 'books');
         } else {
           filtered = fetchedBooks;
-          console.log('📚 Showing all books');
         }
         
-        // Sort books by completion count (descending) - most completed first
         const sortedBooks = filtered.sort((a, b) => {
           const aCompleted = a.completed || 0;
           const bCompleted = b.completed || 0;
-          return bCompleted - aCompleted; // Descending order
+          return bCompleted - aCompleted;
         });
         
         setFilteredBooks(sortedBooks);
-        console.log('📚 Books sorted by completion count:', sortedBooks.map(book => ({ name: book.name, completed: book.completed || 0 })));
+        
+        cardAnimations.length = 0;
+        sortedBooks.forEach((_, index) => {
+          const anim = new Animated.Value(0);
+          cardAnimations.push(anim);
+          
+          Animated.spring(anim, {
+            toValue: 1,
+            delay: index * 100,
+            tension: 50,
+            friction: 7,
+            useNativeDriver: true,
+          }).start();
+        });
       } catch (error) {
-        console.error('💥 Error loading books from Firebase:', error);
+        console.error('Error loading books:', error);
         Alert.alert('Error', `Failed to load books: ${error instanceof Error ? error.message : 'Unknown error'}`);
       } finally {
         setLoading(false);
@@ -86,19 +144,16 @@ export default function CategoryScreen() {
     loadBooks();
   }, [name]);
 
-  // Use AuthGuard for authentication checks
   if (!isLoaded) return (
     <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
       <ThemedText style={{ color: colors.text, fontFamily: Fonts.outfitRegular }}>Loading...</ThemedText>
     </ThemedView>
   );
 
-  // Show loading screen when opening a book
   if (openingBook) {
     return <Loading message="Opening Book..." />;
   }
 
-  // Show EPUB reader if a book is selected
   if (showEpubReader && selectedEpubUri) {
     return (
       <SimpleEpubReader
@@ -111,16 +166,21 @@ export default function CategoryScreen() {
     );
   }
 
-  // Parallax animation effects
   const headerTranslateY = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, -50],
+    inputRange: [0, 150],
+    outputRange: [0, -75],
     extrapolate: 'clamp',
   });
 
   const headerScale = scrollY.interpolate({
+    inputRange: [0, 150],
+    outputRange: [1, 0.92],
+    extrapolate: 'clamp',
+  });
+
+  const headerBlur = scrollY.interpolate({
     inputRange: [0, 100],
-    outputRange: [1, 0.95],
+    outputRange: [0, 10],
     extrapolate: 'clamp',
   });
 
@@ -130,25 +190,15 @@ export default function CategoryScreen() {
   );
 
   const handleBookPress = (book: Book) => {
-    console.log('📖 Book pressed:', book.name);
     setSelectedBook(book);
     setShowBookDescription(true);
-    console.log('📖 Book description should be visible now');
   };
 
   const handleReadNow = async (book: Book) => {
     try {
-      console.log('📖 Starting to read book:', {
-        name: book.name,
-        author: book.author,
-        file_path: book.file_path,
-        hasFile: !!book.file_path
-      });
-      
       setShowBookDescription(false);
       setOpeningBook(true);
       
-      // Show loading for 2 seconds to display the loading screen
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       if (!book.file_path) {
@@ -157,17 +207,11 @@ export default function CategoryScreen() {
       }
       
       const bookUrl = firestoreService.getBookUrl(book.file_path);
-      console.log('📖 Generated book URL:', bookUrl);
       
-      // Check if it's an EPUB file
       if (book.file_path.toLowerCase().endsWith('.epub')) {
-        console.log('📖 Opening EPUB file in reader');
-        // Directly open EPUB in reader - no prompts, no downloads
         setSelectedEpubUri(bookUrl);
         setShowEpubReader(true);
       } else {
-        console.log('📖 Opening non-EPUB file externally');
-        // For other file types (PDF, etc.), open with external app
         const supported = await Linking.canOpenURL(bookUrl);
         
         if (supported) {
@@ -177,189 +221,340 @@ export default function CategoryScreen() {
         }
       }
     } catch (error) {
-      console.error('💥 Error opening book:', error);
+      console.error('Error opening book:', error);
       Alert.alert('Error', 'Failed to open book. Please try again.');
     } finally {
       setOpeningBook(false);
     }
   };
 
-  const renderFeaturedBook = ({ item }: { item: Book }) => {
+  const renderFeaturedBook = ({ item, index }: { item: Book; index: number }) => {
+    const animatedValue = cardAnimations[index] || new Animated.Value(1);
+    
+    const scale = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.8, 1],
+    });
+
+    const opacity = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1],
+    });
+
+    const translateY = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [50, 0],
+    });
+
+    const shimmerTranslate = shimmerAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [-SCREEN_WIDTH, SCREEN_WIDTH],
+    });
+
     return (
-      <TouchableOpacity 
+      <Animated.View
         style={{
-          width: 320,
-          height: 400,
-          marginRight: 16,
-          borderRadius: 20,
-          overflow: 'hidden',
-          borderWidth: 1,
-          borderColor: colors.border + '30'
+          transform: [{ scale }, { translateY }],
+          opacity,
         }}
-        onPress={() => handleBookPress(item)}
-        activeOpacity={0.9}
       >
-        <View style={{ flex: 1, position: 'relative' }}>
-          {item.cover_image_path ? (
-            <Image 
-              source={{ uri: item.cover_image_path }} 
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-            />
-          ) : (
-            <View 
-              style={{
-                width: '100%',
-                height: '100%',
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: colors.surfaceSecondary
-              }}
-            >
-              <Ionicons name="book" size={60} color={colors.iconAccent} />
-            </View>
-          )}
-          <View 
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: '60%',
-              backgroundColor: 'rgba(0,0,0,0.2)'
-            }}
-          />
-        </View>
-        
-        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24 }}>
-          <ThemedText 
-            style={{ 
-              fontSize: 30,
-              color: 'white',
-              lineHeight: 36,
-              marginBottom: 4,
-              fontFamily: Fonts.outfitRegular
-            }}
-            numberOfLines={2}
-          >
-            {item.name}
-          </ThemedText>
-          <ThemedText 
-            variant="secondary"
-            style={{ 
-              fontSize: 16,
-              color: 'rgba(255, 255, 255, 0.9)',
-              fontFamily: Fonts.outfitRegular
-            }}
-            numberOfLines={1}
-          >
-            {item.author}
-          </ThemedText>
-        </View>
-        
         <TouchableOpacity 
           style={{
-            position: 'absolute',
-            bottom: 24,
-            right: 24,
-            width: 56,
-            height: 56,
+            width: 320,
+            height: 420,
+            marginRight: 20,
             borderRadius: 28,
-            justifyContent: 'center',
-            alignItems: 'center',
-            borderWidth: 2,
-            backgroundColor: colors.tint,
-            borderColor: 'rgba(255,255,255,0.3)'
+            overflow: 'hidden',
           }}
           onPress={() => handleBookPress(item)}
+          activeOpacity={0.95}
         >
-          <Ionicons name="play" size={28} color="white" />
+          <View style={{ flex: 1, position: 'relative' }}>
+            {item.cover_image_path ? (
+              <Image 
+                source={{ uri: item.cover_image_path }} 
+                style={{ width: '100%', height: '100%' }}
+                contentFit="cover"
+              />
+            ) : (
+              <LinearGradient
+                colors={[colors.surfaceSecondary + 'CC', colors.surfaceSecondary]}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Animated.View style={{ transform: [{ scale: pulseAnimation }] }}>
+                  <Ionicons name="book" size={80} color={colors.iconAccent} />
+                </Animated.View>
+              </LinearGradient>
+            )}
+            
+            <Animated.View 
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                transform: [{ translateX: shimmerTranslate }],
+              }}
+            >
+              <LinearGradient
+                colors={['transparent', 'rgba(255,255,255,0.15)', 'transparent']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ flex: 1, width: SCREEN_WIDTH }}
+              />
+            </Animated.View>
+
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.85)']}
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: '65%',
+              }}
+            />
+          </View>
+          
+          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 28 }}>
+            <ThemedText 
+              style={{ 
+                fontSize: 32,
+                color: 'white',
+                lineHeight: 38,
+                marginBottom: 6,
+                fontFamily: Fonts.outfitRegular,
+                fontWeight: '700',
+                textShadowColor: 'rgba(0,0,0,0.5)',
+                textShadowOffset: { width: 0, height: 2 },
+                textShadowRadius: 4,
+              }}
+              numberOfLines={2}
+            >
+              {item.name}
+            </ThemedText>
+            <ThemedText 
+              variant="secondary"
+              style={{ 
+                fontSize: 17,
+                color: 'rgba(255, 255, 255, 0.95)',
+                fontFamily: Fonts.outfitRegular,
+                textShadowColor: 'rgba(0,0,0,0.3)',
+                textShadowOffset: { width: 0, height: 1 },
+                textShadowRadius: 3,
+                marginBottom: 8,
+              }}
+              numberOfLines={1}
+            >
+              {item.author}
+            </ThemedText>
+            
+            <View style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              backgroundColor: 'rgba(255, 255, 255, 0.15)', 
+              paddingHorizontal: 12, 
+              paddingVertical: 6, 
+              borderRadius: 12,
+              alignSelf: 'flex-start',
+              backdropFilter: 'blur(10px)',
+            }}>
+              <Ionicons name="people" size={14} color="rgba(255, 255, 255, 0.9)" />
+              <ThemedText 
+                style={{ 
+                  fontSize: 13,
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontFamily: Fonts.outfitRegular,
+                  fontWeight: '600',
+                  marginLeft: 6,
+                  textShadowColor: 'rgba(0,0,0,0.3)',
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 2,
+                }}
+              >
+                {item.completed || 0} readers
+              </ThemedText>
+            </View>
+          </View>
+          
+          <Animated.View
+            style={{
+              position: 'absolute',
+              bottom: 28,
+              right: 28,
+              transform: [{ scale: pulseAnimation }],
+            }}
+          >
+            <TouchableOpacity 
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: colors.tint,
+                shadowColor: colors.tint,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.5,
+                shadowRadius: 16,
+                elevation: 12,
+              }}
+              onPress={() => handleBookPress(item)}
+            >
+              <Ionicons name="play" size={30} color="white" style={{ marginLeft: 3 }} />
+            </TouchableOpacity>
+          </Animated.View>
         </TouchableOpacity>
-      </TouchableOpacity>
+      </Animated.View>
     );
   };
 
-  const renderBookCard = ({ item }: { item: Book }) => {
+  const renderBookCard = ({ item, index }: { item: Book; index: number }) => {
     const isEpub = item.file_path?.toLowerCase().endsWith('.epub');
     const isPdf = item.file_path?.toLowerCase().endsWith('.pdf');
+    const animatedValue = cardAnimations[index + 3] || new Animated.Value(1);
     
+    const scale = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.85, 1],
+    });
+
+    const opacity = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1],
+    });
+
+    const rotateY = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['15deg', '0deg'],
+    });
+
+    const floatingTranslate = floatingAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, -8],
+    });
+
     return (
-      <TouchableOpacity 
-        style={{ flex: 1, backgroundColor: 'transparent' }}
-        onPress={() => handleBookPress(item)}
-        activeOpacity={0.9}
+      <Animated.View
+        style={{
+          flex: 1,
+          transform: [{ scale }, { perspective: 1000 }, { rotateY }],
+          opacity,
+        }}
       >
-        <View 
-          style={{
-            position: 'relative',
-            width: '100%',
-            aspectRatio: 3/4,
-            borderRadius: 16,
-            overflow: 'hidden',
-            marginBottom: 12,
-            borderWidth: 1,
-            borderColor: colors.border + '20'
-          }}
+        <TouchableOpacity 
+          style={{ flex: 1, backgroundColor: 'transparent' }}
+          onPress={() => handleBookPress(item)}
+          activeOpacity={0.95}
         >
-          {item.cover_image_path ? (
-            <Image 
-              source={{ uri: item.cover_image_path }} 
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-            />
-          ) : (
-            <View 
-              style={{
-                width: '100%',
-                height: '100%',
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: colors.surfaceSecondary
-              }}
-            >
-              <Ionicons 
-                name={isEpub ? "book" : isPdf ? "document-text" : "book"} 
-                size={40} 
-                color={colors.iconAccent} 
-              />
-            </View>
-          )}
-          <View 
+          <Animated.View 
             style={{
+              position: 'relative',
+              width: '100%',
+              aspectRatio: 3/4,
+              borderRadius: 20,
+              overflow: 'hidden',
+              marginBottom: 14,
+              transform: [{ translateY: floatingTranslate }],
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.25,
+              shadowRadius: 12,
+              elevation: 10,
+            }}
+          >
+            {item.cover_image_path ? (
+              <Image 
+                source={{ uri: item.cover_image_path }} 
+                style={{ width: '100%', height: '100%' }}
+                contentFit="cover"
+              />
+            ) : (
+              <LinearGradient
+                colors={[colors.surfaceSecondary + 'DD', colors.surfaceSecondary]}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Ionicons 
+                  name={isEpub ? "book" : isPdf ? "document-text" : "book"} 
+                  size={50} 
+                  color={colors.iconAccent} 
+                />
+              </LinearGradient>
+            )}
+            
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.2)']}
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: '45%',
+              }}
+            />
+
+            <View style={{
               position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: '40%',
-              backgroundColor: 'rgba(0,0,0,0.1)'
-            }}
-          />
-        </View>
-        
-        <View style={{ gap: 3 }}>
-          <ThemedText 
-            style={{ 
-              fontSize: 16,
-              textAlign: 'left',
-              fontFamily: Fonts.outfitRegular
-            }}
-            numberOfLines={1}
-          >
-            {item.name}
-          </ThemedText>
-          <ThemedText 
-            variant="secondary"
-            style={{ 
-              fontSize: 14,
-              textAlign: 'left',
-              fontFamily: Fonts.outfitRegular
-            }}
-            numberOfLines={1}
-          >
-            {item.author}
-          </ThemedText>
-        </View>
-      </TouchableOpacity>
+              top: 12,
+              right: 12,
+              backgroundColor: colors.tint,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 12,
+              shadowColor: colors.tint,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.4,
+              shadowRadius: 8,
+            }}>
+              <ThemedText style={{ 
+                color: 'white', 
+                fontSize: 11, 
+                fontFamily: Fonts.outfitRegular,
+                fontWeight: '600'
+              }}>
+                {isEpub ? 'EPUB' : isPdf ? 'PDF' : 'BOOK'}
+              </ThemedText>
+            </View>
+          </Animated.View>
+          
+          <View style={{ gap: 4, paddingHorizontal: 4 }}>
+            <ThemedText 
+              style={{ 
+                fontSize: 17,
+                textAlign: 'left',
+                fontFamily: Fonts.outfitRegular,
+                fontWeight: '600',
+                letterSpacing: 0.2,
+              }}
+              numberOfLines={1}
+            >
+              {item.name}
+            </ThemedText>
+            <ThemedText 
+              variant="secondary"
+              style={{ 
+                fontSize: 14,
+                textAlign: 'left',
+                fontFamily: Fonts.outfitRegular,
+              }}
+              numberOfLines={1}
+            >
+              {item.author}
+            </ThemedText>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
@@ -367,7 +562,6 @@ export default function CategoryScreen() {
     if (name === 'all') return 'All Books';
     return name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Category';
   };
-
 
   return (
     <AuthGuard fallbackRoute="/sign-up" requireEmail={true}>
@@ -381,190 +575,220 @@ export default function CategoryScreen() {
         <Animated.ScrollView 
           showsVerticalScrollIndicator={false} 
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 50 }}
+          contentContainerStyle={{ paddingBottom: 60 }}
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
-          {/* --- Sticky Header --- */}
           <Animated.View 
-            style={[
-              {
-                position: 'sticky',
-                top: 0,
-                zIndex: 20,
+            style={{
+              position: 'absolute',
+              top: 50,
+              left: 16,
+              right: 16,
+              zIndex: 20,
+              transform: [
+                { translateY: headerTranslateY },
+                { scale: headerScale }
+              ],
+              opacity: headerOpacity,
+            }}
+          >
+            <BlurView
+              intensity={Platform.OS === 'ios' ? 80 : 100}
+              tint="dark"
+              style={{
                 flexDirection: 'row',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 paddingHorizontal: 20,
-                paddingVertical: 12,
-                marginTop: 50,
-                marginBottom: 16,
-                minHeight: 50,
-                borderRadius: 16,
-                marginHorizontal: 16,
-                backgroundColor: colors.surface + 'E6',
+                paddingVertical: 14,
+                borderRadius: 24,
+                overflow: 'hidden',
                 borderWidth: 1,
-                borderColor: colors.border + '40',
-                transform: [
-                  { translateY: headerTranslateY },
-                  { scale: headerScale }
-                ],
-                opacity: headerOpacity
-              }
-            ]}
-          >
-            <TouchableOpacity 
-              style={{
-                minWidth: 40,
-                justifyContent: 'center',
-                alignItems: 'center',
-                padding: 8,
-                backgroundColor: colors.surfaceSecondary + '60',
-                borderRadius: 12
+                borderColor: colors.border + '50',
+                backgroundColor: colors.surface + 'DD',
               }}
-              onPress={() => router.back()}
             >
-              <Ionicons name="arrow-back" size={22} color={colors.text} />
-            </TouchableOpacity>
-            
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 }}>
-              <Text 
-                style={{ 
-                  fontSize: 20,
-                  fontWeight: '600',
-                  textAlign: 'center',
-                  letterSpacing: 0.5,
-                  fontFamily: Fonts.silkscreenRegular,
-                  color: colors.text,
-                  includeFontPadding: false,
-                  textAlignVertical: 'center'
+              <TouchableOpacity 
+                style={{
+                  width: 44,
+                  height: 44,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  backgroundColor: colors.surfaceSecondary + '80',
+                  borderRadius: 14,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 4,
                 }}
+                onPress={() => router.back()}
               >
-                {getCategoryTitle()}
-              </Text>
-            </View>
-            
-            <TouchableOpacity 
-              style={{
-                minWidth: 40,
-                justifyContent: 'center',
-                alignItems: 'center',
-                padding: 8,
-                backgroundColor: colors.surfaceSecondary + '60',
-                borderRadius: 12
-              }}
-              onPress={() => setIsSidebarOpen(true)}
-            >
-              <Ionicons name="menu" size={20} color={colors.text} />
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* --- Featured Book Section --- */}
-          {filteredBooks.length > 0 && (
-            <View style={{ paddingVertical: 24, paddingHorizontal: 16, marginBottom: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 8 }}>
-                <Text 
+                <Ionicons name="arrow-back" size={24} color={colors.text} />
+              </TouchableOpacity>
+              
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 }}>
+                <ThemedText 
                   style={{ 
-                    fontSize: 20,
+                    fontSize: 22,
+                    textAlign: 'center',
+                    letterSpacing: 0.8,
                     fontFamily: Fonts.silkscreenRegular,
                     color: colors.text,
-                    includeFontPadding: false,
-                    textAlignVertical: 'center'
                   }}
                 >
-                  Trending in this topic
-                </Text>
-                <View 
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 16,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    backgroundColor: colors.tint
-                  }}
-                >
-                  <Ionicons name="trending-up" size={20} color="white" />
-                </View>
+                  {getCategoryTitle()}
+                </ThemedText>
               </View>
               
-              <View style={{ marginHorizontal: -16, paddingHorizontal: 16 }}>
-                <FlatList
-                  data={filteredBooks.slice(0, 3)}
-                  renderItem={renderFeaturedBook}
-                  keyExtractor={(item) => item.id}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ paddingRight: 16 }}
-                  snapToInterval={320}
-                  decelerationRate="fast"
-                />
+              <TouchableOpacity 
+                style={{
+                  width: 44,
+                  height: 44,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  backgroundColor: colors.surfaceSecondary + '80',
+                  borderRadius: 14,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 4,
+                }}
+                onPress={() => setIsSidebarOpen(true)}
+              >
+                <Ionicons name="menu" size={22} color={colors.text} />
+              </TouchableOpacity>
+            </BlurView>
+          </Animated.View>
+
+          <View style={{ height: 120 }} />
+
+          {filteredBooks.length > 0 && (
+            <View style={{ paddingVertical: 28, paddingHorizontal: 16, marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingHorizontal: 8 }}>
+                <ThemedText 
+                  style={{ 
+                    fontSize: 24,
+                    fontFamily: Fonts.silkscreenRegular,
+                    color: colors.text,
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Trending Now
+                </ThemedText>
+                <Animated.View 
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: colors.tint,
+                    transform: [{ scale: pulseAnimation }],
+                    shadowColor: colors.tint,
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 12,
+                  }}
+                >
+                  <Ionicons name="trending-up" size={22} color="white" />
+                </Animated.View>
+              </View>
+              
+              <FlatList
+                data={filteredBooks.slice(0, 10)}
+                renderItem={renderFeaturedBook}
+                keyExtractor={(item) => item.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingRight: 16 }}
+                snapToInterval={340}
+                decelerationRate="fast"
+              />
+            </View>
+          )}
+
+          {filteredBooks.length > 0 && (
+            <View style={{ paddingHorizontal: 16, paddingBottom: 28, paddingTop: 12 }}>
+              <ThemedText 
+                style={{ 
+                  fontSize: 26,
+                  marginBottom: 24,
+                  paddingHorizontal: 8,
+                  letterSpacing: 0.5,
+                  fontFamily: Fonts.silkscreenRegular,
+                }}
+              >
+                More {getCategoryTitle()}
+              </ThemedText>
+              
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 16 }}>
+                {filteredBooks.map((book, index) => (
+                  <View key={book.id} style={{ width: '47%' }}>
+                    {renderBookCard({ item: book, index })}
+                  </View>
+                ))}
               </View>
             </View>
           )}
 
-          {/* --- More Books Section --- */}
-          <View style={{ paddingHorizontal: 16, paddingBottom: 24, paddingTop: 8 }}>
-            <ThemedText 
-              style={{ 
-                fontSize: 22,
-                fontWeight: '600',
-                marginBottom: 20,
-                paddingHorizontal: 8,
-                letterSpacing: 0.3,
-                fontFamily: Fonts.outfitRegular
-              }}
-            >
-              More {getCategoryTitle()}
-            </ThemedText>
-            
-            {loading ? (
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
-                <ThemedText style={{ color: colors.text, fontFamily: Fonts.outfitRegular }}>Loading books...</ThemedText>
-              </View>
-            ) : filteredBooks.length === 0 ? (
-              <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: 24 }}>
-                <Ionicons name="book-outline" size={64} color={colors.iconAccent} />
-                <ThemedText 
-                  style={{ 
-                    fontSize: 20,
-                    fontWeight: '600',
-                    textAlign: 'center',
-                    marginTop: 16,
-                    fontFamily: Fonts.outfitRegular
-                  }}
-                >
-                  No books found
-                </ThemedText>
-                <ThemedText 
-                  variant="secondary"
-                  style={{ 
-                    fontSize: 16, 
-                    textAlign: 'center', 
-                    marginTop: 8, 
-                    lineHeight: 22,
-                    fontFamily: Fonts.outfitRegular
-                  }}
-                >
-                  {name === 'all' 
-                    ? 'No books are available at the moment' 
-                    : `No books found in the ${getCategoryTitle()} category`
-                  }
-                </ThemedText>
-              </View>
-            ) : (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                {filteredBooks.map((book, index) => (
-                  <View key={book.id} style={{ width: '48%', marginBottom: 24 }}>
-                    {renderBookCard({ item: book })}
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
+          {loading && (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 }}>
+              <Animated.View style={{ transform: [{ scale: pulseAnimation }] }}>
+                <Ionicons name="book" size={64} color={colors.iconAccent} />
+              </Animated.View>
+              <ThemedText style={{ 
+                color: colors.text, 
+                fontFamily: Fonts.outfitRegular,
+                marginTop: 20,
+                fontSize: 16,
+              }}>
+                Loading books...
+              </ThemedText>
+            </View>
+          )}
+
+          {!loading && filteredBooks.length === 0 && (
+            <View style={{ 
+              flex: 1, 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              paddingVertical: 120, 
+              paddingHorizontal: 28,
+              minHeight: 500
+            }}>
+              <Animated.View style={{ transform: [{ scale: pulseAnimation }] }}>
+                <Ionicons name="book-outline" size={80} color={colors.iconAccent} />
+              </Animated.View>
+              <ThemedText 
+                style={{ 
+                  fontSize: 24,
+                  textAlign: 'center',
+                  marginTop: 24,
+                  fontFamily: Fonts.outfitRegular,
+                }}
+              >
+                No books found
+              </ThemedText>
+              <ThemedText 
+                variant="secondary"
+                style={{ 
+                  fontSize: 16, 
+                  textAlign: 'center', 
+                  marginTop: 12, 
+                  lineHeight: 24,
+                  fontFamily: Fonts.outfitRegular,
+                }}
+              >
+                {name === 'all' 
+                  ? 'No books are available at the moment' 
+                  : `No books found in the ${getCategoryTitle()} category`
+                }
+              </ThemedText>
+            </View>
+          )}
         </Animated.ScrollView>
         
-        {/* Book Description Modal */}
         {selectedBook && (
           <BookDescription
             visible={showBookDescription}
@@ -580,5 +804,3 @@ export default function CategoryScreen() {
     </AuthGuard>
   );
 }
-
-// All styles now use inline styles with proper font families
