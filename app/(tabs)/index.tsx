@@ -34,7 +34,7 @@ import {
 } from 'react-native';
 
 // --- Mock Data for Categories and Authors (keeping these as they're UI elements) ---
-const categories = [ { id: '1', name: 'Non-Fiction', icon: 'book' }, { id: '2', name: 'Biographies', icon: 'person' }, { id: '3', name: 'Sci-Fi', icon: 'rocket' }, { id: '4', name: 'Romance', icon: 'heart' }, { id: '5', name: 'Mystery', icon: 'search' }, { id: '6', name: 'Fantasy', icon: 'sparkles' }, ];
+const categories = [ { id: '1', name: 'Non-Fiction', icon: 'book' }, { id: '2', name: 'Biographies', icon: 'person' }, { id: '3', name: 'Sci-Fi', icon: 'rocket' }, { id: '4', name: 'Romance', icon: 'heart' }, { id: '5', name: 'Mystery', icon: 'search' }, { id: '6', name: 'Fantasy', icon: 'sparkles' },{ id: '7', name: 'Motivation', icon: 'library' } ];
 const popularAuthors = [ { id: '1', name: 'Sally Rooney', booksCount: 3, image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face', }, { id: '2', name: 'Delia Owens', booksCount: 2, image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face', }, { id: '3', name: 'Matt Haig', booksCount: 4, image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face', }, { id: '4', name: 'Andy Weir', booksCount: 2, image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face', }, ];
 
 
@@ -42,7 +42,7 @@ const popularAuthors = [ { id: '1', name: 'Sally Rooney', booksCount: 3, image: 
 // const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function HomeScreen() {
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isLoaded } = useAuth();
   const { user } = useUser();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
@@ -57,6 +57,15 @@ export default function HomeScreen() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const colors = useThemeColors();
   const { handleLongPressStart, handleLongPressEnd } = useLongPressTheme();
+  
+  // Create sections data for the main FlatList
+  const sections = [
+    { id: 'header', type: 'header' },
+    { id: 'subGreeting', type: 'subGreeting' },
+    { id: 'categories', type: 'categories' },
+    { id: 'popularBooks', type: 'popularBooks' },
+    { id: 'popularAuthors', type: 'popularAuthors' },
+  ];
   
   // Load Outfit font
   const [fontsLoaded] = useFonts({
@@ -224,9 +233,6 @@ export default function HomeScreen() {
     
     // Calculate user engagement metrics
     const currentlyReading = item.currentlyReading || 0;
-    const completed = item.completed || 0;
-    const totalReaders = currentlyReading + completed;
-    const completionRate = totalReaders > 0 ? (completed / totalReaders) * 100 : 0;
     
     return (
       <TouchableOpacity 
@@ -267,7 +273,10 @@ export default function HomeScreen() {
   };
 
   const renderCategory = ({ item }: { item: any }) => (
-    <TouchableOpacity style={[styles.categoryChip, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+    <TouchableOpacity 
+      style={[styles.categoryChip, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+      onPress={() => router.push(`/category/${item.name.toLowerCase().replace(/\s+/g, '-')}` as any)}
+    >
       <Ionicons name={item.icon as any} size={16} color={colors.iconAccent} />
       <ThemedText variant="secondary" style={[styles.chipText, { fontFamily: 'Silkscreen-Regular' }]} numberOfLines={1}>{item.name}</ThemedText>
     </TouchableOpacity>
@@ -280,6 +289,159 @@ export default function HomeScreen() {
       <ThemedText variant="secondary" style={[styles.authorBooksCount, { fontFamily: Fonts.outfitRegular }]}>{item.booksCount} books</ThemedText>
     </TouchableOpacity>
   );
+
+  const renderMainSection = ({ item }: { item: any }) => {
+    switch (item.type) {
+      case 'header':
+        return (
+          <Animated.View style={[
+            styles.header,
+            {
+              transform: [
+                { translateY: headerTranslateY },
+                { scale: headerScale }
+              ],
+              opacity: headerOpacity
+            }
+          ]}>
+            <TouchableOpacity style={styles.menuButton} onPress={() => setIsSidebarOpen(true)}>
+              <Ionicons name="menu" size={30} color={colors.text} />
+            </TouchableOpacity>
+            <View style={styles.headerCenter}>
+              <View style={styles.greetingContainer}>
+                <ThemedText style={{ fontSize: 28, fontWeight: 'normal', textAlign: 'center', fontFamily: 'Outfit-Regular', flexShrink: 0 }}>Hello, </ThemedText>
+                <TouchableOpacity 
+                  onPressIn={handleLongPressStart} 
+                  onPressOut={handleLongPressEnd}
+                  activeOpacity={0.7}
+                  style={{ flexShrink: 0 }}
+                >
+                  <ThemedText style={{ color: colors.tint, fontSize: 32, fontWeight: 'normal', fontFamily: 'Outfit-Regular', flexShrink: 0 }} numberOfLines={1}>{user?.firstName || 'Reader'}</ThemedText>
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+            <View style={styles.headerRight}>
+              <TouchableOpacity onPress={() => router.push('/profile')} style={styles.profileButton}>
+                <Image source={{ uri: user?.imageUrl }} style={[styles.profileImage, { borderColor: colors.borderAccent }]} />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        );
+
+      case 'subGreeting':
+        return (
+          <View style={styles.subGreetingSection}>
+            <TouchableOpacity
+              onPressIn={handleAsteroidLongPressStart}
+              onPressOut={handleAsteroidLongPressEnd}
+              activeOpacity={0.7}
+            >
+              <ThemedText variant="secondary" style={[styles.subGreeting, { fontFamily: Fonts.silkscreenRegular }]}>Ready to dive in?</ThemedText>
+            </TouchableOpacity>
+          </View>
+        );
+
+      case 'categories':
+        return (
+          <Animated.View style={[
+            styles.section,
+            {
+              transform: [
+                { translateY: sectionTranslateY }
+              ]
+            }
+          ]}>
+            <View style={styles.sectionHeader}>
+              <ThemedText style={[styles.sectionTitle, { fontFamily: Fonts.outfitRegular }]}>Categories</ThemedText>
+              <TouchableOpacity onPress={() => router.push('/category/all' as any)}>
+                <ThemedText variant="accent" style={styles.seeAllText}>See All</ThemedText>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={categories}
+              renderItem={renderCategory}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalListContainer}
+            />
+          </Animated.View>
+        );
+
+      case 'popularBooks':
+        return (
+          <Animated.View style={[
+            styles.section,
+            {
+              transform: [
+                { translateY: sectionTranslateY }
+              ]
+            }
+          ]}>
+            <View style={styles.sectionHeader}>
+              <ThemedText style={[styles.sectionTitle, { fontFamily: Fonts.outfitRegular }]}>Popular Books</ThemedText>
+              <TouchableOpacity onPress={() => router.push('/category/all' as any)}>
+                <ThemedText variant="accent" style={styles.seeAllText}>See All</ThemedText>
+              </TouchableOpacity>
+            </View>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ThemedText style={{ color: colors.text }}>Loading books...</ThemedText>
+              </View>
+            ) : books.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="book-outline" size={48} color={colors.iconAccent} />
+                <ThemedText style={[styles.emptyText, { color: colors.text }]}>No books available</ThemedText>
+                <ThemedText variant="secondary" style={styles.emptySubtext}>Check Firebase Firestore permissions</ThemedText>
+                <ThemedText variant="secondary" style={[styles.emptySubtext, { fontSize: 12, marginTop: 8 }]}>
+                  Make sure the books collection is accessible
+                </ThemedText>
+              </View>
+            ) : (
+              <FlatList
+                data={books}
+                renderItem={renderBookCard}
+                keyExtractor={(item) => item.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContainer}
+              />
+            )}
+          </Animated.View>
+        );
+
+      case 'popularAuthors':
+        return (
+          <Animated.View style={[
+            styles.section,
+            {
+              transform: [
+                { translateY: sectionTranslateY }
+              ]
+            }
+          ]}>
+            <View style={styles.sectionHeader}>
+              <ThemedText style={[styles.sectionTitle, { fontFamily: Fonts.outfitRegular }]}>Popular Authors</ThemedText>
+              <TouchableOpacity onPress={() => router.push('/category/all' as any)}>
+                <ThemedText variant="accent" style={styles.seeAllText}>See All</ThemedText>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={popularAuthors}
+              renderItem={renderAuthor}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalListContainer}
+            />
+          </Animated.View>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <AuthGuard fallbackRoute="/sign-up" requireEmail={true}>
@@ -338,150 +500,16 @@ export default function HomeScreen() {
       ]} />
 
       <SideNavbar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <Animated.ScrollView 
+      <Animated.FlatList 
+        data={sections}
+        renderItem={renderMainSection}
+        keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={styles.scrollContent}
         onScroll={handleScroll}
         scrollEventThrottle={16}
           scrollEnabled={!showAsteroidDodge}
-      >
-        {/* --- Animated Header --- */}
-        <Animated.View style={[
-          styles.header,
-          {
-            transform: [
-              { translateY: headerTranslateY },
-              { scale: headerScale }
-            ],
-            opacity: headerOpacity
-          }
-        ]}>
-            <TouchableOpacity style={styles.menuButton} onPress={() => setIsSidebarOpen(true)}>
-                <Ionicons name="menu" size={30} color={colors.text} />
-            </TouchableOpacity>
-            <View style={styles.headerCenter}>
-                <View style={styles.greetingContainer}>
-                    <ThemedText style={{ fontSize: 28, fontWeight: 'normal', textAlign: 'center', fontFamily: 'Outfit-Regular', flexShrink: 0 }}>Hello, </ThemedText>
-                    <TouchableOpacity 
-                        onPressIn={handleLongPressStart} 
-                        onPressOut={handleLongPressEnd}
-                        activeOpacity={0.7}
-                        style={{ flexShrink: 0 }}
-                    >
-                        <ThemedText style={{ color: colors.tint, fontSize: 32, fontWeight: 'normal', fontFamily: 'Outfit-Regular', flexShrink: 0 }} numberOfLines={1}>{user?.firstName || 'Reader'}</ThemedText>
-                    </TouchableOpacity>
-                </View>
-            </View>
-            
-            <View style={styles.headerRight}>
-              <TouchableOpacity onPress={() => router.push('/profile')} style={styles.profileButton}>
-                <Image source={{ uri: user?.imageUrl }} style={[styles.profileImage, { borderColor: colors.borderAccent }]} />
-              </TouchableOpacity>
-            </View>
-        </Animated.View>
-
-        {/* --- Sub Greeting Section --- */}
-        <View style={styles.subGreetingSection}>
-            <TouchableOpacity
-              onPressIn={handleAsteroidLongPressStart}
-              onPressOut={handleAsteroidLongPressEnd}
-              activeOpacity={0.7}
-            >
-              <ThemedText variant="secondary" style={[styles.subGreeting, { fontFamily: Fonts.silkscreenRegular }]}>Ready to dive in?</ThemedText>
-            </TouchableOpacity>
-        </View>
-
-
-        {/* --- Animated Categories Section --- */}
-        <Animated.View style={[
-          styles.section,
-          {
-            transform: [
-              { translateY: sectionTranslateY }
-            ]
-          }
-        ]}>
-          <View style={styles.sectionHeader}>
-            <ThemedText style={[styles.sectionTitle, { fontFamily: Fonts.outfitRegular }]}>Categories</ThemedText>
-            <TouchableOpacity>
-              <ThemedText variant="accent" style={styles.seeAllText}>See All</ThemedText>
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={categories}
-            renderItem={renderCategory}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalListContainer}
-          />
-        </Animated.View>
-
-        {/* --- Animated Popular Books Section --- */}
-        <Animated.View style={[
-          styles.section,
-          {
-            transform: [
-              { translateY: sectionTranslateY }
-            ]
-          }
-        ]}>
-          <View style={styles.sectionHeader}>
-            <ThemedText style={[styles.sectionTitle, { fontFamily: Fonts.outfitRegular }]}>Popular Books</ThemedText>
-            <TouchableOpacity>
-              <ThemedText variant="accent" style={styles.seeAllText}>See All</ThemedText>
-            </TouchableOpacity>
-          </View>
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ThemedText style={{ color: colors.text }}>Loading books...</ThemedText>
-            </View>
-          ) : books.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="book-outline" size={48} color={colors.iconAccent} />
-              <ThemedText style={[styles.emptyText, { color: colors.text }]}>No books available</ThemedText>
-              <ThemedText variant="secondary" style={styles.emptySubtext}>Check Firebase Firestore permissions</ThemedText>
-              <ThemedText variant="secondary" style={[styles.emptySubtext, { fontSize: 12, marginTop: 8 }]}>
-                Make sure the books collection is accessible
-              </ThemedText>
-            </View>
-          ) : (
-            <FlatList
-              data={books}
-              renderItem={renderBookCard}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalListContainer}
-            />
-          )}
-        </Animated.View>
-        
-        {/* --- Animated Popular Authors Section --- */}
-        <Animated.View style={[
-          styles.section,
-          {
-            transform: [
-              { translateY: sectionTranslateY }
-            ]
-          }
-        ]}>
-          <View style={styles.sectionHeader}>
-            <ThemedText style={[styles.sectionTitle, { fontFamily: Fonts.outfitRegular }]}>Popular Authors</ThemedText>
-            <TouchableOpacity>
-              <ThemedText variant="accent" style={styles.seeAllText}>See All</ThemedText>
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={popularAuthors}
-            renderItem={renderAuthor}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalListContainer}
-          />
-        </Animated.View>
-      </Animated.ScrollView>
+      />
       
       {/* Asteroid Dodge Game Modal */}
       <AsteroidDodge 
@@ -511,6 +539,7 @@ const styles = StyleSheet.create({
   scrollContent: { 
     paddingTop: Platform.OS === 'ios' ? 70 : 50, 
     paddingBottom: 50, 
+    flexGrow: 1,
   },
   
   // Floating background elements

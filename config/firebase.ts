@@ -1,6 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getReactNativePersistence, initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import 'react-native-get-random-values';
 
@@ -29,8 +30,10 @@ console.log('✅ Firebase app initialized:', app.name);
 export const db = getFirestore(app);
 console.log('✅ Firestore initialized');
 
-// Initialize Auth
-export const auth = getAuth(app);
+// Initialize Auth with AsyncStorage persistence
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage)
+});
 console.log('✅ Auth initialized');
 
 // Connect to emulators in development (optional)

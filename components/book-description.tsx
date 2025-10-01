@@ -1,4 +1,5 @@
 import { useThemeColors } from '@/hooks/use-theme-color';
+import type { Book } from '@/services/firestoreService';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,27 +20,12 @@ const { height: screenHeight } = Dimensions.get('window');
 interface BookDescriptionProps {
   visible: boolean;
   onClose: () => void;
-  book: {
-    id: string;
-    name: string;
-    author: string;
-    genre: string;
-    file_path?: string;
-    short_description: string;
-    cover_image_path?: string;
-    total_pages: number;
-    rating: number;
-    reviews: any[];
-    currentlyReading?: number;
-    completed?: number;
-    created_at: string;
-    updated_at: string;
-  };
-  onReadNow: (book: any) => void;
+  book: Book;
+  onReadNow: (book: Book) => void;
 }
 
 // Get book details using actual book data
-const getBookDetails = (book: any) => {
+const getBookDetails = (book: Book) => {
   return {
     title: book.name || 'Unknown Book',
     author: book.author || 'Unknown Author',

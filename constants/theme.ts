@@ -78,6 +78,4 @@ export const Fonts = {
   silkscreenBold: 'Silkscreen-Bold',
   outfitRegular: 'Outfit-Regular',
   outfitBold: 'Outfit-Bold',
-  pacificoRegular: 'Pacifico-Regular',
-  badeenDisplayRegular: 'BadeenDisplay-Regular',
 };

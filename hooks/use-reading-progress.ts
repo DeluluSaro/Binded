@@ -1,23 +1,20 @@
-import {
-    CurrentlyReadingBook,
-    getAllReadingProgress,
-    getCurrentlyReadingBooks,
-    getUserReadingStats,
-    initializeUserIfNotExists,
-    ReadingProgress,
-    updateReadingProgress,
-    UserProfile,
-    UserReadingStats
-} from '@/lib/supabase';
+import { readingProgressService } from '@/services/readingProgressService';
+import { ContinueReadingBook, ReadingProgress, UserData, userService } from '@/services/userService';
 import { useAuth } from '@clerk/clerk-expo';
 import { useCallback, useEffect, useState } from 'react';
 
 export const useReadingProgress = () => {
   const { userId, isSignedIn, isLoaded } = useAuth();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [currentlyReading, setCurrentlyReading] = useState<CurrentlyReadingBook[]>([]);
+  const [userProfile, setUserProfile] = useState<UserData | null>(null);
+  const [currentlyReading, setCurrentlyReading] = useState<ContinueReadingBook[]>([]);
   const [allProgress, setAllProgress] = useState<ReadingProgress[]>([]);
-  const [readingStats, setReadingStats] = useState<UserReadingStats | null>(null);
+  const [readingStats, setReadingStats] = useState<{
+    totalBooksRead: number;
+    totalPagesRead: number;
+    totalReadingTime: number;
+    averageProgress: number;
+    currentBooks: number;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,16 +33,17 @@ export const useReadingProgress = () => {
         throw new Error(errorMsg);
       }
 
-      // Use the comprehensive initialization function with Clerk user object
-      const profile = await initializeUserIfNotExists(clerkUser);
+      // Create or update user in Firebase
+      const userId = await userService.createOrUpdateUser(clerkUser);
+      const userData = await userService.getUser(userId);
       
-      if (!profile) {
-        throw new Error('Failed to initialize or create user profile');
+      if (!userData) {
+        throw new Error('Failed to create user profile in Firebase');
       }
       
-      console.log('✅ User profile initialized successfully:', profile);
-      setUserProfile(profile);
-      return profile;
+      console.log('✅ User profile created successfully:', userData);
+      setUserProfile(userData);
+      return userData;
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to initialize user profile';
@@ -67,8 +65,8 @@ export const useReadingProgress = () => {
     lastReadPosition: string | null = null,
     readingTimeMinutes: number = 0
   ) => {
-    if (!userId) {
-      console.error('❌ No user ID available for updating reading progress');
+    if (!userId || !userProfile) {
+      console.error('❌ No user ID or profile available for updating reading progress');
       return null;
     }
 
@@ -76,28 +74,26 @@ export const useReadingProgress = () => {
       setLoading(true);
       setError(null);
 
-      const progress = await updateReadingProgress(
-        userId,
-        bookId,
-        bookName,
+      // Set user ID for the service
+      readingProgressService.setUserId(userProfile.id);
+
+      // Update reading progress using Firebase service
+      await readingProgressService.updateProgress(bookId, {
         currentPage,
         totalPages,
-        lastReadPosition,
-        readingTimeMinutes
-      );
+        currentChapter: lastReadPosition || 'Chapter 1',
+        readingTime: readingTimeMinutes
+      });
 
-      if (progress) {
-        // Refresh the currently reading books and stats
-        await Promise.all([
-          loadCurrentlyReadingBooks(),
-          loadReadingStats(),
-          loadAllProgress()
-        ]);
-        
-        console.log('✅ Reading progress updated successfully');
-      }
-
-      return progress;
+      // Refresh the currently reading books and stats
+      await Promise.all([
+        loadCurrentlyReadingBooks(),
+        loadReadingStats(),
+        loadAllProgress()
+      ]);
+      
+      console.log('✅ Reading progress updated successfully');
+      return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update reading progress';
       console.error('❌ Error updating reading progress:', errorMessage);
@@ -106,7 +102,7 @@ export const useReadingProgress = () => {
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, userProfile]);
 
   // Load currently reading books (first 3, sorted by last_read_at DESC)
   const loadCurrentlyReadingBooks = useCallback(async () => {
@@ -118,7 +114,11 @@ export const useReadingProgress = () => {
 
     try {
       console.log('🔄 Loading currently reading books for user:', userId);
-      const books = await getCurrentlyReadingBooks(userId, 3);
+      
+      // Set user ID for the service
+      readingProgressService.setUserId(userProfile.id);
+      
+      const books = await readingProgressService.getContinueReading();
       setCurrentlyReading(books || []);
       console.log('✅ Currently reading books loaded:', books?.length || 0);
     } catch (err) {
@@ -138,7 +138,11 @@ export const useReadingProgress = () => {
 
     try {
       console.log('🔄 Loading all reading progress for user:', userId);
-      const progress = await getAllReadingProgress(userId);
+      
+      // Set user ID for the service
+      readingProgressService.setUserId(userProfile.id);
+      
+      const progress = await readingProgressService.getRecentlyRead(50); // Get up to 50 recent books
       setAllProgress(progress || []);
       console.log('✅ All reading progress loaded:', progress?.length || 0);
     } catch (err) {
@@ -158,7 +162,11 @@ export const useReadingProgress = () => {
 
     try {
       console.log('🔄 Loading reading stats for user:', userId);
-      const stats = await getUserReadingStats(userId);
+      
+      // Set user ID for the service
+      readingProgressService.setUserId(userProfile.id);
+      
+      const stats = await readingProgressService.getReadingStats();
       setReadingStats(stats);
       console.log('✅ Reading stats loaded:', stats);
     } catch (err) {
@@ -218,24 +226,24 @@ export const useReadingProgress = () => {
 
   // Get book progress by book ID
   const getBookProgress = useCallback((bookId: string): ReadingProgress | null => {
-    return allProgress.find(progress => progress.book_id === bookId) || null;
+    return allProgress.find(progress => progress.bookId === bookId) || null;
   }, [allProgress]);
 
   // Get reading progress percentage for a book
   const getBookProgressPercentage = useCallback((bookId: string): number => {
     const progress = getBookProgress(bookId);
-    return progress ? progress.progress_percentage : 0;
+    return progress ? progress.progressPercentage : 0;
   }, [getBookProgress]);
 
   // Check if a book is currently being read
   const isBookCurrentlyReading = useCallback((bookId: string): boolean => {
-    return currentlyReading.some(book => book.book_id === bookId);
+    return currentlyReading.some(book => book.bookId === bookId);
   }, [currentlyReading]);
 
   // Check if a book is completed
   const isBookCompleted = useCallback((bookId: string): boolean => {
     const progress = getBookProgress(bookId);
-    return progress ? progress.is_completed : false;
+    return progress ? progress.progressPercentage >= 100 : false;
   }, [getBookProgress]);
 
   return {
@@ -262,9 +270,9 @@ export const useReadingProgress = () => {
     isBookCompleted,
 
     // Computed values
-    totalBooksRead: readingStats?.total_books_read || 0,
-    totalReadingTime: readingStats?.total_reading_time_minutes || 0,
-    currentlyReadingCount: readingStats?.currently_reading_count || 0,
-    averageProgress: readingStats?.average_progress || 0,
+    totalBooksRead: readingStats?.totalBooksRead || 0,
+    totalReadingTime: readingStats?.totalReadingTime || 0,
+    currentlyReadingCount: readingStats?.currentBooks || 0,
+    averageProgress: readingStats?.averageProgress || 0,
   };
 };

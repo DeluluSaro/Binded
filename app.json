@@ -7,10 +7,8 @@
     "icon": "./assets/images/icon.png",
     "scheme": "binded",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-            "extra": {
-      // Firebase configuration is now handled via environment variables
-            },
+    "newArchEnabled": false,
+    "extra": {},
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -54,7 +52,7 @@
         }
       ],
       "expo-font",
-      "expo-sensors"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
