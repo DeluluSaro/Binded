@@ -1,4 +1,5 @@
 import CustomAlert from '@/components/custom-alert';
+import { Fonts } from '@/constants/theme';
 import { useCustomAlert } from '@/hooks/use-custom-alert';
 import { useThemeColors } from '@/hooks/use-theme-color';
 import type { Book } from '@/services/firestoreService';
@@ -9,13 +10,13 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Animated,
-    Dimensions,
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -178,7 +179,7 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
 
   const renderRatingBar = (starCount: number, percentage: number) => (
     <View key={starCount} style={styles.ratingBarContainer}>
-      <Text style={[styles.ratingBarText, { color: colors.text, fontFamily: 'Outfit_400Regular' }]}>{starCount}</Text>
+      <Text style={[styles.ratingBarText, { color: colors.text, fontFamily: Fonts.outfitRegular }]}>{starCount}</Text>
       <View style={[styles.ratingBarBackground, { backgroundColor: colors.surfaceSecondary }]}>
         <View 
           style={[
@@ -291,7 +292,7 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
             <TouchableOpacity style={styles.backButton} onPress={onClose}>
               <Ionicons name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>Book Details</Text>
+            <Text style={[styles.headerTitle, { color: colors.text, fontFamily: Fonts.silkscreenRegular }]}>Book Details</Text>
             <View style={styles.headerSpacer} />
           </Animated.View>
 
@@ -320,31 +321,31 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
                 contentFit="cover"
               />
             </Animated.View>
-            <Text style={[styles.bookTitle, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>{bookDetails.title}</Text>
-            <Text style={[styles.bookAuthor, { color: colors.textSecondary, fontFamily: 'Silkscreen-Regular' }]}>by {bookDetails.author}</Text>
+            <Text style={[styles.bookTitle, { color: colors.text, fontFamily: Fonts.outfitRegular }]}>{bookDetails.title}</Text>
+            <Text style={[styles.bookAuthor, { color: colors.textSecondary, fontFamily: Fonts.silkscreenRegular }]}>by {bookDetails.author}</Text>
             <View style={[styles.genreTag, { backgroundColor: `${colors.tint}20` }]}>
-              <Text style={[styles.genreText, { color: colors.tint, fontFamily: 'Outfit_400Regular' }]}>{bookDetails.genre}</Text>
+              <Text style={[styles.genreText, { color: colors.tint, fontFamily: Fonts.outfitRegular }]}>{bookDetails.genre}</Text>
             </View>
           </Animated.View>
 
           {/* Synopsis Section */}
           <View style={styles.synopsisSection}>
-            <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>Synopsis</Text>
-            <Text style={[styles.synopsisText, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: Fonts.silkscreenRegular }]}>Synopsis</Text>
+            <Text style={[styles.synopsisText, { color: colors.textSecondary, fontFamily: Fonts.outfitRegular }]}>
               {bookDetails.synopsis}
             </Text>
           </View>
 
           {/* Ratings Section */}
           <View style={[styles.ratingsSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>Ratings</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: Fonts.silkscreenRegular }]}>Ratings</Text>
             <View style={styles.ratingsContent}>
               <View style={styles.ratingLeft}>
-                <Text style={[styles.ratingNumber, { color: colors.tint, fontFamily: 'Outfit_700Bold' }]}>{bookDetails.rating}</Text>
+                <Text style={[styles.ratingNumber, { color: colors.tint, fontFamily: Fonts.outfitRegular }]}>{bookDetails.rating}</Text>
                 <View style={styles.starsContainer}>
                   {renderStars(bookDetails.rating)}
                 </View>
-                <Text style={[styles.reviewCount, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>
+                <Text style={[styles.reviewCount, { color: colors.textSecondary, fontFamily: Fonts.outfitRegular }]}>
                   {bookDetails.reviewCount.toLocaleString()} reviews
                 </Text>
               </View>
@@ -361,13 +362,13 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
 
           {/* User Engagement Section */}
           <View style={[styles.readingProgressSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>User Engagement</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: Fonts.silkscreenRegular }]}>User Engagement</Text>
             
             {/* Overall Engagement */}
             <View style={styles.overallProgressContainer}>
               <View style={styles.progressHeader}>
-                <Text style={[styles.progressLabel, { color: colors.text, fontFamily: 'Outfit_400Regular' }]}>Total Readers</Text>
-                <Text style={[styles.progressPercentage, { color: colors.tint, fontFamily: 'Outfit_700Bold' }]}>
+                <Text style={[styles.progressLabel, { color: colors.text, fontFamily: Fonts.outfitRegular }]}>Total Readers</Text>
+                <Text style={[styles.progressPercentage, { color: colors.tint, fontFamily: Fonts.outfitRegular }]}>
                   {(book.currentlyReading || 0) + (book.completed || 0)}
                 </Text>
               </View>
@@ -382,7 +383,7 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
                   ]} 
                 />
               </View>
-              <Text style={[styles.progressStats, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>
+              <Text style={[styles.progressStats, { color: colors.textSecondary, fontFamily: Fonts.outfitRegular }]}>
                 {Math.round(((book.completed || 0) / Math.max((book.currentlyReading || 0) + (book.completed || 0), 1)) * 100)}% completion rate
               </Text>
             </View>
@@ -393,12 +394,12 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
               <View style={[styles.statusCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
                 <View style={styles.statusCardHeader}>
                   <Ionicons name="people" size={20} color={colors.tint} />
-                  <Text style={[styles.statusCardTitle, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>Current Reading</Text>
+                  <Text style={[styles.statusCardTitle, { color: colors.text, fontFamily: Fonts.outfitRegular }]}>Current Reading</Text>
                 </View>
-                <Text style={[styles.statusCardValue, { color: colors.tint, fontFamily: 'Outfit_700Bold' }]}>
+                <Text style={[styles.statusCardValue, { color: colors.tint, fontFamily: Fonts.outfitRegular }]}>
                   {book.currentlyReading || 0} users
                 </Text>
-                <Text style={[styles.statusCardSubtext, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>
+                <Text style={[styles.statusCardSubtext, { color: colors.textSecondary, fontFamily: Fonts.outfitRegular }]}>
                   Actively reading
                 </Text>
               </View>
@@ -407,12 +408,12 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
               <View style={[styles.statusCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
                 <View style={styles.statusCardHeader}>
                   <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-                  <Text style={[styles.statusCardTitle, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>Completes</Text>
+                  <Text style={[styles.statusCardTitle, { color: colors.text, fontFamily: Fonts.outfitRegular }]}>Completes</Text>
                 </View>
-                <Text style={[styles.statusCardValue, { color: colors.success, fontFamily: 'Outfit_700Bold' }]}>
+                <Text style={[styles.statusCardValue, { color: colors.success, fontFamily: Fonts.outfitRegular }]}>
                   {book.completed || 0} users
                 </Text>
-                <Text style={[styles.statusCardSubtext, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>
+                <Text style={[styles.statusCardSubtext, { color: colors.textSecondary, fontFamily: Fonts.outfitRegular }]}>
                   Finished reading
                 </Text>
               </View>
@@ -421,24 +422,24 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
             {/* User Stats */}
             <View style={styles.readingStatsContainer}>
               <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>
+                <Text style={[styles.statValue, { color: colors.text, fontFamily: Fonts.outfitRegular }]}>
                   {book.currentlyReading || 0}
                 </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>Active Readers</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary, fontFamily: Fonts.outfitRegular }]}>Active Readers</Text>
               </View>
               <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
               <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>
+                <Text style={[styles.statValue, { color: colors.text, fontFamily: Fonts.outfitRegular }]}>
                   {(book.currentlyReading || 0) + (book.completed || 0)}
                 </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>Total Readers</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary, fontFamily: Fonts.outfitRegular }]}>Total Readers</Text>
               </View>
               <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
               <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>
+                <Text style={[styles.statValue, { color: colors.text, fontFamily: Fonts.outfitRegular }]}>
                   {book.completed || 0}
                 </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>Completed</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary, fontFamily: Fonts.outfitRegular }]}>Completed</Text>
               </View>
             </View>
           </View>
@@ -449,7 +450,7 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
               style={[styles.readNowButton, { backgroundColor: colors.tint }]}
               onPress={() => onReadNow(book)}
             >
-              <Text style={[styles.readNowText, { fontFamily: 'Outfit_700Bold' }]}>Read Now</Text>
+              <Text style={[styles.readNowText, { fontFamily: Fonts.outfitRegular }]}>Read Now</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -468,7 +469,7 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
                 styles.addToLibraryText, 
                 { 
                   color: isFavorite ? 'white' : colors.tint, 
-                  fontFamily: 'Outfit_700Bold' 
+                  fontFamily: Fonts.outfitRegular 
                 }
               ]}>
                 {isLoading ? 'Loading...' : isFavorite ? 'Remove from Favourites' : 'Add to Favourites'}
