@@ -1,6 +1,7 @@
 import AuthGuard from '@/components/auth-guard';
 import CustomAlert from '@/components/custom-alert';
 import SideNavbar from '@/components/side-navbar';
+import { Fonts } from '@/constants/theme';
 import { useCustomAlert } from '@/hooks/use-custom-alert';
 import { useThemeColors } from '@/hooks/use-theme-color';
 import { userService, type FavoriteBook } from '@/services/userService';
@@ -37,6 +38,13 @@ export default function FavoritesScreen() {
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(50))[0];
+  const [flyingHearts, setFlyingHearts] = useState<{ 
+    id: number; 
+    x: number; 
+    y: number; 
+    anim: Animated.Value; 
+    rotateAnim: Animated.Value; 
+  }[]>([]);
 
   // Load favorites
   const loadFavorites = useCallback(async () => {
@@ -180,12 +188,106 @@ export default function FavoritesScreen() {
     router.push(`/reader/${favorite.bookId}` as any);
   };
 
+  // Flying hearts animation
+  const triggerFlyingHearts = () => {
+    const newHearts = Array.from({ length: 8 }, (_, index) => {
+      const heartId = Date.now() + index;
+      // Start from heart icon position (right side of header)
+      const startX = 280 + Math.random() * 40 - 20; // Around heart icon position
+      const startY = 120; // Start from header area
+      
+      // Animate each heart
+      const heartAnim = new Animated.Value(0);
+      const rotateAnim = new Animated.Value(0);
+      
+      Animated.parallel([
+        Animated.timing(heartAnim, {
+          toValue: 1,
+          duration: 2000 + Math.random() * 1000, // Random duration
+          useNativeDriver: true,
+        }),
+        Animated.loop(
+          Animated.timing(rotateAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          })
+        ),
+      ]).start();
+      
+      return {
+        id: heartId,
+        x: startX,
+        y: startY,
+        anim: heartAnim,
+        rotateAnim: rotateAnim,
+      };
+    });
+    
+    setFlyingHearts(prev => [...prev, ...newHearts]);
+    
+    // Remove hearts after animation
+    setTimeout(() => {
+      setFlyingHearts(prev => prev.filter(heart => !newHearts.some(newHeart => newHeart.id === heart.id)));
+    }, 4000);
+  };
+
   // Load favorites on mount
   useEffect(() => {
     if (user?.id) {
       loadFavorites();
     }
   }, [user?.id, loadFavorites]);
+
+  // Render flying hearts
+  const renderFlyingHearts = () => (
+    <View style={styles.flyingHeartsContainer}>
+      {flyingHearts.map((heart) => (
+        <Animated.View
+          key={heart.id}
+          style={[
+            styles.flyingHeart,
+            {
+              left: heart.x,
+              top: heart.y,
+              transform: [
+                {
+                  translateY: heart.anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -400], // Fly upward
+                  }),
+                },
+                {
+                  translateX: heart.anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, Math.random() * 60 - 30], // Slight horizontal drift around heart icon
+                  }),
+                },
+                {
+                  rotate: heart.rotateAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '360deg'],
+                  }),
+                },
+                {
+                  scale: heart.anim.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [0.5, 1, 0.3], // Scale up then fade out
+                  }),
+                },
+              ],
+              opacity: heart.anim.interpolate({
+                inputRange: [0, 0.7, 1],
+                outputRange: [1, 1, 0], // Fade out at the end
+              }),
+            },
+          ]}
+        >
+          <Ionicons name="heart" size={20} color={colors.tint} />
+        </Animated.View>
+      ))}
+    </View>
+  );
 
   // Render favorite book card
   const renderFavoriteCard = ({ item, index }: { item: FavoriteBook; index: number }) => (
@@ -219,19 +321,19 @@ export default function FavoritesScreen() {
         />
         
         <View style={styles.bookInfo}>
-          <Text style={[styles.bookTitle, { color: colors.text, fontFamily: 'Outfit_700Bold' }]} numberOfLines={2}>
+          <Text style={[styles.bookTitle, { color: colors.text, fontFamily: Fonts.outfitRegular }]} numberOfLines={2}>
             {item.bookTitle}
           </Text>
-          <Text style={[styles.bookAuthor, { color: colors.textSecondary, fontFamily: 'Silkscreen-Regular' }]} numberOfLines={1}>
+          <Text style={[styles.bookAuthor, { color: colors.textSecondary, fontFamily: Fonts.silkscreenRegular }]} numberOfLines={1}>
             by {item.bookAuthor}
           </Text>
           <View style={[styles.genreTag, { backgroundColor: `${colors.tint}20` }]}>
-            <Text style={[styles.genreText, { color: colors.tint, fontFamily: 'Outfit_400Regular' }]}>
+            <Text style={[styles.genreText, { color: colors.tint, fontFamily: Fonts.outfitRegular }]}>
               {item.bookGenre}
             </Text>
           </View>
           {item.bookDescription && (
-            <Text style={[styles.bookDescription, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]} numberOfLines={3}>
+            <Text style={[styles.bookDescription, { color: colors.textSecondary, fontFamily: Fonts.outfitRegular }]} numberOfLines={3}>
               {item.bookDescription}
             </Text>
           )}
@@ -244,7 +346,7 @@ export default function FavoritesScreen() {
           onPress={() => handleReadBook(item)}
         >
           <Ionicons name="play" size={16} color="white" />
-          <Text style={[styles.readButtonText, { fontFamily: 'Outfit_700Bold' }]}>Read</Text>
+          <Text style={[styles.readButtonText, { fontFamily: Fonts.outfitRegular }]}>Read</Text>
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -252,7 +354,7 @@ export default function FavoritesScreen() {
           onPress={() => removeFromFavorites(item.bookId, item.bookTitle)}
         >
           <Ionicons name="heart-dislike" size={16} color={colors.error} />
-          <Text style={[styles.removeButtonText, { color: colors.error, fontFamily: 'Outfit_700Bold' }]}>Remove</Text>
+          <Text style={[styles.removeButtonText, { color: colors.error, fontFamily: Fonts.outfitRegular }]}>Remove</Text>
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -273,17 +375,17 @@ export default function FavoritesScreen() {
         <View style={[styles.emptyIcon, { backgroundColor: colors.surface }]}>
           <Ionicons name="heart-outline" size={48} color={colors.textSecondary} />
         </View>
-        <Text style={[styles.emptyTitle, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>
+        <Text style={[styles.emptyTitle, { color: colors.text, fontFamily: Fonts.outfitRegular }]}>
           No Favorites Yet
         </Text>
-        <Text style={[styles.emptySubtitle, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>
+        <Text style={[styles.emptySubtitle, { color: colors.textSecondary, fontFamily: Fonts.outfitRegular }]}>
           Books you add to favorites will appear here
         </Text>
         <TouchableOpacity
           style={[styles.exploreButton, { backgroundColor: colors.tint }]}
           onPress={() => router.push('/(tabs)')}
         >
-          <Text style={[styles.exploreButtonText, { fontFamily: 'Outfit_700Bold' }]}>
+          <Text style={[styles.exploreButtonText, { fontFamily: Fonts.outfitRegular }]}>
             Explore Books
           </Text>
         </TouchableOpacity>
@@ -300,7 +402,7 @@ export default function FavoritesScreen() {
         {/* Side Navbar */}
         <SideNavbar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <View style={styles.header}>
           <View style={styles.headerLeft}>
             <TouchableOpacity 
               style={styles.menuButton} 
@@ -308,12 +410,15 @@ export default function FavoritesScreen() {
             >
               <Ionicons name="menu" size={24} color={colors.text} />
             </TouchableOpacity>
-            <Ionicons name="heart" size={24} color={colors.tint} />
-            <Text style={[styles.headerTitle, { color: colors.text, fontFamily: 'Outfit_700Bold' }]}>
+            
+            <Text style={[styles.headerTitle, { color: colors.text, fontFamily: Fonts.silkscreenRegular }]}>
               My Favorites
             </Text>
+            <TouchableOpacity onPress={triggerFlyingHearts} style={styles.heartButton}>
+              <Ionicons name="heart" size={24} color={colors.tint} />
+            </TouchableOpacity>
           </View>
-          <Text style={[styles.favoritesCount, { color: colors.textSecondary, fontFamily: 'Outfit_400Regular' }]}>
+          <Text style={[styles.favoritesCount, { color: colors.textSecondary, fontFamily: Fonts.outfitRegular }]}>
             {favorites.length} books
           </Text>
         </View>
@@ -325,7 +430,7 @@ export default function FavoritesScreen() {
             <Animated.View style={{ transform: [{ scale: fadeAnim }] }}>
               <Ionicons name="book" size={48} color={colors.tint} />
             </Animated.View>
-            <Text style={[styles.loadingText, { color: colors.text, fontFamily: 'Outfit_400Regular' }]}>
+            <Text style={[styles.loadingText, { color: colors.text, fontFamily: Fonts.outfitRegular }]}>
               Loading your favorites...
             </Text>
           </View>
@@ -348,6 +453,9 @@ export default function FavoritesScreen() {
             }
           />
         )}
+        
+        {/* Flying Hearts Animation */}
+        {renderFlyingHearts()}
         
         {/* Custom Alert */}
         <CustomAlert
@@ -374,7 +482,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    borderBottomWidth: 1,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -516,5 +623,26 @@ const styles = StyleSheet.create({
   exploreButtonText: {
     color: 'white',
     fontSize: 16,
+  },
+  heartButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+  flyingHeartsContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    pointerEvents: 'none',
+    zIndex: 1000,
+  },
+  flyingHeart: {
+    position: 'absolute',
+    shadowColor: '#ff6b6b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });
