@@ -1,10 +1,13 @@
+import CustomAlert from '@/components/custom-alert';
+import { useCustomAlert } from '@/hooks/use-custom-alert';
 import { useThemeColors } from '@/hooks/use-theme-color';
 import type { Book } from '@/services/firestoreService';
+import { userService } from '@/services/userService';
+import { useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-// import { useRouter } from 'expo-router';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Animated,
     Dimensions,
@@ -48,6 +51,12 @@ const getBookDetails = (book: Book) => {
 export default function BookDescription({ visible, onClose, book, onReadNow }: BookDescriptionProps) {
   const colors = useThemeColors();
   const bookDetails = getBookDetails(book);
+  const { user } = useUser();
+  const { alertConfig, showError, showSuccess, hideAlert } = useCustomAlert();
+  
+  // State for favorites
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Parallax animation values
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -59,6 +68,86 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
     usingRegularText: true,
     fontNames: ['Outfit_700Bold', 'Outfit_400Regular', 'Silkscreen-Regular']
   });
+
+  // Check if book is in favorites when component mounts
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (user?.id) {
+        try {
+          // Get Firebase user by Clerk ID first, then try email as fallback
+          const clerkId = user.id;
+          let firebaseUser = await userService.getUserByClerkId(clerkId);
+          
+          if (!firebaseUser && user?.emailAddresses?.[0]?.emailAddress) {
+            const userEmail = user.emailAddresses[0].emailAddress;
+            firebaseUser = await userService.getUserByEmail(userEmail);
+          }
+          
+          if (firebaseUser) {
+            const isInFavorites = await userService.isBookInFavorites(firebaseUser.id, book.id);
+            setIsFavorite(isInFavorites);
+          }
+        } catch (error) {
+          console.error('Error checking favorites:', error);
+        }
+      }
+    };
+
+    if (visible && user?.id) {
+      checkFavoriteStatus();
+    }
+  }, [visible, user?.id, user?.emailAddresses, book.id]);
+
+  // Handle add to favorites
+  const handleAddToFavorites = async () => {
+    if (!user?.id) {
+      showError('Error', 'Please sign in to add books to favorites');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Get Firebase user by Clerk ID first, then try email as fallback
+      const clerkId = user.id;
+      let firebaseUser = await userService.getUserByClerkId(clerkId);
+      
+      if (!firebaseUser && user?.emailAddresses?.[0]?.emailAddress) {
+        const userEmail = user.emailAddresses[0].emailAddress;
+        firebaseUser = await userService.getUserByEmail(userEmail);
+      }
+      
+      if (!firebaseUser) {
+        showError('Error', 'User not found. Please try signing in again.');
+        return;
+      }
+      
+      if (isFavorite) {
+        // Remove from favorites
+        await userService.removeFromFavorites(firebaseUser.id, book.id);
+        setIsFavorite(false);
+        showSuccess('Success', 'Book removed from favorites');
+      } else {
+        // Add to favorites
+        await userService.addToFavorites(firebaseUser.id, {
+          id: book.id,
+          name: book.name,
+          author: book.author,
+          genre: book.genre || 'Unknown',
+          cover_image_path: book.cover_image_path,
+          short_description: book.short_description,
+          file_path: book.file_path
+        });
+        setIsFavorite(true);
+        showSuccess('Success', 'Book added to favorites');
+      }
+    } catch (error) {
+      console.error('Error updating favorites:', error);
+      showError('Error', 'Failed to update favorites. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -364,13 +453,40 @@ export default function BookDescription({ visible, onClose, book, onReadNow }: B
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[styles.addToLibraryButton, { borderColor: colors.tint }]}
+              style={[
+                styles.addToLibraryButton, 
+                { 
+                  borderColor: colors.tint,
+                  backgroundColor: isFavorite ? colors.tint : 'transparent',
+                  opacity: isLoading ? 0.6 : 1
+                }
+              ]}
+              onPress={handleAddToFavorites}
+              disabled={isLoading}
             >
-              <Text style={[styles.addToLibraryText, { color: colors.tint, fontFamily: 'Outfit_700Bold' }]}>Add to Library</Text>
+              <Text style={[
+                styles.addToLibraryText, 
+                { 
+                  color: isFavorite ? 'white' : colors.tint, 
+                  fontFamily: 'Outfit_700Bold' 
+                }
+              ]}>
+                {isLoading ? 'Loading...' : isFavorite ? 'Remove from Favourites' : 'Add to Favourites'}
+              </Text>
             </TouchableOpacity>
           </View>
         </Animated.ScrollView>
       </View>
+      
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        buttons={alertConfig.buttons}
+        onClose={hideAlert}
+      />
     </Modal>
   );
 }
@@ -597,6 +713,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 8,
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
   },
   progressStats: {
     fontSize: 12,

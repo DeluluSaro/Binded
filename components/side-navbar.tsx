@@ -1,14 +1,16 @@
 import { useThemeColors } from '@/hooks/use-theme-color';
+import { firestoreService } from '@/services/firestoreService';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     Animated,
     Dimensions,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -25,17 +27,20 @@ interface SideNavbarProps {
 
 // --- Data (Unchanged) ---
 const menuItems = [
-  { id: '1', title: 'Home', icon: 'home-outline', route: '/home' },
-  { id: '2', title: 'Library', icon: 'library-outline', route: '/library' },
-  { id: '3', title: 'Favorites', icon: 'heart-outline', route: '/favorites' },
-  { id: '4', title: 'History', icon: 'time-outline', route: '/history' },
+  { id: '1', title: 'Home', icon: 'home-outline', route: '/(tabs)' },
+  { id: '2', title: 'Explore', icon: 'compass-outline', route: '/(tabs)/explore' },
+  { id: '3', title: 'Favorites', icon: 'heart-outline', route: '/(tabs)/favorites' },
+  { id: '4', title: 'Profile', icon: 'person-outline', route: '/(tabs)/profile' },
 ];
 
 const categories = [
-  { id: '1', title: 'Fiction', count: 24 },
-  { id: '2', title: 'Non-Fiction', count: 18 },
-  { id: '3', title: 'Biography', count: 12 },
-  { id: '4', title: 'Science Fiction', count: 8 },
+  { id: 'all', title: 'All Books', route: '/category/all' },
+  { id: 'fiction', title: 'Fiction', route: '/category/fiction' },
+  { id: 'non-fiction', title: 'Non-Fiction', route: '/category/non-fiction' },
+  { id: 'biography', title: 'Biography', route: '/category/biography' },
+  { id: 'science-fiction', title: 'Science Fiction', route: '/category/science-fiction' },
+  { id: 'motivation', title: 'Motivation', route: '/category/motivation' },
+  { id: 'self-help', title: 'Self Help', route: '/category/self-help' },
 ];
 
 const bottomMenuItems = [
@@ -45,21 +50,19 @@ const bottomMenuItems = [
 ];
 
 export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
-  // Safely get Clerk auth - might not be available if Clerk is not configured
-  let user = null;
-  let signOut = () => {};
+  // Always call hooks at the top level
+  const userData = useUser();
+  const auth = useAuth();
   
-  try {
-    const userData = useUser();
-    const auth = useAuth();
-    user = userData?.user ?? null;
-    signOut = auth?.signOut ?? (() => {});
-  } catch (error) {
-    console.log('🔓 Clerk not available in SideNavbar, running in demo mode');
-  }
+  // Safely get Clerk auth - might not be available if Clerk is not configured
+  const user = userData?.user ?? null;
+  const signOut = auth?.signOut ?? (() => {});
   const router = useRouter();
-  const [activeRoute, setActiveRoute] = useState('/home');
-  const [selectedCategory, setSelectedCategory] = useState('1');
+  const pathname = usePathname();
+  const [activeRoute, setActiveRoute] = useState('/(tabs)');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
   const colors = useThemeColors();
 
   // --- Animation Setup ---
@@ -73,13 +76,80 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
     }).start();
   }, [isOpen, slideAnim]);
 
+  // Update active route based on current pathname
+  useEffect(() => {
+    console.log('📍 Current pathname:', pathname);
+    
+    // Map pathname to menu routes
+    if (pathname === '/' || pathname === '/(tabs)') {
+      setActiveRoute('/(tabs)');
+    } else if (pathname === '/(tabs)/favorites') {
+      setActiveRoute('/(tabs)/favorites');
+    } else if (pathname === '/(tabs)/explore') {
+      setActiveRoute('/(tabs)/explore');
+    } else if (pathname === '/(tabs)/profile') {
+      setActiveRoute('/(tabs)/profile');
+    } else if (pathname.startsWith('/category/')) {
+      // Handle category pages
+      const categoryId = pathname.split('/category/')[1];
+      setSelectedCategory(categoryId || 'all');
+    } else {
+      // For other routes, try to match with menu items
+      const matchingItem = menuItems.find(item => 
+        pathname === item.route || pathname.startsWith(item.route)
+      );
+      if (matchingItem) {
+        setActiveRoute(matchingItem.route);
+      }
+    }
+  }, [pathname]);
+
+  // Load category counts from Firebase
+  useEffect(() => {
+    const loadCategoryCounts = async () => {
+      try {
+        setLoading(true);
+        const books = await firestoreService.getAllBooks();
+        
+        const counts: Record<string, number> = {};
+        
+        // Count all books
+        counts['all'] = books.length;
+        
+        // Count books by genre
+        books.forEach(book => {
+          if (book.genre) {
+            const genre = book.genre.toLowerCase();
+            counts[genre] = (counts[genre] || 0) + 1;
+          }
+        });
+        
+        setCategoryCounts(counts);
+      } catch (error) {
+        console.error('Error loading category counts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCategoryCounts();
+  }, []);
+
   // Early exit if not even starting to open
-  if (!isOpen && slideAnim._value === -screenWidth) return null;
+  if (!isOpen) return null;
 
   const handleSignOut = () => {
     onClose();
     // Consider adding a confirmation modal here for better UX
     signOut();
+  };
+
+  const handleMenuItemPress = (item: any) => {
+    console.log('🏠 Navigating to:', item.route, 'Title:', item.title);
+    
+    // Navigate to the route (activeRoute will be updated by useEffect)
+    router.push(item.route as any);
+    onClose();
   };
 
   return (
@@ -113,16 +183,20 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
           end={{ x: 1, y: 1 }}
         />
         
-        <View style={styles.content}>
-              <View style={[styles.header, { borderBottomColor: colors.border }]}>
-                <View style={styles.headerLeft}>
-                  <View style={[styles.logoPlaceholder, { backgroundColor: colors.tint }]}>
-                    <Ionicons name="book" size={24} color={colors.text} />
-                  </View>
-                  <Text style={{ fontSize: 24, fontWeight: 'normal', color: colors.text, fontFamily: 'Outfit-Regular' }}>Kink</Text>
-                </View>
-                <ThemeToggle size="small" />
+        <ScrollView 
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <View style={styles.headerLeft}>
+              <View style={[styles.logoPlaceholder, { backgroundColor: colors.tint }]}>
+                <Ionicons name="book" size={24} color={colors.text} />
               </View>
+              <Text style={{ fontSize: 24, fontWeight: 'normal', color: colors.text, fontFamily: 'Outfit-Regular' }}>Kink</Text>
+            </View>
+            <ThemeToggle size="small" />
+          </View>
 
           <TouchableOpacity
             style={[styles.profileSection, { backgroundColor: colors.surfaceSecondary }]}
@@ -152,11 +226,7 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
                     { backgroundColor: isActive ? colors.tint : 'transparent' },
                     isActive && styles.activeMenuItem
                   ]}
-                  onPress={() => {
-                    setActiveRoute(item.route);
-                    router.push(item.route);
-                    onClose();
-                  }}
+                  onPress={() => handleMenuItemPress(item)}
                 >
                   <Ionicons
                     name={item.icon as any}
@@ -178,9 +248,10 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
 
           <View style={styles.categoriesSection}>
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontFamily: 'Outfit-Regular' }]}>Your Categories</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontFamily: 'Outfit-Regular' }]}>Categories</Text>
             {categories.map((category) => {
                const isSelected = selectedCategory === category.id;
+               const count = categoryCounts[category.id] || 0;
                return (
                 <TouchableOpacity
                   key={category.id}
@@ -189,7 +260,10 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
                     { backgroundColor: isSelected ? colors.tint : 'transparent' },
                     isSelected && styles.selectedCategory
                   ]}
-                  onPress={() => setSelectedCategory(category.id)}
+                  onPress={() => {
+                    router.push(category.route as any);
+                    onClose();
+                  }}
                 >
                   <Text style={[
                     styles.categoryText, 
@@ -208,7 +282,7 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
                       { color: isSelected ? colors.text : colors.textSecondary, fontFamily: 'Outfit-Regular' },
                       isSelected && styles.selectedCategoryCountText
                     ]}>
-                      {category.count}
+                      {loading ? '...' : count}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -238,7 +312,7 @@ export default function SideNavbar({ isOpen, onClose }: SideNavbarProps) {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </ScrollView>
       </Animated.View>
     </View>
   );
@@ -267,10 +341,13 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 60,
-    paddingBottom: 40,
     position: 'relative',
     zIndex: 1,
+  },
+  scrollContent: {
+    paddingTop: 60,
+    paddingBottom: 40,
+    minHeight: screenHeight - 100,
   },
   header: {
     paddingHorizontal: 25,
@@ -355,7 +432,7 @@ const styles = StyleSheet.create({
   },
   categoriesSection: {
     paddingHorizontal: 25,
-    flex: 1,
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 14,
@@ -407,7 +484,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderTopWidth: 1,
     paddingTop: 15,
-    marginTop: 15,
+    marginTop: 20,
+    marginBottom: 20,
   },
   footerItem: {
     flexDirection: 'row',

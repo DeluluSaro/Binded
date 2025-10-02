@@ -17,15 +17,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
-  Animated,
-  Dimensions,
-  FlatList,
-  Linking,
-  Platform,
-  TouchableOpacity,
-  View
+    Alert,
+    Animated,
+    Dimensions,
+    FlatList,
+    Linking,
+    Platform,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
+
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -35,18 +38,29 @@ export default function EnhancedCategoryScreen() {
   const { name } = useLocalSearchParams<{ name: string }>();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
+  const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreBooks, setHasMoreBooks] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
   const [showEpubReader, setShowEpubReader] = useState(false);
   const [selectedEpubUri, setSelectedEpubUri] = useState<string>('');
   const [openingBook, setOpeningBook] = useState(false);
   const [showBookDescription, setShowBookDescription] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const colors = useThemeColors();
   
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerOpacity = useRef(new Animated.Value(1)).current;
   const cardAnimations = useRef<Animated.Value[]>([]).current;
   const shimmerAnimation = useRef(new Animated.Value(0)).current;
+  const thunderAnimation = useRef(new Animated.Value(0)).current;
+  const searchScaleAnimation = useRef(new Animated.Value(1)).current;
+  const lightningOpacity = useRef(new Animated.Value(0)).current;
+  const lightningRotation = useRef(new Animated.Value(0)).current;
+  const searchPaddingAnimation = useRef(new Animated.Value(0)).current;
   const floatingAnimation = useRef(new Animated.Value(0)).current;
   const pulseAnimation = useRef(new Animated.Value(1)).current;
 
@@ -97,10 +111,15 @@ export default function EnhancedCategoryScreen() {
     ).start();
   }, []);
 
+  const ITEMS_PER_PAGE = 12;
+
   useEffect(() => {
     const loadBooks = async () => {
       try {
         setLoading(true);
+        setCurrentPage(0);
+        setHasMoreBooks(true);
+        
         const fetchedBooks = await firestoreService.getAllBooks();
         
         let filtered;
@@ -118,10 +137,17 @@ export default function EnhancedCategoryScreen() {
           return bCompleted - aCompleted;
         });
         
-        setFilteredBooks(sortedBooks);
+        setAllBooks(sortedBooks);
+        
+        // Load first page
+        const firstPageBooks = sortedBooks.slice(0, ITEMS_PER_PAGE);
+        setFilteredBooks(firstPageBooks);
+        
+        // Check if there are more books
+        setHasMoreBooks(sortedBooks.length > ITEMS_PER_PAGE);
         
         cardAnimations.length = 0;
-        sortedBooks.forEach((_, index) => {
+        firstPageBooks.forEach((_, index) => {
           const anim = new Animated.Value(0);
           cardAnimations.push(anim);
           
@@ -143,6 +169,47 @@ export default function EnhancedCategoryScreen() {
 
     loadBooks();
   }, [name]);
+
+  const loadMoreBooks = async () => {
+    if (loadingMore || !hasMoreBooks) return;
+    
+    try {
+      setLoadingMore(true);
+      const nextPage = currentPage + 1;
+      const startIndex = nextPage * ITEMS_PER_PAGE;
+      const endIndex = startIndex + ITEMS_PER_PAGE;
+      
+      const newBooks = allBooks.slice(startIndex, endIndex);
+      
+      if (newBooks.length > 0) {
+        setFilteredBooks(prev => [...prev, ...newBooks]);
+        setCurrentPage(nextPage);
+        
+        // Add animations for new books
+        newBooks.forEach((_, index) => {
+          const anim = new Animated.Value(0);
+          cardAnimations.push(anim);
+          
+          Animated.spring(anim, {
+            toValue: 1,
+            delay: index * 50,
+            tension: 50,
+            friction: 7,
+            useNativeDriver: true,
+          }).start();
+        });
+        
+        // Check if there are more books to load
+        setHasMoreBooks(endIndex < allBooks.length);
+      } else {
+        setHasMoreBooks(false);
+      }
+    } catch (error) {
+      console.error('Error loading more books:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   if (!isLoaded) return (
     <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
@@ -563,6 +630,127 @@ export default function EnhancedCategoryScreen() {
     return name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Category';
   };
 
+  // Enhanced Thunder animation function with electric effects
+  const triggerThunderAnimation = () => {
+    // Move search box down to avoid navbar overlay
+    Animated.timing(searchPaddingAnimation, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+
+    // Scale animation with more dramatic effect
+    Animated.sequence([
+      Animated.timing(searchScaleAnimation, {
+        toValue: 0.92,
+        duration: 80,
+        useNativeDriver: true,
+      }),
+      Animated.spring(searchScaleAnimation, {
+        toValue: 1.02,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.timing(searchScaleAnimation, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Lightning rotation animation for electric effect
+    Animated.sequence([
+      Animated.timing(lightningRotation, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(lightningRotation, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Lightning opacity flicker effect
+    Animated.sequence([
+      Animated.timing(lightningOpacity, {
+        toValue: 1,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(lightningOpacity, {
+        toValue: 0.3,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(lightningOpacity, {
+        toValue: 1,
+        duration: 80,
+        useNativeDriver: true,
+      }),
+      Animated.timing(lightningOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Main thunder border animation
+    Animated.sequence([
+      Animated.timing(thunderAnimation, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: false,
+      }),
+      Animated.timing(thunderAnimation, {
+        toValue: 0.7,
+        duration: 150,
+        useNativeDriver: false,
+      }),
+      Animated.timing(thunderAnimation, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: false,
+      }),
+      Animated.timing(thunderAnimation, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  // Reset animations when search loses focus
+  const resetThunderAnimation = () => {
+    Animated.timing(searchPaddingAnimation, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  // Filter books based on search query
+  const filterBooks = (books: Book[], query: string) => {
+    if (!query.trim()) return books;
+    
+    return books.filter(book => 
+      book.name.toLowerCase().includes(query.toLowerCase()) ||
+      book.author.toLowerCase().includes(query.toLowerCase()) ||
+      (book.genre && book.genre.toLowerCase().includes(query.toLowerCase()))
+    );
+  };
+
+  // Handle search
+  const handleSearch = (text: string) => {
+    setSearchQuery(text);
+    if (allBooks.length > 0) {
+      const filtered = filterBooks(allBooks, text);
+      setFilteredBooks(filtered);
+    }
+  };
+
   return (
     <AuthGuard fallbackRoute="/sign-up" requireEmail={true}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -572,13 +760,7 @@ export default function EnhancedCategoryScreen() {
       >
         <SideNavbar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         
-        <Animated.ScrollView 
-          showsVerticalScrollIndicator={false} 
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 60 }}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-        >
+        <View style={{ flex: 1 }}>
           <Animated.View 
             style={{
               position: 'absolute',
@@ -663,76 +845,257 @@ export default function EnhancedCategoryScreen() {
 
           <View style={{ height: 120 }} />
 
-          {filteredBooks.length > 0 && (
-            <View style={{ paddingVertical: 28, paddingHorizontal: 16, marginBottom: 12 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingHorizontal: 8 }}>
-                <ThemedText 
-                  style={{ 
-                    fontSize: 24,
-                    fontFamily: Fonts.silkscreenRegular,
-                    color: colors.text,
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  Trending Now
-                </ThemedText>
-                <Animated.View 
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    backgroundColor: colors.tint,
-                    transform: [{ scale: pulseAnimation }],
-                    shadowColor: colors.tint,
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.4,
-                    shadowRadius: 12,
-                  }}
-                >
-                  <Ionicons name="trending-up" size={22} color="white" />
-                </Animated.View>
-              </View>
-              
-              <FlatList
-                data={filteredBooks.slice(0, 10)}
-                renderItem={renderFeaturedBook}
-                keyExtractor={(item) => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingRight: 16 }}
-                snapToInterval={340}
-                decelerationRate="fast"
-              />
-            </View>
-          )}
-
-          {filteredBooks.length > 0 && (
-            <View style={{ paddingHorizontal: 16, paddingBottom: 28, paddingTop: 12 }}>
-              <ThemedText 
-                style={{ 
-                  fontSize: 26,
-                  marginBottom: 24,
-                  paddingHorizontal: 8,
-                  letterSpacing: 0.5,
-                  fontFamily: Fonts.silkscreenRegular,
+          {/* Search Box with Enhanced Thunder Effects */}
+          <Animated.View 
+            style={{ 
+              paddingHorizontal: 16, 
+              marginBottom: 20,
+              paddingTop: searchPaddingAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 40],
+              }),
+            }}
+          >
+            <Animated.View
+              style={{
+                transform: [{ scale: searchScaleAnimation }],
+                position: 'relative',
+              }}
+            >
+              {/* Electric Lightning Bolts */}
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  top: -8,
+                  left: -8,
+                  right: -8,
+                  bottom: -8,
+                  opacity: lightningOpacity,
+                  transform: [
+                    {
+                      rotate: lightningRotation.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0deg', '360deg'],
+                      }),
+                    },
+                  ],
                 }}
               >
-                More {getCategoryTitle()}
-              </ThemedText>
-              
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 16 }}>
-                {filteredBooks.map((book, index) => (
-                  <View key={book.id} style={{ width: '47%' }}>
-                    {renderBookCard({ item: book, index })}
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
+                {/* Lightning Bolt 1 - Top */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -15,
+                    left: '30%',
+                    width: 3,
+                    height: 25,
+                    backgroundColor: '#FF8C00',
+                    transform: [{ rotate: '15deg' }],
+                    shadowColor: '#FF8C00',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.8,
+                    shadowRadius: 8,
+                    elevation: 5,
+                  }}
+                />
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -10,
+                    left: '32%',
+                    width: 2,
+                    height: 15,
+                    backgroundColor: '#FFA500',
+                    transform: [{ rotate: '-25deg' }],
+                  }}
+                />
+                
+                {/* Lightning Bolt 2 - Right */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: '40%',
+                    right: -20,
+                    width: 25,
+                    height: 3,
+                    backgroundColor: '#FF8C00',
+                    transform: [{ rotate: '25deg' }],
+                    shadowColor: '#FF8C00',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.8,
+                    shadowRadius: 8,
+                    elevation: 5,
+                  }}
+                />
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: '42%',
+                    right: -15,
+                    width: 15,
+                    height: 2,
+                    backgroundColor: '#FFA500',
+                    transform: [{ rotate: '-35deg' }],
+                  }}
+                />
 
-          {loading && (
+                {/* Lightning Bolt 3 - Bottom */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    bottom: -15,
+                    left: '60%',
+                    width: 3,
+                    height: 25,
+                    backgroundColor: '#FF8C00',
+                    transform: [{ rotate: '-20deg' }],
+                    shadowColor: '#FF8C00',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.8,
+                    shadowRadius: 8,
+                    elevation: 5,
+                  }}
+                />
+                <View
+                  style={{
+                    position: 'absolute',
+                    bottom: -10,
+                    left: '58%',
+                    width: 2,
+                    height: 15,
+                    backgroundColor: '#FFA500',
+                    transform: [{ rotate: '30deg' }],
+                  }}
+                />
+
+                {/* Lightning Bolt 4 - Left */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: '20%',
+                    left: -20,
+                    width: 25,
+                    height: 3,
+                    backgroundColor: '#FF8C00',
+                    transform: [{ rotate: '-30deg' }],
+                    shadowColor: '#FF8C00',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.8,
+                    shadowRadius: 8,
+                    elevation: 5,
+                  }}
+                />
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: '18%',
+                    left: -15,
+                    width: 15,
+                    height: 2,
+                    backgroundColor: '#FFA500',
+                    transform: [{ rotate: '40deg' }],
+                  }}
+                />
+              </Animated.View>
+
+              {/* Enhanced Thunder Border Effect */}
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  top: -6,
+                  left: -6,
+                  right: -6,
+                  bottom: -6,
+                  borderRadius: 30,
+                  borderWidth: thunderAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 3],
+                  }),
+                  borderColor: thunderAnimation.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: ['transparent', '#FF8C00', '#FFA500'],
+                  }),
+                  shadowColor: '#FF8C00',
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: thunderAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 1],
+                  }),
+                  shadowRadius: thunderAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 20],
+                  }),
+                  elevation: thunderAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 15],
+                  }),
+                }}
+              />
+              
+              {/* Search Input Container */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: colors.surface,
+                  borderRadius: 24,
+                  paddingHorizontal: 20,
+                  paddingVertical: 16,
+                  borderWidth: 1,
+                  borderColor: isSearchFocused ? colors.tint : colors.border,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 8,
+                  elevation: 4,
+                }}
+              >
+                <Ionicons 
+                  name="search" 
+                  size={20} 
+                  color={colors.textSecondary} 
+                  style={{ marginRight: 12 }}
+                />
+                <TextInput
+                  style={{
+                    flex: 1,
+                    fontSize: 16,
+                    color: colors.text,
+                    fontFamily: 'Outfit_400Regular',
+                  }}
+                  placeholder="Search books, authors, genres..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                  onFocus={() => {
+                    setIsSearchFocused(true);
+                    triggerThunderAnimation();
+                  }}
+                  onBlur={() => {
+                    setIsSearchFocused(false);
+                    resetThunderAnimation();
+                  }}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSearchQuery('');
+                      handleSearch('');
+                    }}
+                    style={{ marginLeft: 8 }}
+                  >
+                    <Ionicons 
+                      name="close-circle" 
+                      size={20} 
+                      color={colors.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </Animated.View>
+          </Animated.View>
+
+          {loading ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 }}>
               <Animated.View style={{ transform: [{ scale: pulseAnimation }] }}>
                 <Ionicons name="book" size={64} color={colors.iconAccent} />
@@ -746,9 +1109,7 @@ export default function EnhancedCategoryScreen() {
                 Loading books...
               </ThemedText>
             </View>
-          )}
-
-          {!loading && filteredBooks.length === 0 && (
+          ) : filteredBooks.length === 0 ? (
             <View style={{ 
               flex: 1, 
               alignItems: 'center', 
@@ -786,8 +1147,154 @@ export default function EnhancedCategoryScreen() {
                 }
               </ThemedText>
             </View>
+          ) : (
+            <AnimatedFlatList
+              data={[
+                { type: 'trending', data: filteredBooks.slice(0, 10) },
+                { type: 'more', data: filteredBooks }
+              ]}
+              renderItem={({ item, index }) => {
+                if (item.type === 'trending' && item.data.length > 0) {
+                  return (
+                    <View style={{ paddingVertical: 28, paddingHorizontal: 16, marginBottom: 12 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingHorizontal: 8 }}>
+                        <ThemedText 
+                          style={{ 
+                            fontSize: 24,
+                            fontFamily: Fonts.silkscreenRegular,
+                            color: colors.text,
+                            letterSpacing: 0.5,
+                          }}
+                        >
+                          Trending Now
+                        </ThemedText>
+                        <Animated.View 
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            backgroundColor: colors.tint,
+                            transform: [{ scale: pulseAnimation }],
+                            shadowColor: colors.tint,
+                            shadowOffset: { width: 0, height: 6 },
+                            shadowOpacity: 0.4,
+                            shadowRadius: 12,
+                          }}
+                        >
+                          <Ionicons name="trending-up" size={22} color="white" />
+                        </Animated.View>
+                      </View>
+                      
+                      <FlatList
+                        data={item.data}
+                        renderItem={renderFeaturedBook}
+                        keyExtractor={(book) => book.id}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingRight: 16 }}
+                        snapToInterval={340}
+                        decelerationRate="fast"
+                      />
+                    </View>
+                  );
+                } else if (item.type === 'more') {
+                  return (
+                    <View style={{ paddingHorizontal: 16, paddingBottom: 28, paddingTop: 12 }}>
+                      <ThemedText 
+                        style={{ 
+                          fontSize: 26,
+                          marginBottom: 24,
+                          paddingHorizontal: 8,
+                          letterSpacing: 0.5,
+                          fontFamily: Fonts.silkscreenRegular,
+                        }}
+                      >
+                        {name === 'all' ? 'All Books' : `More ${getCategoryTitle()}`}
+                      </ThemedText>
+                      
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 16 }}>
+                        {item.data.map((book, bookIndex) => (
+                          <View key={book.id} style={{ width: '47%' }}>
+                            {renderBookCard({ item: book, index: bookIndex })}
+                          </View>
+                        ))}
+                        
+                        {loadingMore && (
+                          <View style={{ 
+                            width: '100%',
+                            flexDirection: 'row', 
+                            justifyContent: 'center', 
+                            alignItems: 'center', 
+                            paddingVertical: 20 
+                          }}>
+                            <Animated.View style={{ transform: [{ scale: pulseAnimation }] }}>
+                              <Ionicons name="book" size={32} color={colors.iconAccent} />
+                            </Animated.View>
+                            <ThemedText style={{ 
+                              color: colors.text, 
+                              fontFamily: Fonts.outfitRegular,
+                              marginLeft: 12,
+                              fontSize: 14,
+                            }}>
+                              Loading more books...
+                            </ThemedText>
+                          </View>
+                        )}
+                        
+                        {hasMoreBooks && !loadingMore && (
+                          <View style={{ 
+                            width: '100%',
+                            flexDirection: 'row', 
+                            justifyContent: 'center', 
+                            alignItems: 'center', 
+                            paddingVertical: 20 
+                          }}>
+                            <TouchableOpacity 
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                backgroundColor: colors.tint,
+                                paddingHorizontal: 20,
+                                paddingVertical: 12,
+                                borderRadius: 20,
+                                shadowColor: colors.tint,
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 8,
+                              }}
+                              onPress={loadMoreBooks}
+                            >
+                              <Ionicons name="add" size={18} color="white" />
+                              <ThemedText style={{ 
+                                color: 'white', 
+                                fontFamily: Fonts.outfitRegular,
+                                marginLeft: 8,
+                                fontSize: 14,
+                                fontWeight: '600',
+                              }}>
+                                Load More Books
+                              </ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  );
+                }
+                return null;
+              }}
+              keyExtractor={(item, index) => `${item.type}-${index}`}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 60 }}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+              onEndReached={loadMoreBooks}
+              onEndReachedThreshold={0.5}
+            />
           )}
-        </Animated.ScrollView>
+        </View>
         
         {selectedBook && (
           <BookDescription

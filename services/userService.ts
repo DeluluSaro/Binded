@@ -14,6 +14,7 @@ export interface UserData {
   continueReading: ContinueReadingBook[]; // Top 3 books sorted by last read time
   readingProgress: { [bookId: string]: ReadingProgress }; // JSON object with progress for each book
   bookmarks: { [bookId: string]: Bookmark[] }; // JSON object with bookmarks for each book
+  favorites: FavoriteBook[]; // Array of favorite books
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -50,6 +51,17 @@ export interface Bookmark {
   createdAt: Timestamp;
 }
 
+export interface FavoriteBook {
+  bookId: string;
+  bookTitle: string;
+  bookAuthor: string;
+  bookGenre: string;
+  bookCover?: string;
+  bookDescription?: string;
+  bookFilePath?: string;
+  addedAt: Timestamp;
+}
+
 class UserService {
   // Create or update user data when they sign up
   async createOrUpdateUser(clerkUser: any): Promise<string> {
@@ -64,7 +76,8 @@ class UserService {
         currentBooks: [],
         continueReading: [],
         readingProgress: {},
-        bookmarks: {}
+        bookmarks: {},
+        favorites: []
       };
 
       // Ensure no undefined values
@@ -76,7 +89,8 @@ class UserService {
         currentBooks: userData.currentBooks || [],
         continueReading: userData.continueReading || [],
         readingProgress: userData.readingProgress || {},
-        bookmarks: userData.bookmarks || {}
+        bookmarks: userData.bookmarks || {},
+        favorites: userData.favorites || []
       };
 
       console.log('📝 User data prepared:', cleanUserData);
@@ -86,12 +100,14 @@ class UserService {
       const existingUser = await this.getUserByClerkId(clerkUser.id);
       
       if (existingUser) {
-        // Update existing user
+        // Update existing user - only update basic profile info, preserve existing data
         await firestoreService.updateDocument('users', existingUser.id, {
-          ...cleanUserData,
+          name: cleanUserData.name,
+          email: cleanUserData.email,
+          profileImage: cleanUserData.profileImage,
           updatedAt: new Date()
         });
-        console.log('✅ User updated in Firebase:', existingUser.id);
+        console.log('✅ User profile updated in Firebase (preserving existing data):', existingUser.id);
         return existingUser.id;
       } else {
         // Create new user
@@ -128,6 +144,29 @@ class UserService {
       return null;
     } catch (error) {
       console.error('❌ Error getting user by Clerk ID:', error);
+      throw error;
+    }
+  }
+
+  // Get user by email address
+  async getUserByEmail(email: string): Promise<UserData | null> {
+    try {
+      console.log('🔍 Searching for user with email:', email);
+      const snapshot = await firestoreService.getCollection('users', [
+        where('email', '==', email)
+      ]);
+
+      console.log('📊 Query result:', snapshot.docs.length, 'documents found');
+
+      if (snapshot.docs.length > 0) {
+        const doc = snapshot.docs[0];
+        console.log('✅ Found existing user by email:', doc.id);
+        return { id: doc.id, ...doc.data() } as UserData;
+      }
+      console.log('ℹ️ No existing user found by email');
+      return null;
+    } catch (error) {
+      console.error('❌ Error getting user by email:', error);
       throw error;
     }
   }
@@ -408,6 +447,120 @@ class UserService {
       console.log('✅ Book removed from current reading:', bookId);
     } catch (error) {
       console.error('❌ Error removing book from current reading:', error);
+      throw error;
+    }
+  }
+
+  // Add book to favorites
+  async addToFavorites(userId: string, book: {
+    id: string;
+    name: string;
+    author: string;
+    genre: string;
+    cover_image_path?: string;
+    short_description?: string;
+    file_path?: string;
+  }): Promise<void> {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) throw new Error('User not found');
+
+      // Check if book is already in favorites
+      const isAlreadyFavorite = user.favorites.some(fav => fav.bookId === book.id);
+      if (isAlreadyFavorite) {
+        console.log('📚 Book already in favorites:', book.id);
+        return;
+      }
+
+      const favoriteBook: FavoriteBook = {
+        bookId: book.id,
+        bookTitle: book.name,
+        bookAuthor: book.author,
+        bookGenre: book.genre,
+        addedAt: new Date() as any
+      };
+
+      // Only add optional fields if they have values
+      if (book.cover_image_path) {
+        favoriteBook.bookCover = book.cover_image_path;
+      }
+      if (book.short_description) {
+        favoriteBook.bookDescription = book.short_description;
+      }
+      if (book.file_path) {
+        favoriteBook.bookFilePath = book.file_path;
+      }
+
+      user.favorites.push(favoriteBook);
+
+      await firestoreService.updateDocument('users', userId, {
+        favorites: user.favorites,
+        updatedAt: new Date()
+      });
+
+      console.log('✅ Book added to favorites:', book.id);
+    } catch (error) {
+      console.error('❌ Error adding book to favorites:', error);
+      throw error;
+    }
+  }
+
+  // Remove book from favorites
+  async removeFromFavorites(userId: string, bookId: string): Promise<void> {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) throw new Error('User not found');
+
+      user.favorites = user.favorites.filter(fav => fav.bookId !== bookId);
+
+      await firestoreService.updateDocument('users', userId, {
+        favorites: user.favorites,
+        updatedAt: new Date()
+      });
+
+      console.log('✅ Book removed from favorites:', bookId);
+    } catch (error) {
+      console.error('❌ Error removing book from favorites:', error);
+      throw error;
+    }
+  }
+
+  // Get user favorites
+  async getFavorites(userId: string): Promise<FavoriteBook[]> {
+    try {
+      console.log('🔍 Getting favorites for user ID:', userId);
+      const user = await this.getUser(userId);
+      if (!user) {
+        console.log('❌ User not found when getting favorites');
+        return [];
+      }
+
+      console.log('📚 User favorites found:', user.favorites?.length || 0, 'items');
+      console.log('📚 Raw favorites data:', JSON.stringify(user.favorites, null, 2));
+
+      if (!user.favorites || !Array.isArray(user.favorites)) {
+        console.log('❌ Invalid favorites data structure');
+        return [];
+      }
+
+      const sortedFavorites = user.favorites.sort((a, b) => b.addedAt.toMillis() - a.addedAt.toMillis());
+      console.log('✅ Returning sorted favorites:', sortedFavorites.length, 'items');
+      return sortedFavorites;
+    } catch (error) {
+      console.error('❌ Error getting favorites:', error);
+      throw error;
+    }
+  }
+
+  // Check if book is in favorites
+  async isBookInFavorites(userId: string, bookId: string): Promise<boolean> {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) return false;
+
+      return user.favorites.some(fav => fav.bookId === bookId);
+    } catch (error) {
+      console.error('❌ Error checking if book is in favorites:', error);
       throw error;
     }
   }
