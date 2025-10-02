@@ -17,20 +17,54 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    FlatList,
-    Linking,
-    Platform,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Animated,
+  Easing,
+  FlatList,
+  Linking,
+  Platform,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
+const HEADER_MAX_HEIGHT = 190; // Combined height for nav bar and search
+const HEADER_MIN_HEIGHT = 70; // Collapsed nav bar height
+const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// Animated wrapper for list items to add a subtle entrance animation
+const AnimatedListItem = ({ children, index }: { children: React.ReactNode; index: number }) => {
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        delay: index * 100, // Staggered animation
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 400,
+        delay: index * 100,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View style={{ opacity: opacityAnim, transform: [{ translateY: slideAnim }] }}>
+      {children}
+    </Animated.View>
+  );
+};
+
 
 export default function EnhancedCategoryScreen() {
   const { isLoaded } = useAuth();
@@ -53,63 +87,9 @@ export default function EnhancedCategoryScreen() {
   const colors = useThemeColors();
   
   const scrollY = useRef(new Animated.Value(0)).current;
-  const headerOpacity = useRef(new Animated.Value(1)).current;
-  const cardAnimations = useRef<Animated.Value[]>([]).current;
-  const shimmerAnimation = useRef(new Animated.Value(0)).current;
   const thunderAnimation = useRef(new Animated.Value(0)).current;
-  const searchScaleAnimation = useRef(new Animated.Value(1)).current;
   const lightningOpacity = useRef(new Animated.Value(0)).current;
   const lightningRotation = useRef(new Animated.Value(0)).current;
-  const searchPaddingAnimation = useRef(new Animated.Value(0)).current;
-  const floatingAnimation = useRef(new Animated.Value(0)).current;
-  const pulseAnimation = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmerAnimation, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shimmerAnimation, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatingAnimation, {
-          toValue: 1,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(floatingAnimation, {
-          toValue: 0,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnimation, {
-          toValue: 1.05,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnimation, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
 
   const ITEMS_PER_PAGE = 12;
 
@@ -139,26 +119,10 @@ export default function EnhancedCategoryScreen() {
         
         setAllBooks(sortedBooks);
         
-        // Load first page
         const firstPageBooks = sortedBooks.slice(0, ITEMS_PER_PAGE);
         setFilteredBooks(firstPageBooks);
         
-        // Check if there are more books
         setHasMoreBooks(sortedBooks.length > ITEMS_PER_PAGE);
-        
-        cardAnimations.length = 0;
-        firstPageBooks.forEach((_, index) => {
-          const anim = new Animated.Value(0);
-          cardAnimations.push(anim);
-          
-          Animated.spring(anim, {
-            toValue: 1,
-            delay: index * 100,
-            tension: 50,
-            friction: 7,
-            useNativeDriver: true,
-          }).start();
-        });
       } catch (error) {
         console.error('Error loading books:', error);
         Alert.alert('Error', `Failed to load books: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -184,22 +148,6 @@ export default function EnhancedCategoryScreen() {
       if (newBooks.length > 0) {
         setFilteredBooks(prev => [...prev, ...newBooks]);
         setCurrentPage(nextPage);
-        
-        // Add animations for new books
-        newBooks.forEach((_, index) => {
-          const anim = new Animated.Value(0);
-          cardAnimations.push(anim);
-          
-          Animated.spring(anim, {
-            toValue: 1,
-            delay: index * 50,
-            tension: 50,
-            friction: 7,
-            useNativeDriver: true,
-          }).start();
-        });
-        
-        // Check if there are more books to load
         setHasMoreBooks(endIndex < allBooks.length);
       } else {
         setHasMoreBooks(false);
@@ -210,46 +158,6 @@ export default function EnhancedCategoryScreen() {
       setLoadingMore(false);
     }
   };
-
-  if (!isLoaded) return (
-    <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
-      <ThemedText style={{ color: colors.text, fontFamily: Fonts.outfitRegular }}>Loading...</ThemedText>
-    </ThemedView>
-  );
-
-  if (openingBook) {
-    return <Loading message="Opening Book..." />;
-  }
-
-  if (showEpubReader && selectedEpubUri) {
-    return (
-      <SimpleEpubReader
-        epubUrl={selectedEpubUri}
-        onClose={() => {
-          setShowEpubReader(false);
-          setSelectedEpubUri('');
-        }}
-      />
-    );
-  }
-
-  const headerTranslateY = scrollY.interpolate({
-    inputRange: [0, 150],
-    outputRange: [0, -75],
-    extrapolate: 'clamp',
-  });
-
-  const headerScale = scrollY.interpolate({
-    inputRange: [0, 150],
-    outputRange: [1, 0.92],
-    extrapolate: 'clamp',
-  });
-
-  const headerBlur = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, 10],
-    extrapolate: 'clamp',
-  });
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -280,7 +188,6 @@ export default function EnhancedCategoryScreen() {
         setShowEpubReader(true);
       } else {
         const supported = await Linking.canOpenURL(bookUrl);
-        
         if (supported) {
           await Linking.openURL(bookUrl);
         } else {
@@ -295,44 +202,10 @@ export default function EnhancedCategoryScreen() {
     }
   };
 
-  const renderFeaturedBook = ({ item, index }: { item: Book; index: number }) => {
-    const animatedValue = cardAnimations[index] || new Animated.Value(1);
-    
-    const scale = animatedValue.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0.8, 1],
-    });
-
-    const opacity = animatedValue.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, 1],
-    });
-
-    const translateY = animatedValue.interpolate({
-      inputRange: [0, 1],
-      outputRange: [50, 0],
-    });
-
-    const shimmerTranslate = shimmerAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: [-SCREEN_WIDTH, SCREEN_WIDTH],
-    });
-
-    return (
-      <Animated.View
-        style={{
-          transform: [{ scale }, { translateY }],
-          opacity,
-        }}
-      >
+  const renderFeaturedBook = ({ item, index }: { item: Book; index: number }) => (
+    <AnimatedListItem index={index}>
         <TouchableOpacity 
-          style={{
-            width: 320,
-            height: 420,
-            marginRight: 20,
-            borderRadius: 28,
-            overflow: 'hidden',
-          }}
+        style={styles.featuredBookContainer}
           onPress={() => handleBookPress(item)}
           activeOpacity={0.95}
         >
@@ -340,217 +213,74 @@ export default function EnhancedCategoryScreen() {
             {item.cover_image_path ? (
               <Image 
                 source={{ uri: item.cover_image_path }} 
-                style={{ width: '100%', height: '100%' }}
+              style={styles.imageFill}
                 contentFit="cover"
               />
             ) : (
               <LinearGradient
                 colors={[colors.surfaceSecondary + 'CC', colors.surfaceSecondary]}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Animated.View style={{ transform: [{ scale: pulseAnimation }] }}>
+              style={styles.placeholderGradient}
+            >
                   <Ionicons name="book" size={80} color={colors.iconAccent} />
-                </Animated.View>
               </LinearGradient>
             )}
-            
-            <Animated.View 
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                transform: [{ translateX: shimmerTranslate }],
-              }}
-            >
-              <LinearGradient
-                colors={['transparent', 'rgba(255,255,255,0.15)', 'transparent']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{ flex: 1, width: SCREEN_WIDTH }}
-              />
-            </Animated.View>
 
             <LinearGradient
               colors={['transparent', 'rgba(0,0,0,0.85)']}
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: '65%',
-              }}
+            style={styles.featuredBookGradient}
             />
           </View>
           
-          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 28 }}>
-            <ThemedText 
-              style={{ 
-                fontSize: 32,
-                color: 'white',
-                lineHeight: 38,
-                marginBottom: 6,
-                fontFamily: Fonts.outfitRegular,
-                fontWeight: '700',
-                textShadowColor: 'rgba(0,0,0,0.5)',
-                textShadowOffset: { width: 0, height: 2 },
-                textShadowRadius: 4,
-              }}
-              numberOfLines={2}
-            >
+        <View style={styles.featuredBookTextContainer}>
+          <ThemedText style={styles.featuredBookTitle} numberOfLines={2}>
               {item.name}
             </ThemedText>
-            <ThemedText 
-              variant="secondary"
-              style={{ 
-                fontSize: 17,
-                color: 'rgba(255, 255, 255, 0.95)',
-                fontFamily: Fonts.outfitRegular,
-                textShadowColor: 'rgba(0,0,0,0.3)',
-                textShadowOffset: { width: 0, height: 1 },
-                textShadowRadius: 3,
-                marginBottom: 8,
-              }}
-              numberOfLines={1}
-            >
+          <ThemedText variant="secondary" style={styles.featuredBookAuthor} numberOfLines={1}>
               {item.author}
             </ThemedText>
             
-            <View style={{ 
-              flexDirection: 'row', 
-              alignItems: 'center', 
-              backgroundColor: 'rgba(255, 255, 255, 0.15)', 
-              paddingHorizontal: 12, 
-              paddingVertical: 6, 
-              borderRadius: 12,
-              alignSelf: 'flex-start',
-              backdropFilter: 'blur(10px)',
-            }}>
+          <View style={styles.readersInfoContainer}>
               <Ionicons name="people" size={14} color="rgba(255, 255, 255, 0.9)" />
-              <ThemedText 
-                style={{ 
-                  fontSize: 13,
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  fontFamily: Fonts.outfitRegular,
-                  fontWeight: '600',
-                  marginLeft: 6,
-                  textShadowColor: 'rgba(0,0,0,0.3)',
-                  textShadowOffset: { width: 0, height: 1 },
-                  textShadowRadius: 2,
-                }}
-              >
+            <ThemedText style={styles.readersInfoText}>
                 {item.completed || 0} readers
               </ThemedText>
             </View>
           </View>
           
-          <Animated.View
-            style={{
-              position: 'absolute',
-              bottom: 28,
-              right: 28,
-              transform: [{ scale: pulseAnimation }],
-            }}
-          >
+        <View style={styles.playButtonWrapper}>
             <TouchableOpacity 
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 32,
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: colors.tint,
-                shadowColor: colors.tint,
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.5,
-                shadowRadius: 16,
-                elevation: 12,
-              }}
+            style={[styles.playButton, { backgroundColor: colors.tint, shadowColor: colors.tint }]}
               onPress={() => handleBookPress(item)}
             >
               <Ionicons name="play" size={30} color="white" style={{ marginLeft: 3 }} />
             </TouchableOpacity>
-          </Animated.View>
+        </View>
         </TouchableOpacity>
-      </Animated.View>
+    </AnimatedListItem>
     );
-  };
 
   const renderBookCard = ({ item, index }: { item: Book; index: number }) => {
     const isEpub = item.file_path?.toLowerCase().endsWith('.epub');
     const isPdf = item.file_path?.toLowerCase().endsWith('.pdf');
-    const animatedValue = cardAnimations[index + 3] || new Animated.Value(1);
-    
-    const scale = animatedValue.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0.85, 1],
-    });
-
-    const opacity = animatedValue.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, 1],
-    });
-
-    const rotateY = animatedValue.interpolate({
-      inputRange: [0, 1],
-      outputRange: ['15deg', '0deg'],
-    });
-
-    const floatingTranslate = floatingAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, -8],
-    });
 
     return (
-      <Animated.View
-        style={{
-          flex: 1,
-          transform: [{ scale }, { perspective: 1000 }, { rotateY }],
-          opacity,
-        }}
-      >
+      <AnimatedListItem index={index}>
         <TouchableOpacity 
           style={{ flex: 1, backgroundColor: 'transparent' }}
           onPress={() => handleBookPress(item)}
           activeOpacity={0.95}
         >
-          <Animated.View 
-            style={{
-              position: 'relative',
-              width: '100%',
-              aspectRatio: 3/4,
-              borderRadius: 20,
-              overflow: 'hidden',
-              marginBottom: 14,
-              transform: [{ translateY: floatingTranslate }],
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.25,
-              shadowRadius: 12,
-              elevation: 10,
-            }}
-          >
+          <View style={styles.bookCardImageContainer}>
             {item.cover_image_path ? (
               <Image 
                 source={{ uri: item.cover_image_path }} 
-                style={{ width: '100%', height: '100%' }}
+                style={styles.imageFill}
                 contentFit="cover"
               />
             ) : (
               <LinearGradient
                 colors={[colors.surfaceSecondary + 'DD', colors.surfaceSecondary]}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
+                style={styles.placeholderGradient}
               >
                 <Ionicons 
                   name={isEpub ? "book" : isPdf ? "document-text" : "book"} 
@@ -560,68 +290,25 @@ export default function EnhancedCategoryScreen() {
               </LinearGradient>
             )}
             
-            <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.2)']}
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: '45%',
-              }}
-            />
+            <LinearGradient colors={['transparent', 'rgba(0,0,0,0.2)']} style={styles.bookCardGradient} />
 
-            <View style={{
-              position: 'absolute',
-              top: 12,
-              right: 12,
-              backgroundColor: colors.tint,
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 12,
-              shadowColor: colors.tint,
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.4,
-              shadowRadius: 8,
-            }}>
-              <ThemedText style={{ 
-                color: 'white', 
-                fontSize: 11, 
-                fontFamily: Fonts.outfitRegular,
-                fontWeight: '600'
-              }}>
+            <View style={[styles.bookTypeBadge, { backgroundColor: colors.tint, shadowColor: colors.tint }]}>
+              <ThemedText style={styles.bookTypeBadgeText}>
                 {isEpub ? 'EPUB' : isPdf ? 'PDF' : 'BOOK'}
               </ThemedText>
             </View>
-          </Animated.View>
+          </View>
           
-          <View style={{ gap: 4, paddingHorizontal: 4 }}>
-            <ThemedText 
-              style={{ 
-                fontSize: 17,
-                textAlign: 'left',
-                fontFamily: Fonts.outfitRegular,
-                fontWeight: '600',
-                letterSpacing: 0.2,
-              }}
-              numberOfLines={1}
-            >
+          <View style={styles.bookCardTextContainer}>
+            <ThemedText style={styles.bookCardTitle} numberOfLines={1}>
               {item.name}
             </ThemedText>
-            <ThemedText 
-              variant="secondary"
-              style={{ 
-                fontSize: 14,
-                textAlign: 'left',
-                fontFamily: Fonts.outfitRegular,
-              }}
-              numberOfLines={1}
-            >
+            <ThemedText variant="secondary" style={styles.bookCardAuthor} numberOfLines={1}>
               {item.author}
             </ThemedText>
           </View>
         </TouchableOpacity>
-      </Animated.View>
+      </AnimatedListItem>
     );
   };
 
@@ -630,111 +317,40 @@ export default function EnhancedCategoryScreen() {
     return name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Category';
   };
 
-  // Enhanced Thunder animation function with electric effects
   const triggerThunderAnimation = () => {
-    // Move search box down to avoid navbar overlay
-    Animated.timing(searchPaddingAnimation, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
+    const config = { easing: Easing.inOut(Easing.ease), useNativeDriver: true };
+    const borderConfig = { ...config, useNativeDriver: false };
 
-    // Scale animation with more dramatic effect
-    Animated.sequence([
-      Animated.timing(searchScaleAnimation, {
-        toValue: 0.92,
-        duration: 80,
-        useNativeDriver: true,
-      }),
-      Animated.spring(searchScaleAnimation, {
-        toValue: 1.02,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.timing(searchScaleAnimation, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    lightningRotation.setValue(0);
+    lightningOpacity.setValue(0);
+    thunderAnimation.setValue(0);
 
-    // Lightning rotation animation for electric effect
+    Animated.parallel([
     Animated.sequence([
-      Animated.timing(lightningRotation, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(lightningRotation, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Lightning opacity flicker effect
+        Animated.timing(lightningRotation, { toValue: 1, duration: 150, ...config }),
+        Animated.timing(lightningRotation, { toValue: 0, duration: 150, ...config }),
+      ]),
     Animated.sequence([
-      Animated.timing(lightningOpacity, {
-        toValue: 1,
-        duration: 50,
-        useNativeDriver: true,
-      }),
-      Animated.timing(lightningOpacity, {
-        toValue: 0.3,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(lightningOpacity, {
-        toValue: 1,
-        duration: 80,
-        useNativeDriver: true,
-      }),
-      Animated.timing(lightningOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Main thunder border animation
+        Animated.timing(lightningOpacity, { toValue: 1, duration: 50, ...config }),
+        Animated.timing(lightningOpacity, { toValue: 0.3, duration: 100, ...config }),
+        Animated.timing(lightningOpacity, { toValue: 1, duration: 80, ...config }),
+        Animated.timing(lightningOpacity, { toValue: 0, duration: 200, ...config }),
+      ]),
     Animated.sequence([
-      Animated.timing(thunderAnimation, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: false,
-      }),
-      Animated.timing(thunderAnimation, {
-        toValue: 0.7,
-        duration: 150,
-        useNativeDriver: false,
-      }),
-      Animated.timing(thunderAnimation, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: false,
-      }),
-      Animated.timing(thunderAnimation, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: false,
-      }),
+        Animated.timing(thunderAnimation, { toValue: 1, duration: 100, ...borderConfig }),
+        Animated.timing(thunderAnimation, { toValue: 0.7, duration: 150, ...borderConfig }),
+        Animated.timing(thunderAnimation, { toValue: 1, duration: 100, ...borderConfig }),
+        Animated.timing(thunderAnimation, { toValue: 0, duration: 400, ...borderConfig }),
+      ]),
     ]).start();
   };
 
-  // Reset animations when search loses focus
   const resetThunderAnimation = () => {
-    Animated.timing(searchPaddingAnimation, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
+    // No explicit reset needed, animation plays out and stops
   };
 
-  // Filter books based on search query
   const filterBooks = (books: Book[], query: string) => {
     if (!query.trim()) return books;
-    
     return books.filter(book => 
       book.name.toLowerCase().includes(query.toLowerCase()) ||
       book.author.toLowerCase().includes(query.toLowerCase()) ||
@@ -742,405 +358,157 @@ export default function EnhancedCategoryScreen() {
     );
   };
 
-  // Handle search
   const handleSearch = (text: string) => {
     setSearchQuery(text);
-    if (allBooks.length > 0) {
       const filtered = filterBooks(allBooks, text);
       setFilteredBooks(filtered);
-    }
   };
+
+  // ***** ANIMATION VALUES *****
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [0, -HEADER_SCROLL_DISTANCE],
+    extrapolate: 'clamp',
+  });
+
+  const searchOpacity = scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE / 2],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+  
+  // ***** LOADING & EMPTY STATES *****
+  if (!isLoaded) return (
+    <ThemedView style={styles.centeredLoader}>
+      <ThemedText style={{ color: colors.text, fontFamily: Fonts.outfitRegular }}>Loading...</ThemedText>
+    </ThemedView>
+  );
+
+  if (openingBook) return <Loading message="Opening Book..." />;
+
+  if (showEpubReader && selectedEpubUri) {
+    return (
+      <SimpleEpubReader
+        epubUrl={selectedEpubUri}
+        onClose={() => { setShowEpubReader(false); setSelectedEpubUri(''); }}
+      />
+    );
+  }
 
   return (
     <AuthGuard fallbackRoute="/sign-up" requireEmail={true}>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient
-        colors={colors.gradient as [string, string, string]}
-        style={{ flex: 1 }}
-      >
+      <LinearGradient colors={colors.gradient as [string, string, string]} style={{ flex: 1 }}>
         <SideNavbar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         
         <View style={{ flex: 1 }}>
+          {/* ***** UNIFIED ANIMATED HEADER ***** */}
           <Animated.View 
-            style={{
-              position: 'absolute',
-              top: 50,
-              left: 16,
-              right: 16,
-              zIndex: 20,
-              transform: [
-                { translateY: headerTranslateY },
-                { scale: headerScale }
-              ],
-              opacity: headerOpacity,
-            }}
+            style={[
+              styles.header,
+              { 
+                height: HEADER_MAX_HEIGHT,
+                transform: [{ translateY: headerTranslateY }],
+              },
+            ]}
           >
+            {/* Top Navigation Bar */}
             <BlurView
               intensity={Platform.OS === 'ios' ? 80 : 100}
               tint="dark"
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                paddingHorizontal: 20,
-                paddingVertical: 14,
-                borderRadius: 24,
-                overflow: 'hidden',
-                borderWidth: 1,
+              style={[
+                styles.headerNavbar,
+                {
                 borderColor: colors.border + '50',
                 backgroundColor: colors.surface + 'DD',
-              }}
+                }
+              ]}
             >
               <TouchableOpacity 
-                style={{
-                  width: 44,
-                  height: 44,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  backgroundColor: colors.surfaceSecondary + '80',
-                  borderRadius: 14,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.15,
-                  shadowRadius: 4,
-                }}
+                style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary + '80' }]}
                 onPress={() => router.back()}
               >
                 <Ionicons name="arrow-back" size={24} color={colors.text} />
               </TouchableOpacity>
               
-              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 }}>
-                <ThemedText 
-                  style={{ 
-                    fontSize: 22,
-                    textAlign: 'center',
-                    letterSpacing: 0.8,
-                    fontFamily: Fonts.silkscreenRegular,
-                    color: colors.text,
-                  }}
-                >
+              <View style={styles.headerTitleContainer}>
+                <ThemedText style={[styles.headerTitle, { color: colors.text }]}>
                   {getCategoryTitle()}
                 </ThemedText>
               </View>
               
               <TouchableOpacity 
-                style={{
-                  width: 44,
-                  height: 44,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  backgroundColor: colors.surfaceSecondary + '80',
-                  borderRadius: 14,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.15,
-                  shadowRadius: 4,
-                }}
+                style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary + '80' }]}
                 onPress={() => setIsSidebarOpen(true)}
               >
                 <Ionicons name="menu" size={22} color={colors.text} />
               </TouchableOpacity>
             </BlurView>
-          </Animated.View>
-
-          <View style={{ height: 120 }} />
-
-          {/* Search Box with Enhanced Thunder Effects */}
-          <Animated.View 
-            style={{ 
-              paddingHorizontal: 16, 
-              marginBottom: 20,
-              paddingTop: searchPaddingAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, 40],
-              }),
-            }}
-          >
-            <Animated.View
-              style={{
-                transform: [{ scale: searchScaleAnimation }],
-                position: 'relative',
-              }}
-            >
+            
+            {/* Search Box with Thunder Effects */}
+            {!loading && allBooks.length > 0 && (
+              <Animated.View style={[styles.searchWrapper, { opacity: searchOpacity }]}>
+                <View style={{ position: 'relative' }}>
               {/* Electric Lightning Bolts */}
-              <Animated.View
-                style={{
-                  position: 'absolute',
-                  top: -8,
-                  left: -8,
-                  right: -8,
-                  bottom: -8,
-                  opacity: lightningOpacity,
-                  transform: [
-                    {
-                      rotate: lightningRotation.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0deg', '360deg'],
-                      }),
-                    },
-                  ],
-                }}
-              >
-                {/* Lightning Bolt 1 - Top */}
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: -15,
-                    left: '30%',
-                    width: 3,
-                    height: 25,
-                    backgroundColor: '#FF8C00',
-                    transform: [{ rotate: '15deg' }],
-                    shadowColor: '#FF8C00',
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.8,
-                    shadowRadius: 8,
-                    elevation: 5,
-                  }}
-                />
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: -10,
-                    left: '32%',
-                    width: 2,
-                    height: 15,
-                    backgroundColor: '#FFA500',
-                    transform: [{ rotate: '-25deg' }],
-                  }}
-                />
-                
-                {/* Lightning Bolt 2 - Right */}
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: '40%',
-                    right: -20,
-                    width: 25,
-                    height: 3,
-                    backgroundColor: '#FF8C00',
-                    transform: [{ rotate: '25deg' }],
-                    shadowColor: '#FF8C00',
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.8,
-                    shadowRadius: 8,
-                    elevation: 5,
-                  }}
-                />
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: '42%',
-                    right: -15,
-                    width: 15,
-                    height: 2,
-                    backgroundColor: '#FFA500',
-                    transform: [{ rotate: '-35deg' }],
-                  }}
-                />
-
-                {/* Lightning Bolt 3 - Bottom */}
-                <View
-                  style={{
-                    position: 'absolute',
-                    bottom: -15,
-                    left: '60%',
-                    width: 3,
-                    height: 25,
-                    backgroundColor: '#FF8C00',
-                    transform: [{ rotate: '-20deg' }],
-                    shadowColor: '#FF8C00',
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.8,
-                    shadowRadius: 8,
-                    elevation: 5,
-                  }}
-                />
-                <View
-                  style={{
-                    position: 'absolute',
-                    bottom: -10,
-                    left: '58%',
-                    width: 2,
-                    height: 15,
-                    backgroundColor: '#FFA500',
-                    transform: [{ rotate: '30deg' }],
-                  }}
-                />
-
-                {/* Lightning Bolt 4 - Left */}
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: '20%',
-                    left: -20,
-                    width: 25,
-                    height: 3,
-                    backgroundColor: '#FF8C00',
-                    transform: [{ rotate: '-30deg' }],
-                    shadowColor: '#FF8C00',
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.8,
-                    shadowRadius: 8,
-                    elevation: 5,
-                  }}
-                />
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: '18%',
-                    left: -15,
-                    width: 15,
-                    height: 2,
-                    backgroundColor: '#FFA500',
-                    transform: [{ rotate: '40deg' }],
-                  }}
-                />
+                  <Animated.View style={[styles.lightningContainer, { opacity: lightningOpacity, transform: [{ rotate: lightningRotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg']}) }]}]}>
+                    <View style={[styles.lightningBolt, styles.lightning1, { backgroundColor: colors.tint, shadowColor: colors.tint }]} />
+                    <View style={[styles.lightningBolt, styles.lightning1inner, { backgroundColor: colors.tint + 'CC' }]} />
+                    <View style={[styles.lightningBolt, styles.lightning2, { backgroundColor: colors.tint, shadowColor: colors.tint }]} />
+                    <View style={[styles.lightningBolt, styles.lightning2inner, { backgroundColor: colors.tint + 'CC' }]} />
+                    <View style={[styles.lightningBolt, styles.lightning3, { backgroundColor: colors.tint, shadowColor: colors.tint }]} />
+                    <View style={[styles.lightningBolt, styles.lightning3inner, { backgroundColor: colors.tint + 'CC' }]} />
+                    <View style={[styles.lightningBolt, styles.lightning4, { backgroundColor: colors.tint, shadowColor: colors.tint }]} />
+                    <View style={[styles.lightningBolt, styles.lightning4inner, { backgroundColor: colors.tint + 'CC' }]} />
               </Animated.View>
 
-              {/* Enhanced Thunder Border Effect */}
-              <Animated.View
-                style={{
-                  position: 'absolute',
-                  top: -6,
-                  left: -6,
-                  right: -6,
-                  bottom: -6,
-                  borderRadius: 30,
-                  borderWidth: thunderAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 3],
-                  }),
-                  borderColor: thunderAnimation.interpolate({
-                    inputRange: [0, 0.5, 1],
-                    outputRange: ['transparent', '#FF8C00', '#FFA500'],
-                  }),
-                  shadowColor: '#FF8C00',
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: thunderAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 1],
-                  }),
-                  shadowRadius: thunderAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 20],
-                  }),
-                  elevation: thunderAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 15],
-                  }),
-                }}
-              />
+                  {/* Thunder Border Effect */}
+                  <Animated.View style={[styles.thunderBorder, {
+                    borderWidth: thunderAnimation.interpolate({ inputRange: [0, 1], outputRange: [0, 2] }),
+                    borderColor: thunderAnimation.interpolate({ inputRange: [0, 0.5, 1], outputRange: ['transparent', colors.tint, colors.tint + 'CC'] }),
+                    shadowColor: colors.tint,
+                    shadowOpacity: thunderAnimation.interpolate({ inputRange: [0, 1], outputRange: [0, 0.8] }),
+                    shadowRadius: thunderAnimation.interpolate({ inputRange: [0, 1], outputRange: [0, 12] }),
+                    elevation: thunderAnimation.interpolate({ inputRange: [0, 1], outputRange: [0, 8] }),
+                  }]} />
               
               {/* Search Input Container */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: colors.surface,
-                  borderRadius: 24,
-                  paddingHorizontal: 20,
-                  paddingVertical: 16,
-                  borderWidth: 1,
-                  borderColor: isSearchFocused ? colors.tint : colors.border,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 8,
-                  elevation: 4,
-                }}
-              >
-                <Ionicons 
-                  name="search" 
-                  size={20} 
-                  color={colors.textSecondary} 
-                  style={{ marginRight: 12 }}
-                />
+                  <View style={[styles.searchInputContainer, { backgroundColor: colors.surface, borderColor: isSearchFocused ? colors.tint : colors.border }]}>
+                    <Ionicons name="search" size={16} color={colors.textSecondary} style={{ marginRight: 10 }} />
                 <TextInput
-                  style={{
-                    flex: 1,
-                    fontSize: 16,
-                    color: colors.text,
-                    fontFamily: 'Outfit_400Regular',
-                  }}
-                  placeholder="Search books, authors, genres..."
+                      style={[styles.searchInput, { color: colors.text }]}
+                      placeholder="Search books..."
                   placeholderTextColor={colors.textSecondary}
                   value={searchQuery}
                   onChangeText={handleSearch}
-                  onFocus={() => {
-                    setIsSearchFocused(true);
-                    triggerThunderAnimation();
-                  }}
-                  onBlur={() => {
-                    setIsSearchFocused(false);
-                    resetThunderAnimation();
-                  }}
+                      onFocus={() => { setIsSearchFocused(true); triggerThunderAnimation(); }}
+                      onBlur={() => { setIsSearchFocused(false); resetThunderAnimation(); }}
                 />
                 {searchQuery.length > 0 && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setSearchQuery('');
-                      handleSearch('');
-                    }}
-                    style={{ marginLeft: 8 }}
-                  >
-                    <Ionicons 
-                      name="close-circle" 
-                      size={20} 
-                      color={colors.textSecondary} 
-                    />
+                      <TouchableOpacity onPress={() => handleSearch('')} style={{ marginLeft: 6 }}>
+                        <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
                   </TouchableOpacity>
                 )}
+                  </View>
               </View>
             </Animated.View>
+            )}
           </Animated.View>
 
+          {/* ***** MAIN CONTENT ***** */}
           {loading ? (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 }}>
-              <Animated.View style={{ transform: [{ scale: pulseAnimation }] }}>
+            <View style={styles.centeredLoader}>
                 <Ionicons name="book" size={64} color={colors.iconAccent} />
-              </Animated.View>
-              <ThemedText style={{ 
-                color: colors.text, 
-                fontFamily: Fonts.outfitRegular,
-                marginTop: 20,
-                fontSize: 16,
-              }}>
+              <ThemedText style={[styles.loadingText, { color: colors.text }]}>
                 Loading books...
               </ThemedText>
             </View>
           ) : filteredBooks.length === 0 ? (
-            <View style={{ 
-              flex: 1, 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              paddingVertical: 120, 
-              paddingHorizontal: 28,
-              minHeight: 500
-            }}>
-              <Animated.View style={{ transform: [{ scale: pulseAnimation }] }}>
+            <View style={styles.noBooksContainer}>
                 <Ionicons name="book-outline" size={80} color={colors.iconAccent} />
-              </Animated.View>
-              <ThemedText 
-                style={{ 
-                  fontSize: 24,
-                  textAlign: 'center',
-                  marginTop: 24,
-                  fontFamily: Fonts.outfitRegular,
-                }}
-              >
+              <ThemedText style={styles.noBooksTitle}>
                 No books found
               </ThemedText>
-              <ThemedText 
-                variant="secondary"
-                style={{ 
-                  fontSize: 16, 
-                  textAlign: 'center', 
-                  marginTop: 12, 
-                  lineHeight: 24,
-                  fontFamily: Fonts.outfitRegular,
-                }}
-              >
+              <ThemedText variant="secondary" style={styles.noBooksSubtitle}>
                 {name === 'all' 
                   ? 'No books are available at the moment' 
                   : `No books found in the ${getCategoryTitle()} category`
@@ -1152,145 +520,81 @@ export default function EnhancedCategoryScreen() {
               data={[
                 { type: 'trending', data: filteredBooks.slice(0, 10) },
                 { type: 'more', data: filteredBooks }
-              ]}
+              ] as { type: string; data: Book[] }[]}
               renderItem={({ item, index }) => {
-                if (item.type === 'trending' && item.data.length > 0) {
+                const typedItem = item as { type: string; data: Book[] };
+                if (typedItem.type === 'trending' && typedItem.data.length > 0 && searchQuery.length === 0) {
                   return (
-                    <View style={{ paddingVertical: 28, paddingHorizontal: 16, marginBottom: 12 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingHorizontal: 8 }}>
-                        <ThemedText 
-                          style={{ 
-                            fontSize: 24,
-                            fontFamily: Fonts.silkscreenRegular,
-                            color: colors.text,
-                            letterSpacing: 0.5,
-                          }}
-                        >
+                    <View style={styles.sectionContainer}>
+                      <View style={styles.sectionHeader}>
+                        <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
                           Trending Now
                         </ThemedText>
-                        <Animated.View 
-                          style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 20,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            backgroundColor: colors.tint,
-                            transform: [{ scale: pulseAnimation }],
-                            shadowColor: colors.tint,
-                            shadowOffset: { width: 0, height: 6 },
-                            shadowOpacity: 0.4,
-                            shadowRadius: 12,
-                          }}
-                        >
+                        <View style={[styles.trendingIconContainer, { backgroundColor: colors.tint, shadowColor: colors.tint }]}>
                           <Ionicons name="trending-up" size={22} color="white" />
-                        </Animated.View>
+                        </View>
                       </View>
                       
                       <FlatList
-                        data={item.data}
+                        data={typedItem.data}
                         renderItem={renderFeaturedBook}
                         keyExtractor={(book) => book.id}
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingRight: 16 }}
+                        contentContainerStyle={{ paddingLeft: 16, paddingRight: 4 }}
                         snapToInterval={340}
                         decelerationRate="fast"
                       />
                     </View>
                   );
-                } else if (item.type === 'more') {
+                } else if (typedItem.type === 'more' && typedItem.data.length > 0) {
                   return (
-                    <View style={{ paddingHorizontal: 16, paddingBottom: 28, paddingTop: 12 }}>
-                      <ThemedText 
-                        style={{ 
-                          fontSize: 26,
-                          marginBottom: 24,
-                          paddingHorizontal: 8,
-                          letterSpacing: 0.5,
-                          fontFamily: Fonts.silkscreenRegular,
-                        }}
-                      >
-                        {name === 'all' ? 'All Books' : `More ${getCategoryTitle()}`}
+                    <View style={styles.sectionContainerMore}>
+                      <ThemedText style={[styles.sectionTitle, { paddingHorizontal: 8 }]}>
+                        {searchQuery.length > 0 ? 'Search Results' : (name === 'all' ? 'All Books' : `More ${getCategoryTitle()}`)}
                       </ThemedText>
                       
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 16 }}>
-                        {item.data.map((book, bookIndex) => (
-                          <View key={book.id} style={{ width: '47%' }}>
+                      <View style={styles.booksGridContainer}>
+                        {typedItem.data.map((book: Book, bookIndex: number) => (
+                          <View key={book.id} style={{ width: '48%' }}>
                             {renderBookCard({ item: book, index: bookIndex })}
                           </View>
                         ))}
+                      </View>
                         
                         {loadingMore && (
-                          <View style={{ 
-                            width: '100%',
-                            flexDirection: 'row', 
-                            justifyContent: 'center', 
-                            alignItems: 'center', 
-                            paddingVertical: 20 
-                          }}>
-                            <Animated.View style={{ transform: [{ scale: pulseAnimation }] }}>
+                        <View style={styles.loaderMoreContainer}>
                               <Ionicons name="book" size={32} color={colors.iconAccent} />
-                            </Animated.View>
-                            <ThemedText style={{ 
-                              color: colors.text, 
-                              fontFamily: Fonts.outfitRegular,
-                              marginLeft: 12,
-                              fontSize: 14,
-                            }}>
+                          <ThemedText style={[styles.loaderMoreText, { color: colors.text }]}>
                               Loading more books...
                             </ThemedText>
                           </View>
                         )}
                         
-                        {hasMoreBooks && !loadingMore && (
-                          <View style={{ 
-                            width: '100%',
-                            flexDirection: 'row', 
-                            justifyContent: 'center', 
-                            alignItems: 'center', 
-                            paddingVertical: 20 
-                          }}>
+                      {hasMoreBooks && !loadingMore && searchQuery.length === 0 && (
+                        <View style={styles.loadMoreButtonContainer}>
                             <TouchableOpacity 
-                              style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                backgroundColor: colors.tint,
-                                paddingHorizontal: 20,
-                                paddingVertical: 12,
-                                borderRadius: 20,
-                                shadowColor: colors.tint,
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.3,
-                                shadowRadius: 8,
-                              }}
+                            style={[styles.loadMoreButton, { backgroundColor: colors.tint, shadowColor: colors.tint }]}
                               onPress={loadMoreBooks}
                             >
                               <Ionicons name="add" size={18} color="white" />
-                              <ThemedText style={{ 
-                                color: 'white', 
-                                fontFamily: Fonts.outfitRegular,
-                                marginLeft: 8,
-                                fontSize: 14,
-                                fontWeight: '600',
-                              }}>
+                            <ThemedText style={styles.loadMoreButtonText}>
                                 Load More Books
                               </ThemedText>
                             </TouchableOpacity>
                           </View>
                         )}
-                      </View>
                     </View>
                   );
                 }
                 return null;
               }}
-              keyExtractor={(item, index) => `${item.type}-${index}`}
+              keyExtractor={(item, index) => `${(item as { type: string; data: Book[] }).type}-${index}`}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 60 }}
+               contentContainerStyle={{ paddingTop: HEADER_MAX_HEIGHT + 40, paddingBottom: 60 }}
               onScroll={handleScroll}
               scrollEventThrottle={16}
-              onEndReached={loadMoreBooks}
+              onEndReached={searchQuery.length === 0 ? loadMoreBooks : undefined}
               onEndReachedThreshold={0.5}
             />
           )}
@@ -1299,10 +603,7 @@ export default function EnhancedCategoryScreen() {
         {selectedBook && (
           <BookDescription
             visible={showBookDescription}
-            onClose={() => {
-              setShowBookDescription(false);
-              setSelectedBook(null);
-            }}
+            onClose={() => { setShowBookDescription(false); setSelectedBook(null); }}
             book={selectedBook}
             onReadNow={handleReadNow}
           />
@@ -1311,3 +612,60 @@ export default function EnhancedCategoryScreen() {
     </AuthGuard>
   );
 }
+
+// Stylesheet for better organization and performance
+const styles = StyleSheet.create({
+  centeredLoader: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
+  header: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingTop: 40, alignItems: 'center' },
+  headerNavbar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderRadius: 24, overflow: 'hidden', borderWidth: 1, width: '92%' },
+  headerButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center', borderRadius: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4 },
+  headerTitleContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  headerTitle: { fontSize: 22, textAlign: 'center', letterSpacing: 0.8, fontFamily: Fonts.silkscreenRegular },
+   searchWrapper: { width: '92%', marginTop: 20 },
+  lightningContainer: { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8 },
+  lightningBolt: { position: 'absolute', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 8, elevation: 5 },
+  lightning1: { top: -15, left: '30%', width: 3, height: 25, transform: [{ rotate: '15deg' }] },
+  lightning1inner: { top: -10, left: '32%', width: 2, height: 15, transform: [{ rotate: '-25deg' }] },
+  lightning2: { top: '40%', right: -20, width: 25, height: 3, transform: [{ rotate: '25deg' }] },
+  lightning2inner: { top: '42%', right: -15, width: 15, height: 2, transform: [{ rotate: '-35deg' }] },
+  lightning3: { bottom: -15, left: '60%', width: 3, height: 25, transform: [{ rotate: '-20deg' }] },
+  lightning3inner: { bottom: -10, left: '58%', width: 2, height: 15, transform: [{ rotate: '30deg' }] },
+  lightning4: { top: '20%', left: -20, width: 25, height: 3, transform: [{ rotate: '-30deg' }] },
+  lightning4inner: { top: '18%', left: -15, width: 15, height: 2, transform: [{ rotate: '40deg' }] },
+  thunderBorder: { position: 'absolute', top: -3, left: -3, right: -3, bottom: -3, borderRadius: 18, shadowOffset: { width: 0, height: 0 } },
+  searchInputContainer: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
+  searchInput: { flex: 1, fontSize: 14, fontFamily: Fonts.outfitRegular },
+  loadingText: { fontFamily: Fonts.outfitRegular, marginTop: 20, fontSize: 16 },
+  noBooksContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 120, paddingHorizontal: 28, minHeight: 500 },
+  noBooksTitle: { fontSize: 24, textAlign: 'center', marginTop: 24, fontFamily: Fonts.outfitRegular },
+  noBooksSubtitle: { fontSize: 16, textAlign: 'center', marginTop: 12, lineHeight: 24, fontFamily: Fonts.outfitRegular },
+  sectionContainer: { marginBottom: 12 },
+  sectionContainerMore: { paddingHorizontal: 16, paddingBottom: 28, paddingTop: 12 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingHorizontal: 24 },
+  sectionTitle: { fontSize: 26, marginBottom: 24, letterSpacing: 0.5, fontFamily: Fonts.silkscreenRegular },
+  trendingIconContainer: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12 },
+  booksGridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 24 },
+  loaderMoreContainer: { width: '100%', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 20 },
+  loaderMoreText: { fontFamily: Fonts.outfitRegular, marginLeft: 12, fontSize: 14 },
+  loadMoreButtonContainer: { width: '100%', justifyContent: 'center', alignItems: 'center', paddingVertical: 20 },
+  loadMoreButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 20, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+  loadMoreButtonText: { color: 'white', fontFamily: Fonts.outfitRegular, marginLeft: 8, fontSize: 14, fontWeight: '600' },
+  imageFill: { width: '100%', height: '100%' },
+  placeholderGradient: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
+  featuredBookContainer: { width: 320, height: 420, marginRight: 20, borderRadius: 28, overflow: 'hidden' },
+  featuredBookGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '65%' },
+  featuredBookTextContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 28 },
+  featuredBookTitle: { fontSize: 32, color: 'white', lineHeight: 38, marginBottom: 6, fontFamily: Fonts.outfitRegular, fontWeight: '700', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 },
+  featuredBookAuthor: { fontSize: 17, color: 'rgba(255, 255, 255, 0.95)', fontFamily: Fonts.outfitRegular, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3, marginBottom: 8 },
+  readersInfoContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, alignSelf: 'flex-start', overflow: 'hidden' }, // Added overflow for blur
+  readersInfoText: { fontSize: 13, color: 'rgba(255, 255, 255, 0.9)', fontFamily: Fonts.outfitRegular, fontWeight: '600', marginLeft: 6, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  playButtonWrapper: { position: 'absolute', bottom: 28, right: 28 },
+  playButton: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 12 },
+  bookCardImageContainer: { position: 'relative', width: '100%', aspectRatio: 3 / 4, borderRadius: 20, overflow: 'hidden', marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 10 },
+  bookCardGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '45%' },
+  bookTypeBadge: { position: 'absolute', top: 12, right: 12, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
+  bookTypeBadgeText: { color: 'white', fontSize: 11, fontFamily: Fonts.outfitRegular, fontWeight: '600' },
+  bookCardTextContainer: { gap: 4, paddingHorizontal: 4 },
+  bookCardTitle: { fontSize: 17, textAlign: 'left', fontFamily: Fonts.outfitRegular, fontWeight: '600', letterSpacing: 0.2 },
+  bookCardAuthor: { fontSize: 14, textAlign: 'left', fontFamily: Fonts.outfitRegular },
+});
